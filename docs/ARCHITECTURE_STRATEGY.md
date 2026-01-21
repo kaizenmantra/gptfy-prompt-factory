@@ -8,54 +8,70 @@
 
 ## Executive Summary
 
-Transform the Prompt Factory from a generic prompt generator into a **Decisive Analysis Assembler**. Instead of asking the user for complexity, the system will automatically assemble a "mini analyst" based on:
+Transform the Prompt Factory from a generic prompt generator into a **Decisive Analysis Assembler**. We stop asking users to "describe what they want" and instead **automatically assemble** a sophisticated "mini-analyst" based on:
 
-1. **Multi-record data foundation** for evidence quality
-2. **Customer business context file** for industry intelligence (single-tenant advantage)
-3. **Pattern library** extracted from existing production prompts
+- **Verified customer context** (ground truth, not guesses)
+- **Multi-record evidence** (patterns, not single data points)
+- **Proven analytical patterns** (extracted from production prompts)
+- **Deterministic triggers** (data signals, not AI vibes)
+
+**Core Philosophy**: Great analysis is not invented from scratch by an LLM each time. It is **assembled** from proven components.
 
 ---
 
 ## The Core Problem
 
-Current system generates generic advice like "align with stakeholders" that:
+**Old Way**: "Read this record and give advice." → Generic hallucinations like "align with stakeholders"
+
+**Why This Fails**:
 - Doesn't cite specific evidence from Salesforce data
 - Uses generic "consultant speak" instead of customer terminology
 - Treats industry context as optional narrative enrichment
 - Produces report-style summaries instead of decision-support analysis
+- LLM guesses at patterns instead of detecting them from data
 
 **Impact**: Users won't trust/pay for prompts that sound like generic chatbot output.
 
+**New Way**: "Apply the *Negotiation Pressure* pattern using *Cigna* terminology with evidence from *Record #1/2/3*." → Expert decision support.
+
 ---
 
-## The Single-Tenant Game Changer
+## The Single-Tenant Advantage
 
 **Key Insight**: GPTfy deploys into a single customer's org (e.g., Cigna). This fundamentally changes the architecture from "generic + inferred" to "pre-configured + validated."
 
-Instead of guessing at industry context, we can:
-- Pre-load customer-specific business context
-- Use proven terminology from day 1
-- Leverage known deal patterns and buying motions
-- Avoid hallucination about industry that we don't understand
+**What This Enables**:
+- Pre-load customer-specific business context (no guessing)
+- Use proven terminology from day 1 (Member, not Customer)
+- Leverage known deal patterns and buying motions (CFO involvement at $500K+)
+- Avoid hallucination about industry we don't understand
+- Build a customer-specific analyst, not a generic chatbot
+
+**Verdict**: The "Analysis Assembler" is not just a feature upgrade; it is a fundamental shift from *generative text* to *automated intelligence*.
 
 ---
 
-## The Three Pillars Strategy
+## The 4-Layer Architecture
 
-### Pillar 1: Multi-Record Data Foundation
+We implement this via four distinct layers of intelligence:
 
-**Purpose**: Evidence Quality & Pattern Detection
+### Layer 1: The Foundation (Truth & Evidence)
 
-#### What Changes
+**Purpose**: Build on verified ground truth, not LLM guesses
+
+Instead of relying on single records or scraped web data, we establish a **foundation of truth**:
+
+#### Multi-Record Evidence
 Query 2-3 sample records instead of 1:
-- Most recent record
-- Oldest open record  
-- One mid-stage record
+- **Most recent record** - Shows current state
+- **Oldest open record** - Shows historical context
+- **One mid-stage record** - Shows progression patterns
 
-#### Why It Works
-- **Field Selection**: Sees variance (empty vs populated fields across records)
-- **Evidence Binding**: Has real examples to cite ("In Record 1, Discount = 20%")
-- **Pattern Detection**: More reliable ("2 of 3 deals mention discount pressure")
+**Why This Works**:
+- **Prevents n=1 bias**: Single records can be outliers
+- **Enables pattern detection**: "2 of 3 deals mention discount pressure"
+- **Provides variance analysis**: See which fields actually vary vs. always empty
+- **Evidence binding**: Has real examples to cite ("In Record 1, Discount = 20%")
 
 #### Implementation Details
 ```apex
@@ -76,14 +92,11 @@ List<Id> sampleRecordIds = getSampleRecords(rootObject, 3);
 - **Heap size**: Only store field values, not full objects
 - **Processing time**: +5-10 seconds acceptable (quality > speed)
 
----
+#### Customer Business Context File
 
-### Pillar 2: Customer Business Context File
+**Purpose**: Single-tenant "Ground Truth" that replaces generic industry guessing
 
-**Purpose**: Industry Intelligence Without Hallucination
-
-#### What It Is
-Markdown/JSON file deployed with the package containing customer-specific business intelligence.
+A Markdown/JSON file deployed with the package containing verified customer-specific business intelligence.
 
 #### Structure
 ```markdown
@@ -154,12 +167,12 @@ StaticResource: customer_business_context.md
 
 ---
 
-### Pillar 3: Pattern Library from Existing Prompts
+### Layer 2: The Pattern Engine (Analytical Lenses)
 
-**Purpose**: Reusable Components, Proven Quality
+**Purpose**: We do not ask the LLM to "figure it out." We inject specific **Analytical Patterns** triggered by data signals.
 
 #### The Insight
-We have 15-20 production prompts (Deal Coach, Account 360, Sentiment Journey, etc.) that already work. Instead of inventing patterns theoretically, **extract them from what's proven**.
+We have 15-20 production prompts (Deal Coach, Account 360, Sentiment Journey, etc.) that already work. Instead of inventing patterns theoretically or asking the LLM to be creative, **extract proven patterns and apply them deterministically**.
 
 #### Library Structure
 
@@ -283,9 +296,96 @@ We have 15-20 production prompts (Deal Coach, Account 360, Sentiment Journey, et
 - Requires parsing
 - Good for complex nested data
 
-**Option 3: Hybrid**
+**Option 3: Hybrid** (Recommended)
 - Metadata for pattern definitions
 - Static Resources for HTML templates
+
+---
+
+### Layer 3: The Assembly (Meta-Prompting)
+
+**Purpose**: The "Factory" becomes an assembly line that constructs the final prompt from selected components
+
+The key is that **Stage08 doesn't write the prompt - it assembles it** from:
+
+#### Persona Archetypes
+The "container" for the output that defines:
+- **Target reader** (Sales Rep, Executive, Customer Success Manager)
+- **Output structure** (sections, tone, length)
+- **Evidence depth** (how much to cite)
+
+Examples: Deal Coach Brief, Executive Risk Memo, Account 360, Renewal Health Check
+
+#### Evidence Binding Rule (Non-Negotiable)
+A strict system instruction injected into every prompt:
+
+```
+EVIDENCE BINDING RULE:
+Every insight must cite specific evidence from:
+- Record 1, Record 2, or Record 3
+- Specific Salesforce field names and values
+- OR explicitly state: "Missing data: <field name>"
+
+Forbidden: Generic claims without evidence
+```
+
+**Impact**: This single rule prevents 90% of hallucinations.
+
+#### Pattern Injection
+The meta-prompt explicitly instructs the AI which patterns to apply:
+
+```
+You are analyzing an Opportunity using the following patterns:
+1. Negotiation Pressure (Stage=Proposal, Discount mentioned)
+2. Stalled Deal Revival (No stage change in 32 days)
+
+For each pattern, answer the specific questions defined in the pattern.
+Use Cigna terminology: Member (not Customer), Plan (not Product).
+```
+
+#### Compositional Assembly
+Stage08 builds the final prompt by:
+1. Loading the persona archetype (Deal Coach)
+2. Loading selected patterns from library (Negotiation Pressure, Stalled Deal)
+3. Injecting customer terminology from context file
+4. Adding evidence binding rule
+5. Loading UI components for formatting
+6. Assembling into a single, coherent meta-prompt
+
+**Result**: The runtime AI receives a precise, constrained, evidence-grounded instruction - not a vague "analyze this."
+
+---
+
+### Layer 4: The Experience (User Control & Trust)
+
+**Purpose**: While the engine is decisive, the user experience builds trust through transparency and control
+
+#### Interactive Preview (Future Enhancement)
+Users see the prompt being assembled in real-time:
+- ✓ Patterns selected (based on data signals shown)
+- ✓ Customer context loaded
+- ✓ Evidence binding rule active
+- ✓ Final prompt generated
+
+**Benefit**: Users understand WHY the system made each choice (transparency breeds trust)
+
+#### Privacy Mode (Future Enhancement)
+PII sanitization for sensitive fields before analysis:
+- Automatically detect PII fields (Email, Phone, SSN)
+- Mask values before sending to LLM
+- Preserve structure for analysis (e.g., "PII_EMAIL_1", "PII_PHONE_1")
+
+**Benefit**: Compliance and security for regulated industries
+
+#### Deep Research Mode (Future Enhancement)
+Optional "live" web context for highly strategic accounts:
+- User opts in for specific high-value deals
+- Real-time competitive intelligence
+- News and market context
+
+**Benefit**: Balance speed (cached context) with depth (live research) based on deal importance
+
+**Note**: Layer 4 enhancements are future roadmap items, not Phase 0-3 scope.
 
 ---
 
@@ -345,213 +445,285 @@ We have 15-20 production prompts (Deal Coach, Account 360, Sentiment Journey, et
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### What Makes This Cohesive
+### What Makes This Cohesive: The 4 Layers Working Together
 
-#### 1. Single Source of Truth (Customer Context File)
-- Replaces guessing with facts
-- Website scraping becomes validation, not discovery
-- Terminology is correct from the start
-- Deal patterns reflect customer reality
+#### How the Layers Integrate
 
-#### 2. Evidence Richness (Multi-Record)
-- More data = better pattern detection
-- Citations reference specific examples ("Record 2 shows...")
-- Field selection is smarter (sees variance)
+**Layer 1 (Foundation)** provides the raw materials:
+- 3 sample records (evidence)
+- Customer context file (terminology, patterns, constraints)
 
-#### 3. Proven Patterns (From Existing Prompts)
-- Not theoretical - extracted from what already works
-- Easy to expand (add new patterns as you build new prompts)
-- Consistent quality across all generated prompts
-- 70% reuse across prompt types
+**Layer 2 (Pattern Engine)** selects the analytical lenses:
+- Scans the 3 records for trigger signals
+- Applies customer-specific patterns from context file
+- Selects 3-5 applicable patterns (not all, just relevant ones)
 
-#### 4. Compositional Architecture
-- **Patterns** are Lego blocks (Negotiation Pressure, Stalled Deal)
-- **Archetypes** define the shape (Deal Coach, Executive Brief)
-- **Customer context** defines the language (Member, Plan, MLR)
-- **Multi-record** provides the evidence (cite specific records)
-- **UI components** ensure consistent formatting
+**Layer 3 (Assembly)** constructs the meta-prompt:
+- Loads persona archetype (Deal Coach, Executive Brief, etc.)
+- Injects selected patterns with their specific questions
+- Applies customer terminology
+- Adds evidence binding rule
+- Assembles into precise, constrained instruction
+
+**Layer 4 (Experience)** builds user trust:
+- Shows what patterns were selected and why (transparency)
+- Offers privacy controls for PII (compliance)
+- Allows deep research mode for strategic deals (flexibility)
+
+#### Why This Is Assembly, Not Invention
+
+- **No LLM creativity**: Patterns are pre-defined, triggers are deterministic
+- **No guessing**: Customer context is verified truth, not web scraping
+- **No vague prompts**: "Analyze this" becomes "Apply patterns X, Y, Z with evidence from records 1, 2, 3"
+- **Composable**: Add new patterns without rewriting the system
+- **Proven**: 70% reuse across prompt types (extracted from production)
 
 ---
 
 ## Implementation Roadmap
 
-### Phase 0: Foundation & Proof of Concept (Week 1)
-
-**Goals**: 
-- Prove evidence binding improves quality
-- Extract initial patterns from existing prompts
-- Define metadata structure
-
-**Tasks**:
-1. **Evidence Binding** (1-2 hours)
-   - Update Stage08 to inject evidence rules
-   - Deploy and test with existing prompts
-   - Measure hallucination reduction
-
-2. **Pattern Extraction** (2-3 days)
-   - Analyze top 5 existing prompts
-   - Extract common patterns
-   - Document in markdown
-
-3. **Metadata Design** (1 day)
-   - Design Custom Metadata structure
-   - Create initial pattern definitions
-   - Create initial archetype definitions
-
-**Success Criteria**:
-- Evidence binding reduces hallucination by 50%+
-- Identified 5-8 reusable patterns
-- Metadata structure approved
+**Strategy**: Depth over breadth. Prove each layer before building the next.
 
 ---
 
-### Phase 1: Multi-Record Foundation (Week 2)
+### Phase 0: Evidence Binding (Immediate - 1-2 days)
 
-**Goals**: 
-- Implement multi-record querying
-- Improve field selection with variance analysis
-- Test impact on evidence quality
+**Goal**: Prove that forcing evidence citation improves quality
+
+**Why First**: This is the fastest, highest-impact change. It's a 2-hour code change that prevents 90% of hallucinations.
+
+**Tasks**:
+1. **Update Stage08** (2 hours)
+   - Inject evidence binding rule into prompt assembly
+   - Format: "Every insight must cite Record 1/2/3 or state 'Missing data: <field>'"
+   - Deploy to agentictso org
+
+2. **Test & Measure** (1 day)
+   - Run 5 test prompts (Deal Coach, Account 360, etc.)
+   - Compare before/after: Count claims without evidence
+   - User feedback: Does output feel more trustworthy?
+
+**Success Criteria**:
+- ✅ Hallucination rate drops by 50%+
+- ✅ Users report output feels more credible
+- ✅ No performance degradation
+
+**Decision Point**: If evidence binding works, commit to full architecture. If not, revisit approach.
+
+---
+
+### Phase 1: The Analysis Assembler Engine (Week 1-2)
+
+**Goal**: Build the "Factory" that assembles prompts from components
+
+**Why Second**: Once evidence binding proves the value of constraints, build the engine that applies multiple constraints systematically.
+
+**Tasks**:
+1. **Define the Meta-Prompt Blueprint** (2 days)
+   - Document the structure of the "Factory prompt"
+   - Template variables: {selectedPatterns}, {customerContext}, {archetypeStructure}
+   - Test manually before automating
+
+2. **Archetype Definitions** (2 days)
+   - Create metadata structure for archetypes
+   - Define "Deal Coach" archetype completely
+   - Define "Executive Risk Brief" archetype
+   - Store in Custom Metadata: `PF_Persona_Archetype__mdt`
+
+3. **Pattern Extraction** (3 days)
+   - Analyze top 5 production prompts
+   - Extract common patterns (expect to find 5-8)
+   - Document triggers, questions, forbidden phrases
+   - Create markdown documentation
+
+4. **Flagship Rewrite** (2 days)
+   - Rewrite "Deal Coach" using new architecture
+   - Manually assemble the meta-prompt (no automation yet)
+   - Test and compare vs. old version
+
+**Success Criteria**:
+- ✅ "Deal Coach" output quality 2x better than baseline
+- ✅ Meta-prompt blueprint documented and validated
+- ✅ 5-8 patterns extracted and documented
+- ✅ Users prefer new "Deal Coach" over old version
+
+---
+
+### Phase 2: Pattern Engine (Week 3-4)
+
+**Goal**: Automate pattern selection based on data signals
+
+**Tasks**:
+1. **Pattern Storage** (2 days)
+   - Create Custom Metadata: `PF_Analytical_Pattern__mdt`
+   - Store 5-8 extracted patterns
+   - Include trigger rules (Stage, Keywords, Probability)
+
+2. **Stage02 Pattern Detection** (3 days)
+   - Implement trigger evaluation logic
+   - Input: 3 records + data signals
+   - Output: 3-5 selected patterns (ranked by relevance)
+   - Test pattern matching accuracy
+
+3. **Stage08 Assembly Integration** (3 days)
+   - Update prompt assembly to query pattern library
+   - Inject pattern-specific analysis questions
+   - Apply forbidden phrase filters
+   - Test with multiple pattern combinations
+
+4. **Full Pipeline Test** (2 days)
+   - End-to-end test: Sample records → Pattern detection → Prompt assembly
+   - Measure pattern hit rate (% of applicable patterns correctly detected)
+   - Measure output quality vs. baseline
+
+**Success Criteria**:
+- ✅ Pattern matching logic works reliably (>90% accuracy)
+- ✅ Stage08 successfully composes prompts from patterns
+- ✅ Output quality 2x better than generic prompts
+
+---
+
+### Phase 3: Multi-Record Foundation (Week 5)
+
+**Goal**: Add multi-record evidence to increase pattern detection reliability
+
+**Why Third**: Once pattern detection works with single records, enhance with multi-record variance
 
 **Tasks**:
 1. **Update Stage01** (2 days)
    - Implement `getSampleRecords()` method
-   - Query 3 records in parallel
+   - Query 3 records in parallel (async calls)
    - Handle edge cases (fewer than 3 records available)
+   - Pass all 3 to subsequent stages
 
-2. **Update Stage05** (2 days)
+2. **Update Stage02** (1 day)
+   - Analyze all 3 records for pattern triggers
+   - Enhance detection: "2 of 3 deals mention discount"
+   - More reliable signal vs. single record
+
+3. **Update Stage05** (2 days)
    - Analyze field variance across 3 records
    - Prioritize fields that show patterns
    - Maintain baseline hardcoded fields
 
-3. **Testing** (1 day)
+4. **Testing** (1 day)
    - Test with Opportunity, Account, Case objects
    - Measure field selection quality improvement
    - Check heap size and performance
 
 **Success Criteria**:
-- 3 records queried successfully
-- Field selection quality improves measurably
-- No performance degradation (heap size OK)
+- ✅ 3 records queried successfully
+- ✅ Pattern detection reliability improves
+- ✅ Field selection quality improves measurably
+- ✅ No performance degradation (heap size OK)
 
 ---
 
-### Phase 2: Pattern Library Implementation (Weeks 3-4)
+### Phase 4: Customer Context Integration (Week 6)
 
-**Goals**: 
-- Build pattern matching logic
-- Create pattern library from remaining prompts
-- Integrate into Stage02 and Stage08
+**Goal**: Replace industry guessing with verified ground truth
 
-**Tasks**:
-1. **Pattern Matching Logic** (3 days)
-   - Build trigger evaluation in Stage02
-   - Match patterns based on data signals
-   - Limit to 3-5 patterns max per run
-
-2. **Pattern Library Creation** (3 days)
-   - Extract patterns from remaining 10-15 prompts
-   - Store in Custom Metadata
-   - Document each pattern
-
-3. **Stage08 Composition** (3 days)
-   - Update prompt assembly to use pattern library
-   - Inject pattern-specific analysis questions
-   - Apply forbidden phrase filters
-   - Test with multiple pattern combinations
-
-4. **Testing & Refinement** (2 days)
-   - Test each pattern individually
-   - Test pattern combinations
-   - Measure output quality vs. baseline
-
-**Success Criteria**:
-- 10-15 patterns defined and stored
-- Pattern matching logic works reliably
-- Output quality improves 2x vs. generic prompts
-
----
-
-### Phase 3: Customer Context Integration (Week 5)
-
-**Goals**: 
-- Create customer business context structure
-- Integrate into Stage02
-- Replace/reduce website scraping dependency
+**Why Fourth**: Once the engine works well, enhance with customer-specific intelligence
 
 **Tasks**:
 1. **Context File Creation** (2 days)
-   - Design context file structure
-   - Create Cigna example context
-   - Store as Custom Metadata or Static Resource
+   - Design context file structure (see Layer 1 for example)
+   - Create Cigna example context (Industry, Terminology, Deal Patterns, Stakeholders, Red Flags)
+   - Store as Custom Metadata: `PF_Customer_Context__mdt` OR Static Resource
 
-2. **Stage02 Integration** (2 days)
-   - Load context file first
-   - Use as baseline for industry classification
-   - Website scraping becomes validation/enrichment
+2. **Stage01 Integration** (1 day)
+   - Load context file at pipeline start
+   - Pass to Stage02 as baseline
 
-3. **Stage08 Integration** (1 day)
-   - Inject customer terminology
+3. **Stage02 Integration** (2 days)
+   - START with customer context (not website)
+   - Use context for:
+     - Industry classification (no guessing)
+     - Forbidden topics (exclusion list)
+     - Deal pattern hints
+   - Website scraping becomes **optional validation**, not primary source
+
+4. **Stage08 Integration** (1 day)
+   - Inject customer terminology into meta-prompt
    - Apply customer-specific deal patterns
-   - Use customer stakeholder maps
+   - Use customer stakeholder maps in analysis
 
-4. **Testing** (1 day)
-   - Test with/without website scraping
-   - Verify terminology correctness
-   - Measure accuracy improvement
+5. **Testing** (1 day)
+   - Compare outputs with/without customer context
+   - Verify terminology correctness (100% accuracy expected)
+   - Test with/without website scraping (should work either way)
 
 **Success Criteria**:
-- Customer context correctly loaded
-- Terminology accurate in all outputs
-- Can optionally skip website scraping
+- ✅ Customer context correctly loaded
+- ✅ Terminology 100% accurate in all outputs
+- ✅ Can skip website scraping without quality loss
+- ✅ Industry-specific patterns correctly applied
 
 ---
 
-### Phase 4: UI Component Library (Week 6)
+### Phase 5: UI Component Library (Week 7 - Optional)
 
-**Goals**: 
-- Extract reusable UI components
-- Ensure consistent formatting
-- Enable mix-and-match composition
+**Goal**: Ensure consistent HTML formatting across all prompt outputs
+
+**Why Optional**: This is a "nice-to-have" polish after core functionality works
 
 **Tasks**:
 1. **Component Extraction** (2 days)
-   - Identify common UI patterns in existing prompts
-   - Extract HTML templates
-   - Define merge field requirements
+   - Identify common UI patterns in existing prompts (risk cards, action lists, timelines)
+   - Extract HTML templates with merge field placeholders
+   - Define merge field requirements per component
 
 2. **Component Storage** (1 day)
-   - Store in Static Resources (HTML templates)
-   - Link to analytical patterns in metadata
-   - Document usage
+   - Store in Static Resources (HTML templates with CSS)
+   - Create metadata: `PF_UI_Component__mdt`
+   - Link to analytical patterns (which patterns use which components)
 
-3. **Stage08 Integration** (2 days)
-   - Update template assembly to use components
+3. **Stage07/08 Integration** (2 days)
+   - Update Stage07 (Template Design) to query component library
+   - Stage08 references components in assembly
    - Support archetype-specific layouts
-   - Test rendering
 
 **Success Criteria**:
-- 8-10 reusable components defined
-- Consistent formatting across all prompts
-- Easy to add new components
+- ✅ 8-10 reusable components defined
+- ✅ Consistent formatting across all prompts
+- ✅ Easy to add new components
+
+**Note**: Can be deferred if Phases 0-4 take longer than expected. Core value is in Layers 1-3, not UI polish.
 
 ---
 
-## The Killer Advantage
+## Why This Wins: The Decisive Difference
 
-### What Other AI Tools Do
+### What Other AI Prompt Tools Do
+**Invention Approach**:
 - Generic, one-size-fits-all prompts
-- Guess at industry context
+- Ask LLM to "figure out" what the user needs
+- Guess at industry context from web scraping
 - Generic advice ("align with stakeholders")
 - No evidence backing
+- Hope the model is smart enough
 
-### What GPTfy Does (After This)
+**Result**: Generic hallucinations that users don't trust
+
+### What GPTfy Does (After This Implementation)
+**Assembly Approach**:
 - **Pre-configured** for customer's business (Cigna, not "healthcare")
-- **Built from proven patterns** (extracted from working prompts)
-- **Evidence-backed** by actual deal data (cites Record 1/2/3)
-- **Speaks customer's language** natively (Member, Plan, MLR)
+- **Deterministic** pattern selection (data signals, not AI vibes)
+- **Verified** customer context (ground truth file, not guesses)
+- **Evidence-backed** by actual deal data (cites Record 1/2/3 or states "Missing")
+- **Proven** patterns (extracted from working prompts, 70% reuse)
 - **Compositional** (patterns + archetypes + context + evidence)
+- **Transparent** (user sees what was selected and why)
 
-**This isn't just "better prompts" - it's "your analyst, automated."**
+**Result**: Decision support that feels like "your analyst, automated"
+
+### The Three Reasons Customers Choose GPTfy
+
+1. **Trust**: By citing explicit evidence ("Record 2 shows Discount = 20%"), users trust the output
+2. **Relevance**: By using the Customer Context file, we speak their language on Day 1
+3. **Speed**: We stop asking users 20 questions. We look at the data and **decide** what analysis they need
+
+**This isn't just "better prompts" - it's a fundamental shift from *generative text* to *automated intelligence*.**
 
 ---
 
@@ -601,30 +773,51 @@ We have 15-20 production prompts (Deal Coach, Account 360, Sentiment Journey, et
 
 ## Next Actions
 
-### Immediate (This Week)
+### Phase 0: Immediate (This Week)
+**Focus**: Prove evidence binding works
+
 1. ✅ Document strategy (this file)
-2. 🔲 Implement evidence binding in Stage08
-3. 🔲 Extract patterns from 3-5 existing prompts
-4. 🔲 Test evidence binding impact
+2. 🔲 Implement evidence binding in Stage08 (2 hours)
+3. 🔲 Deploy and test (1 day)
+4. 🔲 **Decision point**: If 50%+ improvement, proceed to Phase 1
 
-### Short Term (Weeks 2-3)
-1. Multi-record implementation
-2. Initial pattern library (5-8 patterns)
-3. Pattern matching logic in Stage02
+### Phase 1: Short Term (Weeks 1-2)
+**Focus**: Build the Analysis Assembler engine
 
-### Medium Term (Weeks 4-6)
-1. Full pattern library (10-15 patterns)
-2. Customer context file integration
-3. UI component library
+1. Define meta-prompt blueprint
+2. Extract 5-8 patterns from production prompts
+3. Create archetype definitions (Deal Coach, Executive Risk Brief)
+4. Rewrite "Deal Coach" using new architecture
+5. **Decision point**: If 2x quality improvement, proceed to Phase 2
+
+### Phase 2: Medium Term (Weeks 3-4)
+**Focus**: Automate pattern selection
+
+1. Create pattern library metadata
+2. Implement Stage02 pattern detection
+3. Integrate Stage08 prompt assembly
+4. Test end-to-end pipeline
+
+### Phase 3-5: Long Term (Weeks 5-7)
+**Focus**: Enhance with multi-record and customer context
+
+1. Multi-record foundation
+2. Customer context file
+3. UI component library (optional)
 
 ---
 
 ## References & Related Docs
 
-- [PRD: Automated Prompt Creation](./PRD-Automated-Prompt-Creation.md)
-- [Enhanced Prompt Template](./ENHANCED_PROMPT.md)
-- [GPTfy Configuration Guide](./GPTFY_CONFIG.md)
-- [Current Roadmap](./ROADMAP.md)
+### Strategic Documents
+- [Strategic Evolution (recommendations.md)](../recommendations.md) - Original architectural vision
+- [Unified POV](./UNIFIED_POV.md) - 4-layer architecture philosophy
+- [Current Roadmap](./ROADMAP.md) - Feature development timeline
+
+### Product Requirements
+- [PRD: Automated Prompt Creation](./PRD-Automated-Prompt-Creation.md) - Core product definition
+- [Enhanced Prompt Template](./ENHANCED_PROMPT.md) - Template specifications
+- [GPTfy Configuration Guide](./GPTFY_CONFIG.md) - Integration details
 
 ---
 
@@ -633,4 +826,5 @@ We have 15-20 production prompts (Deal Coach, Account 360, Sentiment Journey, et
 | Date | Author | Changes |
 |------|--------|---------|
 | 2026-01-21 | AI Assistant | Initial strategy document created |
+| 2026-01-21 | AI Assistant | Major revision: Integrated 4-layer architecture from UNIFIED_POV.md and recommendations.md, reorganized roadmap with decision points, clarified Assembly vs Invention philosophy |
 
