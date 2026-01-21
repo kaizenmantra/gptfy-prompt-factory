@@ -38,13 +38,13 @@ public with sharing class Stage12_QualityAudit implements IStage {
                 outputHtml, businessContext, targetPersona, businessObjectives, rootObject
             );
 
-            result.queueDebug(runId, STAGE_NUMBER, 'Calling Claude AI for quality scoring');
+            result.queueDebug(runId, STAGE_NUMBER, 'Calling AI for quality scoring');
 
-            // Call Claude AI (HTTP callout - no DML before this!)
-            AIServiceClient.AIResponse aiResponse = AIServiceClient.callClaude(auditPrompt, 2048, 0.5);
+            // Call AI (HTTP callout - no DML before this!)
+            AIServiceClient.AIResponse aiResponse = AIServiceClient.callAI(null, auditPrompt, 2048, 0.5);
 
             if (!aiResponse.success) {
-                throw new StageException('Claude AI call failed: ' + aiResponse.errorMessage);
+                throw new StageException('AI call failed: ' + aiResponse.errorMessage);
             }
 
             result.queueInfo(runId, STAGE_NUMBER,

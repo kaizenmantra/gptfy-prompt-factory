@@ -186,13 +186,13 @@ public with sharing class Stage07_TemplateDesign implements IStage {
         String prompt = buildTemplatePrompt(selectedFieldsRaw, rootObject,
                                            businessContext, targetPersona, outputFormat);
 
-        result.queueDebug(runId, STAGE_NUMBER, 'Calling Claude AI for template generation');
+        result.queueDebug(runId, STAGE_NUMBER, 'Calling AI for template generation');
 
-        // Call Claude AI (HTTP callout - no DML before this!)
-        AIServiceClient.AIResponse aiResponse = AIServiceClient.callClaude(prompt, 8192, 0.7);
+        // Call AI (HTTP callout - no DML before this!)
+        AIServiceClient.AIResponse aiResponse = AIServiceClient.callAI(null, prompt, 8192, 0.7);
 
         if (!aiResponse.success) {
-            throw new StageException('Claude AI call failed: ' + aiResponse.errorMessage);
+            throw new StageException('AI call failed: ' + aiResponse.errorMessage);
         }
 
         result.queueInfo(runId, STAGE_NUMBER,
@@ -261,10 +261,10 @@ public with sharing class Stage07_TemplateDesign implements IStage {
 
             prompt += 'Output ONLY raw HTML starting with <div - no markdown, no backticks, no explanation:';
 
-            result.queueDebug(runId, STAGE_NUMBER, 'Calling Claude AI for template regeneration (Stage 7.4b)');
+            result.queueDebug(runId, STAGE_NUMBER, 'Calling AI for template regeneration (Stage 7.4b)');
 
             // Use lower temperature for more deterministic regeneration
-            AIServiceClient.AIResponse aiResponse = AIServiceClient.callClaude(prompt, 8192, 0.5);
+            AIServiceClient.AIResponse aiResponse = AIServiceClient.callAI(null, prompt, 8192, 0.5);
 
             if (!aiResponse.success) {
                 result.queueError(runId, STAGE_NUMBER, 'Regeneration failed: ' + aiResponse.errorMessage);

@@ -33,13 +33,13 @@ public with sharing class Stage02_StrategicProfiling implements IStage {
             // Build prompt for Claude
             String prompt = buildProfilingPrompt(businessContext, rootObject, outputFormat);
 
-            result.queueDebug(runId, STAGE_NUMBER, 'Calling Claude AI for strategic profiling');
+            result.queueDebug(runId, STAGE_NUMBER, 'Calling AI for strategic profiling');
 
-            // Call Claude AI (HTTP callout - no DML before this!)
-            AIServiceClient.AIResponse aiResponse = AIServiceClient.callClaude(prompt, 2048, 0.7);
+            // Call AI (HTTP callout - no DML before this!)
+            AIServiceClient.AIResponse aiResponse = AIServiceClient.callAI(null, prompt, 2048, 0.7);
 
             if (!aiResponse.success) {
-                throw new StageException('Claude AI call failed: ' + aiResponse.errorMessage);
+                throw new StageException('AI call failed: ' + aiResponse.errorMessage);
             }
 
             result.queueInfo(runId, STAGE_NUMBER,

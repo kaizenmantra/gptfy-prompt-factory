@@ -48,25 +48,39 @@ public with sharing class AIServiceClient {
     }
     
     /**
-     * @description Detect which AI provider is configured
+     * @description Detect which AI provider is configured and set as default
+     * Checks the Default__c checkbox on both credential custom settings
      * @return AIProvider enum value
      */
     private static AIProvider detectProvider() {
         Azure_OpenAI_Credentials__c azureCreds = Azure_OpenAI_Credentials__c.getInstance();
         Claude_API_Credentials__c claudeCreds = Claude_API_Credentials__c.getInstance();
         
-        // Check Azure OpenAI first (prefer if both are configured)
+        // Check which provider is marked as Default
+        Boolean azureDefault = (azureCreds != null && azureCreds.Default__c == true && String.isNotBlank(azureCreds.API_Key__c));
+        Boolean claudeDefault = (claudeCreds != null && claudeCreds.Default__c == true && String.isNotBlank(claudeCreds.API_Key__c));
+        
+        // If Azure is marked as default, use it
+        if (azureDefault) {
+            return AIProvider.AZURE_OPENAI;
+        }
+        
+        // If Claude is marked as default, use it
+        if (claudeDefault) {
+            return AIProvider.CLAUDE;
+        }
+        
+        // Fallback: If neither is marked as default but credentials exist, prefer Azure
         if (azureCreds != null && String.isNotBlank(azureCreds.API_Key__c)) {
             return AIProvider.AZURE_OPENAI;
         }
         
-        // Fall back to Claude
         if (claudeCreds != null && String.isNotBlank(claudeCreds.API_Key__c)) {
             return AIProvider.CLAUDE;
         }
         
-        // Default to Azure OpenAI if nothing configured (will fail gracefully)
-        return AIProvider.AZURE_OPENAI;
+        // Default to Claude if nothing configured (will fail gracefully with clear error)
+        return AIProvider.CLAUDE;
     }
     
     /**
