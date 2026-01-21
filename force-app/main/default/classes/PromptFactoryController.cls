@@ -19,15 +19,28 @@ public with sharing class PromptFactoryController {
      */
     /**
      * @description Gets available AI Models (GPTfy Connections) for dropdown
+     * Returns actual record IDs so Stage09 can use them directly
      * @return List of AI Connection options with Id and Name
      */
     @AuraEnabled(cacheable=true)
     public static List<Map<String, String>> getAIModelOptions() {
         List<Map<String, String>> options = new List<Map<String, String>>();
-        // Managed package is missing in this org, return standard options
-        options.add(new Map<String, String>{ 'label' => 'GPT-4o (OpenAI)', 'value' => 'gpt-4o' });
-        options.add(new Map<String, String>{ 'label' => 'Claude 3.5 Sonnet', 'value' => 'claude-3-5-sonnet' });
-        options.add(new Map<String, String>{ 'label' => 'Gemini Pro 1.5', 'value' => 'gemini-1.5-pro' });
+        
+        // GPTfy AI Connection record IDs from this org
+        // These are the actual ccai__AI_Connection__c record IDs
+        options.add(new Map<String, String>{ 
+            'label' => 'GPTfy (OpenAI)', 
+            'value' => 'a01gD000003okzEQAQ' 
+        });
+        options.add(new Map<String, String>{ 
+            'label' => 'GPTfy (Amazon BedRock Claude)', 
+            'value' => 'a01gD000003okzGQAQ' 
+        });
+        options.add(new Map<String, String>{ 
+            'label' => 'GPTfy (Google AI)', 
+            'value' => 'a01gD000003okzFQAQ' 
+        });
+        
         return options;
     }
 
