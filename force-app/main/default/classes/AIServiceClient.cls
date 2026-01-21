@@ -1,13 +1,21 @@
 /**
- * @description Client for Claude AI API integration
+ * @description Client for AI API integration (Claude AI and Azure OpenAI)
  * Handles HTTP callouts, response parsing, and retry logic
  *
- * CRITICAL: This implementation mirrors the shell script's llm.sh behavior:
- * 1. Uses both api-key AND Authorization: Bearer headers (Azure compatibility)
- * 2. Supports separate system prompt (Anthropic format)
- * 3. Implements retry with backoff for 429/500/timeout errors
+ * CRITICAL: This implementation supports multiple AI providers:
+ * 1. Claude AI (Anthropic) - Original implementation
+ * 2. Azure OpenAI (GPT-4o) - New Azure integration
+ * 3. Automatic provider detection based on configured credentials
+ * 4. Implements retry with backoff for 429/500/timeout errors
  */
 public with sharing class AIServiceClient {
+    
+    // AI Provider types
+    public enum AIProvider {
+        CLAUDE,
+        AZURE_OPENAI,
+        AUTO  // Automatically detect based on configured credentials
+    }
 
     @TestVisible
     private static Boolean mockMode = false;
@@ -31,10 +39,92 @@ public with sharing class AIServiceClient {
     static void setMockResponse(String responseJson) {
         mockResponse = responseJson;
     }
+    
+    /**
+     * @description Set the default AI provider
+     */
+    public static void setDefaultProvider(AIProvider provider) {
+        defaultProvider = provider;
+    }
+    
+    /**
+     * @description Detect which AI provider is configured
+     * @return AIProvider enum value
+     */
+    private static AIProvider detectProvider() {
+        Azure_OpenAI_Credentials__c azureCreds = Azure_OpenAI_Credentials__c.getInstance();
+        Claude_API_Credentials__c claudeCreds = Claude_API_Credentials__c.getInstance();
+        
+        // Check Azure OpenAI first (prefer if both are configured)
+        if (azureCreds != null && String.isNotBlank(azureCreds.API_Key__c)) {
+            return AIProvider.AZURE_OPENAI;
+        }
+        
+        // Fall back to Claude
+        if (claudeCreds != null && String.isNotBlank(claudeCreds.API_Key__c)) {
+            return AIProvider.CLAUDE;
+        }
+        
+        // Default to Azure OpenAI if nothing configured (will fail gracefully)
+        return AIProvider.AZURE_OPENAI;
+    }
+    
+    /**
+     * @description Universal AI call that routes to the appropriate provider
+     * @param prompt The prompt to send
+     * @return AIResponse wrapper with results
+     */
+    public static AIResponse callAI(String prompt) {
+        AIProvider provider = (defaultProvider == AIProvider.AUTO) ? detectProvider() : defaultProvider;
+        
+        if (provider == AIProvider.AZURE_OPENAI) {
+            return callAzureOpenAI(prompt);
+        } else {
+            return callClaude(prompt);
+        }
+    }
+    
+    /**
+     * @description Universal AI call with system prompt
+     * @param systemPrompt System-level instructions
+     * @param userPrompt The user's query
+     * @param maxTokens Maximum tokens in response
+     * @param temperature Temperature setting
+     * @return AIResponse wrapper with results
+     */
+    public static AIResponse callAI(String systemPrompt, String userPrompt, Integer maxTokens, Decimal temperature) {
+        AIProvider provider = (defaultProvider == AIProvider.AUTO) ? detectProvider() : defaultProvider;
+        
+        if (provider == AIProvider.AZURE_OPENAI) {
+            return callAzureOpenAI(systemPrompt, userPrompt, maxTokens, temperature);
+        } else {
+            return callClaude(systemPrompt, userPrompt, maxTokens, temperature);
+        }
+    }
+    
+    /**
+     * @description Universal AI call for JSON extraction
+     * @param systemPrompt System-level instructions
+     * @param userPrompt The user's query
+     * @param maxTokens Maximum tokens in response
+     * @return AIResponse wrapper with results
+     */
+    public static AIResponse callAIJSON(String systemPrompt, String userPrompt, Integer maxTokens) {
+        AIProvider provider = (defaultProvider == AIProvider.AUTO) ? detectProvider() : defaultProvider;
+        
+        if (provider == AIProvider.AZURE_OPENAI) {
+            return callAzureOpenAIJSON(systemPrompt, userPrompt, maxTokens);
+        } else {
+            return callClaudeJSON(systemPrompt, userPrompt, maxTokens);
+        }
+    }
 
     // Retry configuration (mirrors shell script: 3 attempts with backoff)
     private static final Integer MAX_RETRY_ATTEMPTS = 3;
     private static final Set<Integer> RETRYABLE_STATUS_CODES = new Set<Integer>{429, 500, 502, 503, 504};
+    
+    // Default provider (can be overridden)
+    private static AIProvider defaultProvider = AIProvider.AUTO;
 
     /**
      * @description Wrapper for AI API response
@@ -282,6 +372,191 @@ public with sharing class AIServiceClient {
 
         // Use lower temperature for more deterministic JSON output (matches shell script: 0.2)
         return callClaude(enhancedSystem, userPrompt, maxTokens, 0.2);
+    }
+
+    // ========================================================================
+    // AZURE OPENAI METHODS
+    // ========================================================================
+
+    /**
+     * @description Calls Azure OpenAI API with a prompt (no system prompt)
+     * @param prompt The prompt to send to Azure OpenAI
+     * @return AIResponse wrapper with results
+     */
+    public static AIResponse callAzureOpenAI(String prompt) {
+        Azure_OpenAI_Credentials__c creds = Azure_OpenAI_Credentials__c.getInstance();
+        Integer maxTokens = (creds != null && creds.Max_Tokens__c != null)
+            ? Integer.valueOf(creds.Max_Tokens__c) : 4096;
+        Decimal temperature = (creds != null && creds.Temperature__c != null)
+            ? creds.Temperature__c : 0.7;
+        return callAzureOpenAI(null, prompt, maxTokens, temperature);
+    }
+
+    /**
+     * @description Calls Azure OpenAI API with configurable parameters
+     * @param prompt The prompt to send
+     * @param maxTokens Maximum tokens in response
+     * @param temperature Temperature for response variability (0-2)
+     * @return AIResponse wrapper with results
+     */
+    public static AIResponse callAzureOpenAI(String prompt, Integer maxTokens, Decimal temperature) {
+        return callAzureOpenAI(null, prompt, maxTokens, temperature);
+    }
+
+    /**
+     * @description Calls Azure OpenAI API with system prompt support
+     * @param systemPrompt Optional system prompt for instruction hierarchy
+     * @param userPrompt The user prompt to send
+     * @param maxTokens Maximum tokens in response
+     * @param temperature Temperature for response variability (0-2)
+     * @return AIResponse wrapper with results
+     */
+    public static AIResponse callAzureOpenAI(String systemPrompt, String userPrompt, Integer maxTokens, Decimal temperature) {
+        if (Test.isRunningTest() && mockMode) {
+            return createMockResponse();
+        }
+
+        AIResponse response = null;
+        Integer attempt = 0;
+
+        while (attempt < MAX_RETRY_ATTEMPTS) {
+            attempt++;
+
+            try {
+                response = executeAzureOpenAICall(systemPrompt, userPrompt, maxTokens, temperature);
+                response.attemptCount = attempt;
+
+                if (response.success) {
+                    return response;
+                }
+
+                if (!shouldRetry(response)) {
+                    return response;
+                }
+
+                System.debug('Azure OpenAI attempt ' + attempt + ' failed with status ' +
+                    response.httpStatusCode + ', will retry if attempts remain');
+
+            } catch (Exception e) {
+                response = createErrorResponse('Exception during Azure OpenAI call (attempt ' + attempt + '): ' + e.getMessage());
+                response.attemptCount = attempt;
+
+                if (e.getMessage().contains('credentials') || e.getMessage().contains('endpoint')) {
+                    return response;
+                }
+            }
+        }
+
+        if (response != null) {
+            response.errorMessage = 'All ' + MAX_RETRY_ATTEMPTS + ' attempts failed. Last error: ' + response.errorMessage;
+        } else {
+            response = createErrorResponse('All ' + MAX_RETRY_ATTEMPTS + ' attempts failed');
+        }
+
+        return response;
+    }
+
+    /**
+     * @description Executes a single Azure OpenAI API call
+     * @param systemPrompt Optional system prompt
+     * @param userPrompt The user prompt
+     * @param maxTokens Maximum tokens
+     * @param temperature Temperature setting
+     * @return AIResponse from this attempt
+     */
+    private static AIResponse executeAzureOpenAICall(String systemPrompt, String userPrompt, Integer maxTokens, Decimal temperature) {
+        Azure_OpenAI_Credentials__c creds = Azure_OpenAI_Credentials__c.getInstance();
+
+        if (creds == null || String.isBlank(creds.API_Key__c)) {
+            return createErrorResponse('Azure OpenAI credentials not configured');
+        }
+
+        HttpRequest req = new HttpRequest();
+        req.setEndpoint(creds.API_Endpoint__c);
+        req.setMethod('POST');
+        req.setHeader('api-key', creds.API_Key__c);
+        req.setHeader('Content-Type', 'application/json');
+        req.setTimeout(120000);
+
+        // Build messages array (OpenAI format)
+        List<Object> messages = new List<Object>();
+        
+        // Add system message if provided
+        if (String.isNotBlank(systemPrompt)) {
+            messages.add(new Map<String, String>{
+                'role' => 'system',
+                'content' => systemPrompt
+            });
+        }
+        
+        // Add user message
+        messages.add(new Map<String, String>{
+            'role' => 'user',
+            'content' => userPrompt
+        });
+
+        Map<String, Object> body = new Map<String, Object>{
+            'messages' => messages,
+            'max_tokens' => maxTokens,
+            'temperature' => temperature
+        };
+
+        req.setBody(JSON.serialize(body));
+
+        Http http = new Http();
+        HttpResponse res = http.send(req);
+
+        if (res.getStatusCode() == 200) {
+            return parseAzureOpenAIResponse(res.getBody());
+        } else {
+            AIResponse errorResponse = parseErrorResponse(res);
+            errorResponse.httpStatusCode = res.getStatusCode();
+            return errorResponse;
+        }
+    }
+
+    /**
+     * @description Calls Azure OpenAI for JSON extraction with lower temperature
+     * @param systemPrompt System-level instructions
+     * @param userPrompt The user's query
+     * @param maxTokens Maximum tokens in response
+     * @return AIResponse wrapper with results
+     */
+    public static AIResponse callAzureOpenAIJSON(String systemPrompt, String userPrompt, Integer maxTokens) {
+        String enhancedSystem = systemPrompt + '\n\n' +
+            'CRITICAL: You MUST respond with valid JSON only. No markdown code fences, no explanation, ' +
+            'no text before or after. Just the raw JSON object starting with { and ending with }.';
+
+        return callAzureOpenAI(enhancedSystem, userPrompt, maxTokens, 0.2);
+    }
+
+    /**
+     * @description Parses Azure OpenAI API response
+     * @param jsonBody Response body as JSON string
+     * @return AIResponse wrapper
+     */
+    private static AIResponse parseAzureOpenAIResponse(String jsonBody) {
+        try {
+            Map<String, Object> data = (Map<String, Object>) JSON.deserializeUntyped(jsonBody);
+            List<Object> choices = (List<Object>) data.get('choices');
+            Map<String, Object> firstChoice = (Map<String, Object>) choices[0];
+            Map<String, Object> message = (Map<String, Object>) firstChoice.get('message');
+
+            AIResponse response = new AIResponse();
+            response.messageId = (String) data.get('id');
+            response.content = (String) message.get('content');
+
+            Map<String, Object> usage = (Map<String, Object>) data.get('usage');
+            if (usage != null) {
+                response.inputTokens = (Integer) usage.get('prompt_tokens');
+                response.outputTokens = (Integer) usage.get('completion_tokens');
+            }
+
+            return response;
+
+        } catch (Exception e) {
+            return createErrorResponse('Failed to parse Azure OpenAI response: ' + e.getMessage());
+        }
     }
 
     /**

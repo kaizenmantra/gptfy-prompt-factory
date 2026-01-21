@@ -6,10 +6,10 @@ public with sharing class AddCardControllerTest {
         TestUtility.createCardConfiguration('DnB','APIDS',true);
         TestUtility.createCardConfiguration('GPTfy (OpenAI)','AMODL',true);
         TestUtility.createCardConfiguration('Boost Sales','CTLOG',true);
-        AI_Response_Mapping__c responseMapping = TestUtility.createResponseMapping('TestResponse',true);
-        AI_Connection__c ac = TestUtility.getConnection('GPTfy (OpenAI)1', false);
+        ccai__AI_Response_Mapping__c responseMapping = TestUtility.createResponseMapping('TestResponse',true);
+        ccai__AI_Connection__c ac = TestUtility.getConnection('GPTfy (OpenAI)1', false);
         ac.AI_Technology__c = 'GPTfy';
-        ac.AI_Response_Mapping__c = responseMapping.Id;
+        ac.ccai__AI_Response_Mapping__c = responseMapping.Id;
         insert ac;
         ac.Name = 'GPTfy (OpenAI)';
         update ac;
@@ -99,7 +99,7 @@ public with sharing class AddCardControllerTest {
     public static void updateCardConfigurationTest(){        
         Test.startTest();
         Test.setMock(WebServiceMock.class, new MetadataAPIMockHttpResponseGenerator());
-        AI_Card_Configuration__c config = [Select id from AI_Card_Configuration__c where Name='Boost Sales' AND Feature__c='CTLOG'];
+        ccai__AI_Card_Configuration__c config = [Select id from ccai__AI_Card_Configuration__c where Name='Boost Sales' AND Feature__c='CTLOG'];
         Map<String, Object> mapParams = new Map<String, Object>();
         mapParams.put('Id',config.id);
         mapParams.put('Name','Boost Sales');
@@ -123,7 +123,7 @@ public with sharing class AddCardControllerTest {
         Test.startTest();
         Test.setMock(WebServiceMock.class, new MetadataAPIMockHttpResponseGenerator());
 
-        AI_Card_Configuration__c card = TestUtility.createCardConfiguration('TestCard123','AMODL',true);
+        ccai__AI_Card_Configuration__c card = TestUtility.createCardConfiguration('TestCard123','AMODL',true);
         boolean hasSuccess = AddCardController.deleteCardConfiguration('test', 'GPTfy_Card_Configuration.Test', 'test', 'CTLOG',card.Id);
         Test.stopTest();
         
@@ -161,7 +161,7 @@ public with sharing class AddCardControllerTest {
         Test.startTest();        
         List<AddCardController.dataWrap> lst = AddCardController.getCardConfiguration('AMODL');
         try{
-            AI_Connection__c ac = TestUtility.getConnection('GPTfy (OpenAI)', false);
+            ccai__AI_Connection__c ac = TestUtility.getConnection('GPTfy (OpenAI)', false);
             ac.AI_Technology__c = 'GPTfy';
             insert ac;
         }catch(Exception ex){}
@@ -180,8 +180,8 @@ public with sharing class AddCardControllerTest {
     @isTest
     public static void createConnectionTest(){
         String NAMESPACE = AIExtractionFieldMappingController.NAMESPACE;
-        AI_Response_Mapping__c responseMapping = TestUtility.createResponseMapping('TestResponse2',true);
-        Request_Mapping__c reqMapping = TestUtility.createRequestMapping('TestRequest2',true);
+        ccai__AI_Response_Mapping__c responseMapping = TestUtility.createResponseMapping('TestResponse2',true);
+        ccai__Request_Mapping__c reqMapping = TestUtility.createRequestMapping('TestRequest2',true);
         Map<String, Object> params = new Map<String, Object>();
         params.put('Name', 'GPTfy (OpenAI)');
         params.put(NAMESPACE + 'Named_Credential__c', 'Test');
@@ -197,9 +197,9 @@ public with sharing class AddCardControllerTest {
         params.put(NAMESPACE + 'EndPoint_URL__c', 'test');
         params.put(NAMESPACE + 'Top_P__c', 1);
         params.put(NAMESPACE + 'Response_Mapping__c',responseMapping.Id);
-        params.put(NAMESPACE + 'Request_Mapping__c',reqMapping.Id);
+        params.put(NAMESPACE + 'ccai__Request_Mapping__c',reqMapping.Id);
         Test.startTest();
-        AI_Connection__c conn = AddCardController.createConnection(params);
+        ccai__AI_Connection__c conn = AddCardController.createConnection(params);
         String responseMappingData = AddCardController.getResponseMapping(conn.Id);
         AddCardController.getRequestMapping(conn.Id);
         Test.stopTest();
@@ -241,7 +241,7 @@ public with sharing class AddCardControllerTest {
         Test.setMock(HttpCalloutMock.class, new AIMockCallout(respBody));
         boolean act = AddCardController.handleCardActivate(params);
         boolean act2 = AddCardController.handleCardActivate(paramsDataSource);
-        AI_Card_Configuration__c metadata = [SELECT Id FROM AI_Card_Configuration__c LIMIT 1];
+        ccai__AI_Card_Configuration__c metadata = [SELECT Id FROM ccai__AI_Card_Configuration__c LIMIT 1];
         AddCardController.getCardConfigurationRecord(metadata.Id);
         Test.stopTest();
         System.assert(!act);
@@ -252,7 +252,7 @@ public with sharing class AddCardControllerTest {
         Boolean isError = false;
         Test.startTest();
         try{
-            AI_Connection__c ac = TestUtility.getConnection('OpenAI / Azure', false);
+            ccai__AI_Connection__c ac = TestUtility.getConnection('OpenAI / Azure', false);
             ac.Named_Credential__c = '';
             ac.AI_Technology__c = '';
             ac.Infrastructure__c = '';

@@ -6,7 +6,7 @@ public with sharing class AddCardController implements Metadata.DeployCallback {
     private static final String STATIC_RESOURCE_MISSING_ERROR = 'Static resource not exist.';
     private static final String NAME = 'Name';
     private static final String RESPONSE_MAPPING = 'Response_Mapping__c';
-    private static final String REQUEST_MAPPING = 'Request_Mapping__c';
+    private static final String REQUEST_MAPPING = 'ccai__Request_Mapping__c';
     private static final String feature = 'Feature';
     private static final String CARD_TYPE = 'Feature__c';
     private static final String ICON_SOURCE = 'Icon_Source__c';
@@ -40,7 +40,7 @@ public with sharing class AddCardController implements Metadata.DeployCallback {
                 }
             }   
             
-            AI_Card_Configuration__c oCardConfiguration = new AI_Card_Configuration__c();
+            ccai__AI_Card_Configuration__c oCardConfiguration = new ccai__AI_Card_Configuration__c();
             oCardConfiguration.Name = (String)params.get(NAME);
             for(String field : METADATA_FIELDS){
                 if(params.containsKey(field)){
@@ -55,7 +55,7 @@ public with sharing class AddCardController implements Metadata.DeployCallback {
                     }
                 }
             }
-            FLSCheck.getInstance().insertDML(new List<AI_Card_Configuration__c>{oCardConfiguration});
+            FLSCheck.getInstance().insertDML(new List<ccai__AI_Card_Configuration__c>{oCardConfiguration});
             hasSuccess = true;
         }catch(DMLException dmlex){
             throw new AuraHandledException(dmlex.getDMLMessage(0));
@@ -69,7 +69,7 @@ public with sharing class AddCardController implements Metadata.DeployCallback {
     public static boolean updateCardConfiguration(Map<String, Object> params) {  
         boolean hasUpdated = false;
         try{
-            AI_Card_Configuration__c oCardConfiguration = new AI_Card_Configuration__c();
+            ccai__AI_Card_Configuration__c oCardConfiguration = new ccai__AI_Card_Configuration__c();
             oCardConfiguration.Id = (String)params.get('Id');
             for (String key : METADATA_FIELDS) {
                 if(params.containsKey(key)){
@@ -84,7 +84,7 @@ public with sharing class AddCardController implements Metadata.DeployCallback {
                     }
                 }
             }
-            FLSCheck.getInstance().upsertDML(new List<AI_Card_Configuration__c>{oCardConfiguration});
+            FLSCheck.getInstance().upsertDML(new List<ccai__AI_Card_Configuration__c>{oCardConfiguration});
             hasUpdated = true;
             return hasUpdated;
         }catch(DMLException dmlex){
@@ -99,7 +99,7 @@ public with sharing class AddCardController implements Metadata.DeployCallback {
 
         boolean hasDeleted = false;
         try{
-            AI_Card_Configuration__c oCardConfiguration = new AI_Card_Configuration__c(Id=recordId);
+            ccai__AI_Card_Configuration__c oCardConfiguration = new ccai__AI_Card_Configuration__c(Id=recordId);
             MetadataService.MetadataPort service = createService();
             if(cardType == CARD_TYPE_CTLOG){
                 if(!Test.isRunningTest()){                    
@@ -138,7 +138,7 @@ public with sharing class AddCardController implements Metadata.DeployCallback {
                 if(lstOfPrompt != null && !lstOfPrompt.isEmpty()){
                     throw new ChatGPTUtills.ApplicationException('Cannot be deleted as the record is associated with prompts.');
                 }else{
-                    List<AI_Connection__c> lstOfConnToDelete = [SELECT Id FROM AI_Connection__c WHERE Name =:metadataLabel];
+                    List<ccai__AI_Connection__c> lstOfConnToDelete = [SELECT Id FROM ccai__AI_Connection__c WHERE Name =:metadataLabel];
                     if(lstOfConnToDelete != null && !lstOfConnToDelete.isEmpty()){
                         FLSCheck.getInstance().deleteDML(lstOfConnToDelete);
                     }
@@ -158,14 +158,14 @@ public with sharing class AddCardController implements Metadata.DeployCallback {
     @AuraEnabled
     public static List<dataWrap> getCardConfiguration(String feature){
         List<dataWrap> lstDataWrap = new List<dataWrap>();
-        List<AI_Card_Configuration__c> lstCardConfiguration = new List<AI_Card_Configuration__c>();
+        List<ccai__AI_Card_Configuration__c> lstCardConfiguration = new List<ccai__AI_Card_Configuration__c>();
         
         Map<String, Set<String>> mapRecordName = new Map<String, Set<String>>();
         Map<String, Map<String, List<AI_Prompt__c>>> mapMatrics = new Map<String, Map<String, List<AI_Prompt__c>>>();
         Map<String, Decimal> mapSecondTotal = new Map<String, Decimal>();
         Map<String, Decimal> mapMoneyTotal = new Map<String, Decimal>();
         
-        for(AI_Card_Configuration__c cardConfiguration : [SELECT Id, Name, Feature__c, Icon_Source__c, Description__c, Enabled__c, Icon_Details__c, Sequence__c FROM AI_Card_Configuration__c WHERE Feature__c =: feature AND Icon_Details__c != NULL ORDER BY Sequence__c]){
+        for(ccai__AI_Card_Configuration__c cardConfiguration : [SELECT Id, Name, Feature__c, Icon_Source__c, Description__c, Enabled__c, Icon_Details__c, Sequence__c FROM ccai__AI_Card_Configuration__c WHERE Feature__c =: feature AND Icon_Details__c != NULL ORDER BY Sequence__c]){
             if(cardConfiguration.Icon_Source__c == ICON_SOURCE_STATIC_RESOURCE){
                 try{
                     cardConfiguration.Icon_Details__c = URL.getOrgDomainUrl().toExternalForm() + PageReference.forResource(cardConfiguration.Icon_Details__c).getUrl().SubStringBefore('?');
@@ -185,7 +185,7 @@ public with sharing class AddCardController implements Metadata.DeployCallback {
                 mapMoneyTotal = lstROITotal[1];
             }
             
-            for(AI_Card_Configuration__c cardConfiguration : lstCardConfiguration){
+            for(ccai__AI_Card_Configuration__c cardConfiguration : lstCardConfiguration){
                 //if(mdt.Enabled__c){
                     dataWrap wrap = new dataWrap();
                     wrap.mdtRecord = new metadataWrap(cardConfiguration);
@@ -221,13 +221,13 @@ public with sharing class AddCardController implements Metadata.DeployCallback {
                 //}
             }
         } else if(feature == CARD_TYPE_AMODL){
-            Map<String, AI_Connection__c> mapAIConnection = new Map<String, AI_Connection__c>();
+            Map<String, ccai__AI_Connection__c> mapAIConnection = new Map<String, ccai__AI_Connection__c>();
             if(mapRecordName.containsKey(CARD_TYPE_AMODL) && mapRecordName.get(CARD_TYPE_AMODL).size() > 0){
-                for(AI_Connection__c c : [SELECT Id, Name, AI_Technology__c FROM AI_Connection__c WHERE  Name IN : mapRecordName.get(CARD_TYPE_AMODL)]){
+                for(ccai__AI_Connection__c c : [SELECT Id, Name, AI_Technology__c FROM ccai__AI_Connection__c WHERE  Name IN : mapRecordName.get(CARD_TYPE_AMODL)]){
                     mapAIConnection.put(c.Name, c);
                 }
             }
-            for(AI_Card_Configuration__c cardConfiguration : lstCardConfiguration){
+            for(ccai__AI_Card_Configuration__c cardConfiguration : lstCardConfiguration){
                 dataWrap wrap = new dataWrap();
                     wrap.mdtRecord = new metadataWrap(cardConfiguration);
                     if(!mapAIConnection.isEmpty() && mapAIConnection.containsKey(cardConfiguration.Name)){                    
@@ -245,7 +245,7 @@ public with sharing class AddCardController implements Metadata.DeployCallback {
                     mapDataSource.put(c.Name, c);
                 }
             }
-            for(AI_Card_Configuration__c cardConfiguration : lstCardConfiguration){
+            for(ccai__AI_Card_Configuration__c cardConfiguration : lstCardConfiguration){
                 dataWrap wrap = new dataWrap();
                 wrap.mdtRecord = new metadataWrap(cardConfiguration);
                 if(!mapDataSource.isEmpty() && mapDataSource.containsKey(cardConfiguration.Name)){                    
@@ -267,11 +267,11 @@ public with sharing class AddCardController implements Metadata.DeployCallback {
         mapResponseMapping.put('namespace', NAMESPACE);
         String responseMapping = '';
         if(String.isNotBlank(recordId)){
-            for(AI_Connection__c ac : [SELECT AI_Response_Mapping__c FROM AI_Connection__c WHERE Id=:recordId AND AI_Response_Mapping__c != null]){
-                responseMapping = ac.AI_Response_Mapping__c;
+            for(ccai__AI_Connection__c ac : [SELECT ccai__AI_Response_Mapping__c FROM ccai__AI_Connection__c WHERE Id=:recordId AND ccai__AI_Response_Mapping__c != null]){
+                responseMapping = ac.ccai__AI_Response_Mapping__c;
             }
             if(String.isNotBlank(responseMapping)){
-                for(AI_Response_Mapping__c rm : [SELECT Id, Name FROM AI_Response_Mapping__c WHERE Id=:responseMapping]){
+                for(ccai__AI_Response_Mapping__c rm : [SELECT Id, Name FROM ccai__AI_Response_Mapping__c WHERE Id=:responseMapping]){
                     mapResponseMapping.put('Name', rm.Name);
                     mapResponseMapping.put('Id', rm.Id);
                 }
@@ -289,11 +289,11 @@ public with sharing class AddCardController implements Metadata.DeployCallback {
         
         String requestMapping = '';
         if(String.isNotBlank(recordId)){
-            for(AI_Connection__c ac : [SELECT AI_Request_Mapping__c FROM AI_Connection__c WHERE Id=:recordId AND AI_Request_Mapping__c != null]){
+            for(ccai__AI_Connection__c ac : [SELECT AI_Request_Mapping__c FROM ccai__AI_Connection__c WHERE Id=:recordId AND AI_Request_Mapping__c != null]){
                 requestMapping = ac.AI_Request_Mapping__c;
             }
             if(String.isNotBlank(requestMapping)){
-                for(Request_Mapping__c  rm : [SELECT Id, Name FROM Request_Mapping__c  WHERE Id =: requestMapping]){ 
+                for(ccai__Request_Mapping__c  rm : [SELECT Id, Name FROM ccai__Request_Mapping__c  WHERE Id =: requestMapping]){ 
                     mapRequestMapping.put('Name', rm.Name);
                     mapRequestMapping.put('Id', rm.Id);
                 }
@@ -303,13 +303,13 @@ public with sharing class AddCardController implements Metadata.DeployCallback {
     }
     
     @AuraEnabled
-    public static AI_Connection__c createConnection(Map<String, Object> params){
+    public static ccai__AI_Connection__c createConnection(Map<String, Object> params){
         try{
-            AI_Connection__c c = new AI_Connection__c();
+            ccai__AI_Connection__c c = new ccai__AI_Connection__c();
             String recName = (String)params.get(NAME);
             
             if(String.isNotBlank(recName)){
-                for(AI_Connection__c ac : [SELECT Id, Name, Named_Credential__c, AI_Technology__c, Connector_Class__c, Infrastructure__c, Security_Layer__c, Version__c, Enable_in_Sandbox__c, Model__c, EndPoint_URL__c, Type__c FROM AI_Connection__c WHERE Name =: recName LIMIT 1]){
+                for(ccai__AI_Connection__c ac : [SELECT Id, Name, Named_Credential__c, AI_Technology__c, Connector_Class__c, Infrastructure__c, Security_Layer__c, Version__c, Enable_in_Sandbox__c, Model__c, EndPoint_URL__c, Type__c FROM ccai__AI_Connection__c WHERE Name =: recName LIMIT 1]){
                     c = ac;
                 }
             }
@@ -332,9 +332,9 @@ public with sharing class AddCardController implements Metadata.DeployCallback {
             c.Top_P__c = (params.get(NAMESPACE + 'Top_P__c') != '' && params.get(NAMESPACE + 'Top_P__c') != null ) ? Decimal.valueOf(''+params.get(NAMESPACE + 'Top_P__c')) : null;
             c.Additional_Parameters__c = (String)params.get(NAMESPACE+'Additional_Parameters__c');
             c.Type__c = (String)params.get(NAMESPACE+'Type__c');
-            c.AI_Response_Mapping__c = (params.get(RESPONSE_MAPPING) != null && params.get(RESPONSE_MAPPING) != '') ? String.valueOf(''+params.get(RESPONSE_MAPPING)) : null;
+            c.ccai__AI_Response_Mapping__c = (params.get(RESPONSE_MAPPING) != null && params.get(RESPONSE_MAPPING) != '') ? String.valueOf(''+params.get(RESPONSE_MAPPING)) : null;
             c.AI_Request_Mapping__c = (params.get(REQUEST_MAPPING) != null && params.get(REQUEST_MAPPING) != '') ? String.valueOf(''+params.get(REQUEST_MAPPING)) : null;
-            c = (AI_Connection__c)FLSCheck.getInstance().upsertDML(new List<AI_Connection__c>{c}).get(0);
+            c = (ccai__AI_Connection__c)FLSCheck.getInstance().upsertDML(new List<ccai__AI_Connection__c>{c}).get(0);
             
 			return c;
         }catch(exception ex){
@@ -375,11 +375,11 @@ public with sharing class AddCardController implements Metadata.DeployCallback {
         String feature = (String)params.get(feature);
         String SOQL = '';
         if(feature == CARD_TYPE_AMODL){
-            SOQL = 'SELECT AI_Technology__c, Connector_Class__c, Processing_Class__c, Type__c, Custom_Metadata__c, Additional_Parameters__c, Enable_in_Sandbox__c, EndPoint_URL__c, Infrastructure__c, Key__c, Max_Tokens__c, Model__c, Named_Credential__c, Security_Layer__c, Temperature__c, Top_P__c, Version__c, External_Id__c, AI_Response_Mapping__c, AI_Request_Mapping__c, Id, Name FROM AI_Connection__c WHERE Name =: recName ';
+            SOQL = 'SELECT AI_Technology__c, Connector_Class__c, Processing_Class__c, Type__c, Custom_Metadata__c, Additional_Parameters__c, Enable_in_Sandbox__c, EndPoint_URL__c, Infrastructure__c, Key__c, Max_Tokens__c, Model__c, Named_Credential__c, Security_Layer__c, Temperature__c, Top_P__c, Version__c, External_Id__c, ccai__AI_Response_Mapping__c, AI_Request_Mapping__c, Id, Name FROM ccai__AI_Connection__c WHERE Name =: recName ';
         }else if(feature == CARD_TYPE_APIDS){
             SOQL = 'SELECT Id, Name, Named_Credential__c, Source__c, EndPoint_URL__c, Connector_Class__c FROM AI_Data_Source__c WHERE Name =: recName ';
         }
-        List<AI_Card_Configuration__c> mdt = [SELECT Id, Name, Enabled__c FROM AI_Card_Configuration__c WHERE Name =: recName AND Feature__c =: feature LIMIT 1];
+        List<ccai__AI_Card_Configuration__c> mdt = [SELECT Id, Name, Enabled__c FROM ccai__AI_Card_Configuration__c WHERE Name =: recName AND Feature__c =: feature LIMIT 1];
         List<sObject> records = database.query(SOQL);
         if(mdt.size() < 1 || records.size() < 1){
             hasError = true;
@@ -473,7 +473,7 @@ public with sharing class AddCardController implements Metadata.DeployCallback {
                     String validationCommand = 'Give me the name of account';
                     String validationBody = '{"Account" : {"Name" : "Validation Account"}}';
                     //System.debug('connection call validation: '+c);
-                    String msg = AIGPTfyCalloutController.validateRequest(validationCommand, validationBody, (AI_Connection__c)c);
+                    String msg = AIGPTfyCalloutController.validateRequest(validationCommand, validationBody, (ccai__AI_Connection__c)c);
                     if(String.isNotBlank(msg)){
                         hasError = true;
                         throw new AuraHandledException('Card activation failed. Unable to perform a successfull validation with AI. Error: '+msg);
@@ -486,9 +486,9 @@ public with sharing class AddCardController implements Metadata.DeployCallback {
             throw new AuraHandledException('Sorry, we\'ve detected duplicate connections. Please review your connections and remove any duplicates.');
         }
         if(!hasError){
-            AI_Card_Configuration__c oCardConfiguration = mdt[0];
+            ccai__AI_Card_Configuration__c oCardConfiguration = mdt[0];
             oCardConfiguration.Enabled__c = true;
-            FLSCheck.getInstance().updateDML(new List<AI_Card_Configuration__c>{oCardConfiguration});
+            FLSCheck.getInstance().updateDML(new List<ccai__AI_Card_Configuration__c>{oCardConfiguration});
         }
         return hasError;
     }
@@ -658,7 +658,7 @@ public with sharing class AddCardController implements Metadata.DeployCallback {
      */
     @AuraEnabled
     public static metadataWrap getCardConfigurationRecord(String cardConfigId){
-        return new metadataWrap([SELECT Id, Name, Feature__c, Icon_Source__c, Description__c, Enabled__c, Icon_Details__c, Sequence__c FROM AI_Card_Configuration__c WHERE Id =: cardConfigId LIMIT 1]);
+        return new metadataWrap([SELECT Id, Name, Feature__c, Icon_Source__c, Description__c, Enabled__c, Icon_Details__c, Sequence__c FROM ccai__AI_Card_Configuration__c WHERE Id =: cardConfigId LIMIT 1]);
     }
     
     /**
@@ -703,7 +703,7 @@ public with sharing class AddCardController implements Metadata.DeployCallback {
         @AuraEnabled public decimal Sequence {get; set;}
         @AuraEnabled public boolean Enabled {get; set;}
         
-        public metadataWrap(AI_Card_Configuration__c cardConfiguration){
+        public metadataWrap(ccai__AI_Card_Configuration__c cardConfiguration){
             this.Id = cardConfiguration.Id;
             this.MasterLabel = cardConfiguration.Name;
             this.Description = cardConfiguration.Description__c;

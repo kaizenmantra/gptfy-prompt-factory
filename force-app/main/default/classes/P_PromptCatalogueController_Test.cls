@@ -14,10 +14,10 @@ private class P_PromptCatalogueController_Test {
     @TestSetup
     static void setupTestData() {
         // Create AI Card Configurations
-        List<AI_Card_Configuration__c> cards = new List<AI_Card_Configuration__c>();
+        List<ccai__AI_Card_Configuration__c> cards = new List<ccai__AI_Card_Configuration__c>();
         
         for (Integer i = 0; i < 10; i++) {
-            cards.add(new AI_Card_Configuration__c(
+            cards.add(new ccai__AI_Card_Configuration__c(
                 Name = 'Test Card ' + i,
                 Description__c = 'Test description for card ' + i,
                 Icon_Details__c = 'standard:account',
@@ -30,7 +30,7 @@ private class P_PromptCatalogueController_Test {
         }
         
         // Add inactive card for filtering test
-        cards.add(new AI_Card_Configuration__c(
+        cards.add(new ccai__AI_Card_Configuration__c(
             Name = 'Inactive Card',
             Description__c = 'This card should not appear',
             Icon_Details__c = 'standard:account',
@@ -41,7 +41,7 @@ private class P_PromptCatalogueController_Test {
         ));
         
         // Add card with different feature
-        cards.add(new AI_Card_Configuration__c(
+        cards.add(new ccai__AI_Card_Configuration__c(
             Name = 'Other Feature Card',
             Description__c = 'Different feature card',
             Icon_Details__c = 'standard:opportunity',
@@ -54,12 +54,12 @@ private class P_PromptCatalogueController_Test {
         Database.insert(cards, AccessLevel.USER_MODE);
         
         // Create AI Connections
-        List<AI_Connection__c> connections = new List<AI_Connection__c>();
-        connections.add(new AI_Connection__c(
+        List<ccai__AI_Connection__c> connections = new List<ccai__AI_Connection__c>();
+        connections.add(new ccai__AI_Connection__c(
             Name = 'Test Connection 1',
             AI_Technology__c = 'OpenAI'
         ));
-        connections.add(new AI_Connection__c(
+        connections.add(new ccai__AI_Connection__c(
             Name = 'Test Connection 2',
             AI_Technology__c = 'Azure'
         ));
@@ -86,7 +86,7 @@ private class P_PromptCatalogueController_Test {
             prompts.add(new AI_Prompt__c(
                 Name = 'Test Prompt ' + i,
                 Description__c = 'Test prompt description ' + i,
-                AI_Connection__c = connections[0].Id,
+                ccai__AI_Connection__c = connections[0].Id,
                 AI_Data_Extraction_Mapping__c = mappings[0].Id,
                 Object__c = 'Account',
                 Purpose__c = 'Data Extraction;Analysis',
@@ -98,7 +98,7 @@ private class P_PromptCatalogueController_Test {
         prompts.add(new AI_Prompt__c(
             Name = 'Summary Prompt',
             Description__c = 'Summarize records',
-            AI_Connection__c = connections[1].Id,
+            ccai__AI_Connection__c = connections[1].Id,
             AI_Data_Extraction_Mapping__c = mappings[1].Id,
             Object__c = 'Contact',
             Purpose__c = 'Summarization',
@@ -109,7 +109,7 @@ private class P_PromptCatalogueController_Test {
         prompts.add(new AI_Prompt__c(
             Name = 'Inactive Prompt',
             Description__c = 'Should not appear',
-            AI_Connection__c = connections[0].Id,
+            ccai__AI_Connection__c = connections[0].Id,
             AI_Data_Extraction_Mapping__c = mappings[0].Id,
             Object__c = 'Account',
             Purpose__c = 'Testing',
@@ -125,7 +125,7 @@ private class P_PromptCatalogueController_Test {
     @IsTest
     static void testGetPromptCards_Success() {
         Test.startTest();
-        List<AI_Card_Configuration__c> cards = P_PromptCatalogueController.getPromptCards();
+        List<ccai__AI_Card_Configuration__c> cards = P_PromptCatalogueController.getPromptCards();
         Test.stopTest();
         
         // Assert cards are returned
@@ -136,7 +136,7 @@ private class P_PromptCatalogueController_Test {
         Assert.isTrue(cards[0].Sequence__c <= cards[1].Sequence__c, 'Cards should be ordered by Sequence__c');
         
         // Assert all cards are enabled
-        for (AI_Card_Configuration__c card : cards) {
+        for (ccai__AI_Card_Configuration__c card : cards) {
             Assert.isTrue(card.Enabled__c, 'All returned cards should be enabled');
             Assert.areEqual('PROMPT_CATALOGUE', card.Feature__c, 'All cards should have PROMPT_CATALOGUE feature');
         }
@@ -148,11 +148,11 @@ private class P_PromptCatalogueController_Test {
     @IsTest
     static void testGetPromptCards_NoRecords() {
         // Delete all test cards
-        List<AI_Card_Configuration__c> allCards = [SELECT Id FROM AI_Card_Configuration__c];
+        List<ccai__AI_Card_Configuration__c> allCards = [SELECT Id FROM ccai__AI_Card_Configuration__c];
         Database.delete(allCards, AccessLevel.USER_MODE);
         
         Test.startTest();
-        List<AI_Card_Configuration__c> cards = P_PromptCatalogueController.getPromptCards();
+        List<ccai__AI_Card_Configuration__c> cards = P_PromptCatalogueController.getPromptCards();
         Test.stopTest();
         
         // Assert empty list is returned
@@ -260,10 +260,10 @@ private class P_PromptCatalogueController_Test {
     @IsTest
     static void testGetPromptCards_BulkData() {
         // Create additional cards
-        List<AI_Card_Configuration__c> bulkCards = new List<AI_Card_Configuration__c>();
+        List<ccai__AI_Card_Configuration__c> bulkCards = new List<ccai__AI_Card_Configuration__c>();
         
         for (Integer i = 10; i < 150; i++) {
-            bulkCards.add(new AI_Card_Configuration__c(
+            bulkCards.add(new ccai__AI_Card_Configuration__c(
                 Name = 'Bulk Card ' + i,
                 Description__c = 'Bulk description ' + i,
                 Icon_Details__c = 'standard:account',
@@ -277,7 +277,7 @@ private class P_PromptCatalogueController_Test {
         Database.insert(bulkCards, AccessLevel.USER_MODE);
         
         Test.startTest();
-        List<AI_Card_Configuration__c> cards = P_PromptCatalogueController.getPromptCards();
+        List<ccai__AI_Card_Configuration__c> cards = P_PromptCatalogueController.getPromptCards();
         Test.stopTest();
         
         // Assert limit is respected
@@ -291,7 +291,7 @@ private class P_PromptCatalogueController_Test {
     @IsTest
     static void testPromptWrapper_Construction() {
         AI_Prompt__c prompt = [
-            SELECT Id, Name, Description__c, AI_Connection__c, AI_Connection__r.Name,
+            SELECT Id, Name, Description__c, ccai__AI_Connection__c, AI_Connection__r.Name,
                    AI_Data_Extraction_Mapping__c, AI_Data_Extraction_Mapping__r.Name,
                    Object__c, Purpose__c, Status__c
             FROM AI_Prompt__c
@@ -308,7 +308,7 @@ private class P_PromptCatalogueController_Test {
         Assert.areEqual(prompt.Id, wrapper.promptId, 'Prompt ID should match');
         Assert.areEqual(prompt.Name, wrapper.name, 'Name should match');
         Assert.areEqual(prompt.Description__c, wrapper.description, 'Description should match');
-        Assert.areEqual(prompt.AI_Connection__c, wrapper.connectionId, 'Connection ID should match');
+        Assert.areEqual(prompt.ccai__AI_Connection__c, wrapper.connectionId, 'Connection ID should match');
         Assert.areEqual(prompt.Object__c, wrapper.objectName, 'Object name should match');
         Assert.isNotNull(wrapper.promptUrl, 'Prompt URL should be generated');
         Assert.isTrue(wrapper.promptUrl.contains(prompt.Id), 'Prompt URL should contain record ID');
@@ -339,7 +339,7 @@ private class P_PromptCatalogueController_Test {
         System.runAs(testUser) {
             Test.startTest();
             try {
-                List<AI_Card_Configuration__c> cards = P_PromptCatalogueController.getPromptCards();
+                List<ccai__AI_Card_Configuration__c> cards = P_PromptCatalogueController.getPromptCards();
                 // If successful, verify results
                 Assert.isNotNull(cards, 'Cards should not be null');
             } catch (Exception ex) {

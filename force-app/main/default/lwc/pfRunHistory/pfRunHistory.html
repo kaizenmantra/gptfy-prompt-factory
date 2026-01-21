@@ -1,0 +1,125 @@
+<template>
+    <div class={containerClass}>
+        <!-- Header -->
+        <div class="history-header" onclick={handleToggle}>
+            <div class="header-content">
+                <div class="header-left">
+                    <template if:true={collapsible}>
+                        <lightning-button-icon
+                            icon-name={collapseIconName}
+                            variant="bare"
+                            alternative-text={collapseLabel}
+                            class="slds-m-right_x-small">
+                        </lightning-button-icon>
+                    </template>
+                    <lightning-icon
+                        icon-name="utility:clock"
+                        size="small"
+                        class="slds-m-right_x-small">
+                    </lightning-icon>
+                    <h3 class="slds-text-heading_small">
+                        Recent Runs
+                        <template if:true={hasRuns}>
+                            <span class="run-count">({runCount})</span>
+                        </template>
+                    </h3>
+                </div>
+
+                <div class="header-right">
+                    <lightning-button-icon
+                        icon-name="utility:refresh"
+                        variant="border-filled"
+                        alternative-text="Refresh"
+                        title="Refresh runs"
+                        onclick={handleRefresh}
+                        class="slds-m-left_x-small">
+                    </lightning-button-icon>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <template if:true={showContent}>
+            <!-- Error State -->
+            <template if:true={hasError}>
+                <div class="history-error slds-p-around_medium slds-text-align_center">
+                    <lightning-icon
+                        icon-name="utility:error"
+                        variant="error"
+                        size="small"
+                        class="slds-m-bottom_x-small">
+                    </lightning-icon>
+                    <p class="slds-text-color_error">{error}</p>
+                </div>
+            </template>
+
+            <!-- Runs List -->
+            <template if:true={hasRuns}>
+                <div class="history-list">
+                    <template for:each={runs} for:item="run">
+                        <div key={run.key}
+                             class="run-item"
+                             data-id={run.id}
+                             onclick={handleViewRun}>
+
+                            <!-- Run Info Row -->
+                            <div class="run-main">
+                                <div class="run-info">
+                                    <div class="run-name">{run.promptName}</div>
+                                    <div class="run-meta">
+                                        <span class="run-object">{run.rootObject}</span>
+                                        <span class="run-date">{run.formattedDate}</span>
+                                    </div>
+                                </div>
+
+                                <div class="run-status">
+                                    <span class={run.statusClass}>
+                                        <lightning-icon
+                                            icon-name={run.statusIcon}
+                                            size="xx-small"
+                                            variant={run.statusVariant}
+                                            class="status-icon">
+                                        </lightning-icon>
+                                        {run.status}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Run Stats Row -->
+                            <div class="run-stats">
+                                <div class="stat-item">
+                                    <span class="stat-label">Stage</span>
+                                    <span class="stat-value">{run.stageDisplay}</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Quality</span>
+                                    <span class="stat-value">{run.qualityDisplay}</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">By</span>
+                                    <span class="stat-value">{run.createdByName}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </template>
+
+            <!-- Empty State -->
+            <template if:false={hasRuns}>
+                <template if:false={hasError}>
+                    <div class="history-empty slds-p-around_medium slds-text-align_center">
+                        <lightning-icon
+                            icon-name="utility:info"
+                            size="small"
+                            class="slds-m-bottom_x-small">
+                        </lightning-icon>
+                        <p class="slds-text-color_weak">
+                            No pipeline runs yet. Start your first run using the form above.
+                        </p>
+                    </div>
+                </template>
+            </template>
+        </template>
+    </div>
+</template>

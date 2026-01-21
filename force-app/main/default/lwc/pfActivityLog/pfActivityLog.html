@@ -1,0 +1,28 @@
+<template>
+    <div class="terminal-container">
+        <!-- Terminal Header (macOS style) -->
+        <div class="terminal-header">
+            <span class="terminal-dot dot-red"></span>
+            <span class="terminal-dot dot-yellow"></span>
+            <span class="terminal-dot dot-green"></span>
+            <span class="terminal-title">Pipeline Activity</span>
+        </div>
+        <!-- Terminal Output -->
+        <div class="terminal-output">
+            <template if:true={hasLogs}>
+                <template for:each={processedLogs} for:item="logEntry">
+                    <div key={logEntry.key} class={logEntry.lineClass}>
+                        <span class="log-prefix">{logEntry.prefix}</span>
+                        <span class="log-message">{logEntry.message}</span>
+                    </div>
+                </template>
+            </template>
+            <template if:false={hasLogs}>
+                <div class="terminal-waiting">
+                    <span class="waiting-cursor">▸</span>
+                    <span class="waiting-text">Waiting for pipeline to start...</span>
+                </div>
+            </template>
+        </div>
+    </div>
+</template>

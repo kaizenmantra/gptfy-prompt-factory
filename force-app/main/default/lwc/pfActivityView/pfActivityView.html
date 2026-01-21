@@ -1,0 +1,196 @@
+<template>
+    <div class="activity-view-container">
+        <!-- Empty state when in draft mode - pipeline hasn't started yet -->
+        <template if:true={showWelcome}>
+            <div class="empty-state slds-p-around_large slds-text-align_center">
+                <lightning-icon
+                    icon-name="utility:activity"
+                    size="large"
+                    class="slds-m-bottom_medium empty-state-icon">
+                </lightning-icon>
+                <p class="slds-text-color_weak slds-text-body_regular">
+                    No pipeline activity yet. Start a pipeline run from the Configuration tab to see activity here.
+                </p>
+            </div>
+        </template>
+
+        <!-- Running State - Current Stage Content -->
+        <template if:true={showStageContent}>
+            <div class="slds-box">
+                <div class="stage-header">
+                    <lightning-icon
+                        icon-name={currentStageInfo.icon}
+                        size="medium"
+                        class="slds-m-right_small">
+                    </lightning-icon>
+                    <div>
+                        <h2 class="slds-text-heading_medium">
+                            Stage {currentStageInfo.index}: {currentStageInfo.name}
+                        </h2>
+                        <p class="slds-text-body_regular slds-text-color_weak">
+                            {currentStageInfo.description}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Running Indicator -->
+                <div class="slds-m-top_medium slds-text-align_center">
+                    <lightning-spinner
+                        alternative-text="Processing"
+                        size="medium">
+                    </lightning-spinner>
+                    <p class="slds-m-top_small slds-text-color_weak">
+                        Processing stage... Check the activity log below for real-time updates.
+                    </p>
+                    <p class="slds-text-body_small slds-text-color_weak slds-m-top_x-small">
+                        Run ID: {runId}
+                    </p>
+                </div>
+            </div>
+        </template>
+
+        <!-- Completed State - Quality Scorecard -->
+        <template if:true={showQualityScorecard}>
+            <div class="slds-box">
+                <div class="scorecard-header">
+                    <lightning-icon
+                        icon-name="utility:success"
+                        size="medium"
+                        variant="success"
+                        class="slds-m-right_small">
+                    </lightning-icon>
+                    <div>
+                        <h2 class="slds-text-heading_medium">
+                            Pipeline Completed Successfully
+                        </h2>
+                        <p class="slds-text-body_regular slds-text-color_weak">
+                            Your prompt has been generated and validated.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Overall Score -->
+                <div class="slds-m-top_large overall-score-container">
+                    <div class="slds-text-align_center">
+                        <h3 class="slds-text-heading_small slds-m-bottom_x-small">
+                            Overall Quality Score
+                        </h3>
+                        <div class="overall-score {overallScoreVariant}">
+                            {overallScore} / 10
+                        </div>
+                        <div class="slds-progress-bar slds-progress-bar_large slds-m-top_small" aria-valuemin="0" aria-valuemax="100" aria-valuenow={overallScorePercentage} role="progressbar">
+                            <span class="slds-progress-bar__value" style={overallScorePercentage}>
+                                <span class="slds-assistive-text">{overallScorePercentage}%</span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Individual Dimension Scores -->
+                <div class="slds-m-top_large">
+                    <h3 class="slds-text-heading_small slds-m-bottom_medium">
+                        Quality Dimensions
+                    </h3>
+                    <div class="quality-grid">
+                        <template for:each={qualityScores} for:item="scoreItem">
+                            <div key={scoreItem.key} class="quality-item slds-box slds-box_x-small">
+                                <div class="quality-item-header">
+                                    <lightning-icon
+                                        icon-name={scoreItem.icon}
+                                        size="small"
+                                        class="slds-m-right_x-small">
+                                    </lightning-icon>
+                                    <span class="slds-text-body_regular">{scoreItem.dimension}</span>
+                                </div>
+                                <div class="quality-score {scoreItem.cssClass}">
+                                    {scoreItem.score} / 10
+                                </div>
+                                <div class="slds-progress-bar slds-progress-bar_small slds-m-top_x-small" aria-valuemin="0" aria-valuemax="100" aria-valuenow={scoreItem.percentage} role="progressbar">
+                                    <span class="slds-progress-bar__value" style={scoreItem.percentage}>
+                                        <span class="slds-assistive-text">{scoreItem.percentage}%</span>
+                                    </span>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Next Steps -->
+                <div class="slds-m-top_large">
+                    <div class="slds-box slds-box_small slds-theme_success">
+                        <h3 class="slds-text-heading_small slds-m-bottom_small">
+                            Next Steps
+                        </h3>
+                        <ul class="slds-list_dotted">
+                            <li>Review the generated prompt in your Prompt Factory records</li>
+                            <li>Test the prompt with additional sample data</li>
+                            <li>Deploy to production when satisfied with quality</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <!-- Failed State -->
+        <template if:true={showError}>
+            <div class="slds-box">
+                <div class="error-header">
+                    <lightning-icon
+                        icon-name="utility:error"
+                        size="medium"
+                        variant="error"
+                        class="slds-m-right_small">
+                    </lightning-icon>
+                    <div>
+                        <h2 class="slds-text-heading_medium slds-text-color_error">
+                            Pipeline Failed
+                        </h2>
+                        <p class="slds-text-body_regular slds-text-color_weak">
+                            The pipeline encountered an error and could not complete.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="slds-m-top_medium">
+                    <div class="slds-box slds-box_small slds-theme_error">
+                        <p class="slds-text-body_regular">
+                            Check the activity log below for detailed error information.
+                            You can start a new run with the "New Run" button.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <!-- Aborted State -->
+        <template if:true={showAborted}>
+            <div class="slds-box">
+                <div class="warning-header">
+                    <lightning-icon
+                        icon-name="utility:warning"
+                        size="medium"
+                        variant="warning"
+                        class="slds-m-right_small">
+                    </lightning-icon>
+                    <div>
+                        <h2 class="slds-text-heading_medium slds-text-color_warning">
+                            Pipeline Aborted
+                        </h2>
+                        <p class="slds-text-body_regular slds-text-color_weak">
+                            The pipeline run was stopped by user request.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="slds-m-top_medium">
+                    <div class="slds-box slds-box_small slds-theme_warning">
+                        <p class="slds-text-body_regular">
+                            Partial results may be available in the logs.
+                            Click "New Run" to start over with updated configuration.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+</template>

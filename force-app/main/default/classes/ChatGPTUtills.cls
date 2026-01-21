@@ -214,7 +214,7 @@ public with sharing class ChatGPTUtills {
         }
         
         //for cohere
-        if(aiPrompt.AI_Connection__c != null && aiPrompt.AI_Connection__r.AI_Technology__c.containsIgnoreCase('Cohere')){
+        if(aiPrompt.ccai__AI_Connection__c != null && aiPrompt.AI_Connection__r.AI_Technology__c.containsIgnoreCase('Cohere')){
             String data = gptDeanonymizeData;
             if(String.isNotBlank(data)){
                 CohereWrapper maps = (CohereWrapper)JSON.deserialize(data, CohereWrapper.class);
@@ -239,8 +239,8 @@ public with sharing class ChatGPTUtills {
                 response.Status__c = AIConstants.RESP_STATUS_ERROR;
             }
         }
-        if(String.isNotBlank(aiPrompt.AI_Connection__c) && String.isNotBlank(aiPrompt.AI_Connection__r.AI_Response_Mapping__c) && hasResponseMapping(aiPrompt.AI_Connection__r.AI_Response_Mapping__c)){
-            parseResponse(response, gptResponse, aiPrompt.AI_Connection__r.AI_Response_Mapping__c);
+        if(String.isNotBlank(aiPrompt.ccai__AI_Connection__c) && String.isNotBlank(aiPrompt.AI_Connection__r.ccai__AI_Response_Mapping__c) && hasResponseMapping(aiPrompt.AI_Connection__r.ccai__AI_Response_Mapping__c)){
+            parseResponse(response, gptResponse, aiPrompt.AI_Connection__r.ccai__AI_Response_Mapping__c);
         }
         if(responseId != null && String.isNotBlank(responseId)){
             response.Id = responseId;
@@ -289,7 +289,7 @@ public with sharing class ChatGPTUtills {
     }
     public static boolean hasResponseMapping(String responseMappingName){
         Boolean hasMetadata = false;
-        for(AI_Response_Mapping__c rm : [SELECT Id FROM AI_Response_Mapping__c WHERE Id =: responseMappingName limit 1]){
+        for(ccai__AI_Response_Mapping__c rm : [SELECT Id FROM ccai__AI_Response_Mapping__c WHERE Id =: responseMappingName limit 1]){
             hasMetadata = true;
         }
         return hasMetadata;
@@ -298,7 +298,7 @@ public with sharing class ChatGPTUtills {
     public static void parseResponse(AI_Response__c response, String jsonString, String responseMappingName){
         Map<String, Object> mapResponse = (Map<String, Object>)JSON.deserializeUntyped(jsonString);
         if(!mapResponse.IsEmpty()){
-            for(AI_Response_Mapping_Line__c responseMappingLine : [SELECT Security_Audit_Field_Name__c,Mapping_Field_Name__c FROM AI_Response_Mapping_Line__c WHERE AI_Response_Mapping__c =: responseMappingName LIMIT 50000]){
+            for(AI_Response_Mapping_Line__c responseMappingLine : [SELECT Security_Audit_Field_Name__c,Mapping_Field_Name__c FROM AI_Response_Mapping_Line__c WHERE ccai__AI_Response_Mapping__c =: responseMappingName LIMIT 50000]){
                 List<String> path = String.valueOf(responseMappingLine.Mapping_Field_Name__c).split('\\.');
                 if(path  != null && path.size()>0){
                     response.put(responseMappingLine.Security_Audit_Field_Name__c, getResponse(path, mapResponse.get(path.remove(0))));

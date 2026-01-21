@@ -1,0 +1,152 @@
+<template>
+    <div class="progress-tracker-container">
+        <!-- Row 1: DISCOVER (2 stages) + MAP (4 stages) -->
+        <div class="phase-labels-row">
+            <!-- DISCOVER spans 2 cards -->
+            <div class="phase-label phase-violet" style="flex: 2;">
+                <span class="phase-dot"></span>
+                <span class="phase-text">DISCOVER</span>
+            </div>
+            <!-- MAP spans 4 cards -->
+            <div class="phase-label phase-blue" style="flex: 4;">
+                <span class="phase-dot"></span>
+                <span class="phase-text">MAP</span>
+            </div>
+        </div>
+
+        <div class="stages-row">
+            <template for:each={row1Stages} for:item="stage">
+                <div key={stage.key} class="stage-wrapper">
+                    <div class={stage.cardClass}
+                         data-index={stage.index}
+                         onclick={handleStageClick}
+                         title={stage.hoverText}>
+                        <!-- Status dot -->
+                        <div class={stage.statusDotClass}></div>
+
+                        <!-- Icon -->
+                        <div class={stage.iconContainerClass}>
+                            <lightning-icon
+                                icon-name={stage.icon}
+                                size="small"
+                                class="stage-icon">
+                            </lightning-icon>
+                        </div>
+
+                        <!-- Stage info -->
+                        <div class="stage-info">
+                            <div class="stage-number">STAGE {stage.index}</div>
+                            <div class="stage-name">{stage.name}</div>
+                        </div>
+
+                        <!-- Running indicator -->
+                        <template if:true={stage.isRunning}>
+                            <div class="running-indicator"></div>
+                        </template>
+                    </div>
+
+                    <!-- Connector (except last in row) -->
+                    <template if:false={stage.isLastInRow}>
+                        <div class="connector">
+                            <div class="connector-line"></div>
+                        </div>
+                    </template>
+                </div>
+            </template>
+        </div>
+
+        <!-- Row 2: CREATE (2 stages) + DEPLOY & TEST (4 stages) -->
+        <div class="phase-labels-row row-2">
+            <!-- CREATE spans 2 cards -->
+            <div class="phase-label phase-green" style="flex: 2;">
+                <span class="phase-dot"></span>
+                <span class="phase-text">CREATE</span>
+            </div>
+            <!-- DEPLOY & TEST spans 4 cards -->
+            <div class="phase-label phase-amber" style="flex: 4;">
+                <span class="phase-dot"></span>
+                <span class="phase-text">DEPLOY & TEST</span>
+            </div>
+        </div>
+
+        <div class="stages-row">
+            <template for:each={row2Stages} for:item="stage">
+                <div key={stage.key} class="stage-wrapper">
+                    <div class={stage.cardClass}
+                         data-index={stage.index}
+                         onclick={handleStageClick}
+                         title={stage.hoverText}>
+                        <!-- Status dot -->
+                        <div class={stage.statusDotClass}></div>
+
+                        <!-- Icon -->
+                        <div class={stage.iconContainerClass}>
+                            <lightning-icon
+                                icon-name={stage.icon}
+                                size="small"
+                                class="stage-icon">
+                            </lightning-icon>
+                        </div>
+
+                        <!-- Stage info -->
+                        <div class="stage-info">
+                            <div class="stage-number">STAGE {stage.index}</div>
+                            <div class="stage-name">{stage.name}</div>
+                        </div>
+
+                        <!-- Running indicator -->
+                        <template if:true={stage.isRunning}>
+                            <div class="running-indicator"></div>
+                        </template>
+                    </div>
+
+                    <!-- Connector (except last in row) -->
+                    <template if:false={stage.isLastInRow}>
+                        <div class="connector">
+                            <div class="connector-line"></div>
+                        </div>
+                    </template>
+                </div>
+            </template>
+        </div>
+
+        <!-- Instruction and Progress Footer -->
+        <div class="progress-footer">
+            <template if:true={showInstruction}>
+                <div class="footer-instruction">
+                    Configure your prompt below and click <strong>Start Pipeline Run</strong> to begin.
+                </div>
+            </template>
+            <div class="footer-stats">
+                <div class="progress-section">
+                    <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow={progressPercentage}>
+                        <div class="progress-bar-fill" style={progressStyle}></div>
+                    </div>
+                    <div class="progress-text">{completedCount}/12 Complete</div>
+                </div>
+                <div class="legend">
+                    <div class="legend-item">
+                        <span class="legend-dot status-pending"></span>
+                        <span class="legend-text">Pending</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot status-running"></span>
+                        <span class="legend-text">Running</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot status-completed"></span>
+                        <span class="legend-text">Completed</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot status-warning"></span>
+                        <span class="legend-text">Warning</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot status-failed"></span>
+                        <span class="legend-text">Failed</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>

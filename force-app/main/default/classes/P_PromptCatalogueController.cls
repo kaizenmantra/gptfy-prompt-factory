@@ -24,7 +24,7 @@ public with sharing class P_PromptCatalogueController {
         @AuraEnabled public String timeSaved;
         @AuraEnabled public String costSaved;
         
-        public CardWrapper(AI_Card_Configuration__c card, Integer prompts, Integer active, String savedTime, String savedCost) {
+        public CardWrapper(ccai__AI_Card_Configuration__c card, Integer prompts, Integer active, String savedTime, String savedCost) {
             this.id = card.Id;
             this.name = card.Name;
             this.description = card.Description__c;
@@ -64,7 +64,7 @@ public with sharing class P_PromptCatalogueController {
     public static Map<String, Object> getPromptCards() {
         try {
             // Query AI Card Configurations with security enforced
-            List<AI_Card_Configuration__c> cards = [
+            List<ccai__AI_Card_Configuration__c> cards = [
                 SELECT 
                     Id,
                     Name,
@@ -77,7 +77,7 @@ public with sharing class P_PromptCatalogueController {
                     External_Id__c,
                     CreatedDate,
                     LastModifiedDate
-                FROM AI_Card_Configuration__c
+                FROM ccai__AI_Card_Configuration__c
                 WHERE Feature__c = 'CTLOG'
                   AND Enabled__c = true
                 WITH USER_MODE
@@ -141,7 +141,7 @@ public with sharing class P_PromptCatalogueController {
             
             // Get card names for querying
             Set<String> cardNames = new Set<String>();
-            for (AI_Card_Configuration__c card : cards) {
+            for (ccai__AI_Card_Configuration__c card : cards) {
                 cardNames.add(card.Name);
             }
             
@@ -200,7 +200,7 @@ public with sharing class P_PromptCatalogueController {
             Integer totalHoursSaved = 0;
             // Build wrapper list
             List<CardWrapper> wrapperList = new List<CardWrapper>();
-            for (AI_Card_Configuration__c card : cards) {
+            for (ccai__AI_Card_Configuration__c card : cards) {
                 System.debug('Card Name from DB: ' + card.Name);
                 System.debug('Card Description from DB: ' + card.Description__c);
                 
@@ -373,7 +373,7 @@ public with sharing class P_PromptCatalogueController {
                 SELECT 
                     Id,
                     Name,
-                    AI_Connection__c,
+                    ccai__AI_Connection__c,
                     AI_Connection__r.Name,
                     AI_Data_Extraction_Mapping__c,
                     AI_Data_Extraction_Mapping__r.Name,
@@ -432,15 +432,15 @@ public with sharing class P_PromptCatalogueController {
         Set<String> activeConnections = new Set<String>();
         
         try {
-            List<AI_Card_Configuration__c> activeCards = [
+            List<ccai__AI_Card_Configuration__c> activeCards = [
                 SELECT Name 
-                FROM AI_Card_Configuration__c 
+                FROM ccai__AI_Card_Configuration__c 
                 WHERE Enabled__c = true 
                 WITH USER_MODE
                 LIMIT 10000
             ];
             
-            for (AI_Card_Configuration__c card : activeCards) {
+            for (ccai__AI_Card_Configuration__c card : activeCards) {
                 activeConnections.add(card.Name.toLowerCase());
             }
             
@@ -474,7 +474,7 @@ public with sharing class P_PromptCatalogueController {
                 SELECT 
                     Id,
                     Name,
-                    AI_Connection__c,
+                    ccai__AI_Connection__c,
                     AI_Connection__r.Name,
                     AI_Data_Extraction_Mapping__c,
                     AI_Data_Extraction_Mapping__r.Name,
@@ -528,7 +528,7 @@ public with sharing class P_PromptCatalogueController {
             this.promptId = prompt.Id;
             this.name = prompt.Name;
             this.description = prompt.Description__c;
-            this.connectionId = prompt.AI_Connection__c;
+            this.connectionId = prompt.ccai__AI_Connection__c;
             this.connectionName = prompt.AI_Connection__r?.Name;
             this.mappingId = prompt.AI_Data_Extraction_Mapping__c;
             this.mappingName = prompt.AI_Data_Extraction_Mapping__r?.Name;

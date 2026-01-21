@@ -72,7 +72,7 @@ public with sharing class AIPromptValidationController {
             addMessage('The selected object on prompt ('+pmt.Object__c+') does not exist.');
         }if(pmt.AI_Data_Extraction_Mapping__c == null){
             addMessage('Data Extraction Mapping cannot be blank on the prompt.');
-        }if(pmt.AI_Connection__c == null){
+        }if(pmt.ccai__AI_Connection__c == null){
             addMessage('Connection cannot be blank on the prompt.');
         }if(pmt.AI_Model_File_Processing__c == null && pmt.Include_Files__c){
             addMessage('"AI Model - File Procesing" cannot be blank when "Include Files" is checked.');
@@ -94,8 +94,8 @@ public with sharing class AIPromptValidationController {
         if(lst != null && !lst.isEmpty()){
             AI_Data_Source__c ds = lst.get(0);
             if(String.isNotBlank(ds.Connector_Class__c)){
-                List<AI_Card_Configuration__c> mdt = [SELECT Id 
-                                                      FROM AI_Card_Configuration__c 
+                List<ccai__AI_Card_Configuration__c> mdt = [SELECT Id 
+                                                      FROM ccai__AI_Card_Configuration__c 
                                                       WHERE Enabled__c = true 
                                                       AND Name =:ds.Name
                                                       AND Feature__c =:AIConstants.GPTFY_CARD_CONFIGURATION_MDT_APIDS];
@@ -423,11 +423,11 @@ public with sharing class AIPromptValidationController {
     }
     
     public void validatePromptActions(AI_Prompt__c pmt){
-        Map<String, AI_Prompt_Action__c> mapOfActions = new Map<String, AI_Prompt_Action__c>([
+        Map<String, ccai__AI_Prompt_Action__c> mapOfActions = new Map<String, ccai__AI_Prompt_Action__c>([
             SELECT Id, Action__c, Action_Label__c, Apex_Class_Name__c, Field_API_Name__c,
             Flow_API_Name__c, Object_Name__c, Prompt_Component__c, AI_Prompt__r.Object__c,
             (SELECT Id, Field_API_Name__c, Type__c, Value__c FROM Prompt_Action_Details__r)
-            FROM AI_Prompt_Action__c
+            FROM ccai__AI_Prompt_Action__c
             WHERE AI_Prompt__c =:pmt.Id
         ]);
         
@@ -444,7 +444,7 @@ public with sharing class AIPromptValidationController {
                 setOfValidPromptComponents.add(pc.Name.toLowerCase());
             }
             
-            for(AI_Prompt_Action__c pa : mapOfActions.values()){
+            for(ccai__AI_Prompt_Action__c pa : mapOfActions.values()){
                 if(pa.Action__c == AIConstants.ACTION_TYPE_UPDATE_FIELD){
                     setOfUpdateFieldApiNames.add(pa.Field_API_Name__c);
                     if(String.isNotBlank(pa.Prompt_Component__c) && (setOfValidPromptComponents.isEmpty() || !setOfValidPromptComponents.contains(pa.Prompt_Component__c.toLowerCase()))){
@@ -456,7 +456,7 @@ public with sharing class AIPromptValidationController {
                             addMessage('Object Name "'+pa.Object_Name__c+'" is missing on Prompt Action: '+pa.Action_Label__c);
                         }else{
                             if(pa.Prompt_Action_Details__r != null && !pa.Prompt_Action_Details__r.isEmpty()){
-                                for(AI_Prompt_Action_Detail__c detail : pa.Prompt_Action_Details__r){
+                                for(ccai__AI_Prompt_Action_Detail__c detail : pa.Prompt_Action_Details__r){
                                     if(detail.Type__c == AIConstants.ACTION_DETAIL_TYPE_AI_RESP && String.isNotBlank(detail.Value__c) && detail.Value__c != '#N/A#' && (setOfValidPromptComponents.isEmpty() || !setOfValidPromptComponents.contains(detail.Value__c.toLowerCase()))){
                                         addMessage('One of the Prompt Component "'+detail.Value__c+'" selected in "'+pa.Action_Label__c+'" is missing on Prompt.');
                                     }else if(detail.Type__c == AIConstants.ACTION_DETAIL_TYPE_REF_FIELD){
@@ -507,7 +507,7 @@ public with sharing class AIPromptValidationController {
                 }
 
                 for(String paId : mapOfFlowApiNames.keySet()){
-                    AI_Prompt_Action__c pa = mapOfActions.get(paId);
+                    ccai__AI_Prompt_Action__c pa = mapOfActions.get(paId);
                     String flowApiName = mapOfFlowApiNames.get(paId);
                     if(activeFlowApiNames == null || !activeFlowApiNames.contains(flowApiName)){
                         addMessage('Either the Flow "'+pa.Flow_API_Name__c+'" does not exists, or is Inactive, or is not of Type Autolaunched on Prompt Action: '+pa.Action_Label__c);
@@ -525,7 +525,7 @@ public with sharing class AIPromptValidationController {
                 }
                 
                 for(String paId : mapOfApexClassApiNames.keySet()){
-                    AI_Prompt_Action__c pa = mapOfActions.get(paId);
+                    ccai__AI_Prompt_Action__c pa = mapOfActions.get(paId);
                     String apexClassName = mapOfApexClassApiNames.get(paId);
                     if(activeApexClassNames == null || !activeApexClassNames.contains(apexClassName)){
                         addMessage('The Apex Class "'+pa.Apex_Class_Name__c+'" does not exists on Prompt Action: '+pa.Action_Label__c);

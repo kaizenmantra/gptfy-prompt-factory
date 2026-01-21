@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+    <types>
+        <!-- Core Pipeline Classes -->
+        <members>PromptFactoryController</members>
+        <members>PromptFactoryPipeline</members>
+        <members>PromptFactoryLogger</members>
+        <members>PromptFactoryChainBreaker</members>
+        <members>PromptFactoryRulesLoader</members>
+        
+        <!-- Stage Interface and Factory -->
+        <members>IStage</members>
+        <members>StageFactory</members>
+        <members>StageResult</members>
+        <members>StageJobHelper</members>
+        
+        <!-- All 12 Stage Implementation Classes -->
+        <members>Stage01_IntelligenceRetrieval</members>
+        <members>Stage02_StrategicProfiling</members>
+        <members>Stage03_SchemaDiscovery</members>
+        <members>Stage04_DataProfiling</members>
+        <members>Stage05_FieldSelection</members>
+        <members>Stage06_ConfigurationValidation</members>
+        <members>Stage07_TemplateDesign</members>
+        <members>Stage08_PromptAssembly</members>
+        <members>Stage09_CreateAndDeploy</members>
+        <members>Stage10_TestExecution</members>
+        <members>Stage11_SafetyValidation</members>
+        <members>Stage12_QualityAudit</members>
+        
+        <!-- Stage Job Classes -->
+        <members>Stage05_FieldSelectionJob</members>
+        <members>Stage06_ConfigurationValidationJob</members>
+        <members>Stage07_TemplateDesignJob</members>
+        <members>Stage08_PromptAssemblyJob</members>
+        <members>Stage09_CreateAndDeployJob</members>
+        <members>Stage10_RestCalloutJob</members>
+        <members>Stage10_RestExecutor</members>
+        <members>Stage10_RetryHandler</members>
+        <members>Stage10_TestExecutionJob</members>
+        <members>Stage11_SafetyValidationJob</members>
+        <members>Stage12_QualityAuditJob</members>
+        
+        <!-- Utility Classes -->
+        <members>AIServiceClient</members>
+        <members>DCMBuilder</members>
+        <members>PromptBuilder</members>
+        <members>SchemaHelper</members>
+        <members>MergeFieldValidator</members>
+        
+        <name>ApexClass</name>
+    </types>
+    <types>
+        <members>PF_Config.Claude</members>
+        <name>CustomMetadata</name>
+    </types>
+    <types>
+        <members>Claude_API_Credentials__c</members>
+        <members>PF_Config__mdt</members>
+        <members>PF_Quality_Score__c</members>
+        <members>PF_Run_Log__c</members>
+        <members>PF_Run_Stage__c</members>
+        <members>PF_Run__c</members>
+        <name>CustomObject</name>
+    </types>
+    <types>
+        <members>Prompt_Factory_Wizard</members>
+        <name>FlexiPage</name>
+    </types>
+    <types>
+        <members>pfActivityLog</members>
+        <members>pfActivityView</members>
+        <members>pfInputForm</members>
+        <members>pfProgressTracker</members>
+        <members>pfRunHistory</members>
+        <members>promptFactoryWizard</members>
+        <name>LightningComponentBundle</name>
+    </types>
+    <types>
+        <members>Prompt_Factory_Admin</members>
+        <members>Prompt_Factory_User</members>
+        <name>PermissionSet</name>
+    </types>
+    <types>
+        <members>Gemini</members>
+        <members>Grok</members>
+        <members>PF_MergeFieldRules</members>
+        <members>PF_OutputValidationRules</members>
+        <members>PF_UIPatterns</members>
+        <members>Perplexity</members>
+        <members>Perplexity_Logo</members>
+        <members>deepSeek_logo</members>
+        <name>StaticResource</name>
+    </types>
+    <types>
+        <members>Prompt_Factory_Wizard</members>
+        <name>CustomTab</name>
+    </types>
+    <version>64.0</version>
+</Package>
