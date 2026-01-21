@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<RemoteSiteSetting xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>Use this to invoke Response API from Azure / GPT4o</description>
+    <disableProtocolSecurity>false</disableProtocolSecurity>
+    <isActive>true</isActive>
+    <url>https://saura-m51w47qu-eastus2.cognitiveservices.azure.com</url>
+</RemoteSiteSetting>
