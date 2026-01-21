@@ -1,0 +1,317 @@
+{
+  "version": "3.0",
+  "description": "UI/UX Pattern Library for GPTfy Prompt Factory - Salesforce Brand Compliant",
+  "lastUpdated": "2026-01-11",
+
+  "colorPalette": {
+    "description": "Salesforce Brand Colors - Use consistently across all outputs",
+    "primary": {
+      "main": "#0176D3",
+      "dark": "#014486",
+      "light": "#1B96FF"
+    },
+    "semantic": {
+      "success": "#2E844A",
+      "successLight": "#45C65A",
+      "successBg": "#EAF5EC",
+      "warning": "#DD7A01",
+      "warningLight": "#FFA929",
+      "warningBg": "#FEF3E0",
+      "error": "#BA0517",
+      "errorLight": "#FE5C4C",
+      "errorBg": "#FDE8E8",
+      "info": "#0176D3",
+      "infoBg": "#EEF4FF"
+    },
+    "neutral": {
+      "textPrimary": "#181818",
+      "textSecondary": "#706E6B",
+      "textTertiary": "#A8A8A8",
+      "textInverse": "#FFFFFF",
+      "background": "#F3F3F3",
+      "backgroundAlt": "#FFFFFF",
+      "backgroundDark": "#243B53",
+      "border": "#DDDBDA",
+      "borderDark": "#A8A8A8"
+    },
+    "scores": {
+      "excellent": "#2E844A",
+      "good": "#45C65A",
+      "fair": "#DD7A01",
+      "poor": "#FE5C4C",
+      "critical": "#BA0517"
+    }
+  },
+
+  "typography": {
+    "fontFamily": "'Salesforce Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif",
+    "sizes": {
+      "xs": "10px",
+      "sm": "12px",
+      "base": "14px",
+      "md": "16px",
+      "lg": "18px",
+      "xl": "24px",
+      "xxl": "32px",
+      "stat": "28px"
+    },
+    "weights": {
+      "light": "300",
+      "normal": "400",
+      "medium": "500",
+      "semibold": "600",
+      "bold": "700"
+    },
+    "lineHeights": {
+      "tight": "1.2",
+      "normal": "1.5",
+      "relaxed": "1.75"
+    }
+  },
+
+  "spacing": {
+    "xs": "4px",
+    "sm": "8px",
+    "md": "16px",
+    "lg": "24px",
+    "xl": "32px",
+    "xxl": "48px"
+  },
+
+  "borders": {
+    "radiusSm": "4px",
+    "radiusMd": "8px",
+    "radiusLg": "12px",
+    "radiusFull": "9999px",
+    "width": "1px",
+    "widthThick": "2px"
+  },
+
+  "inlineStyles": {
+    "container": "font-family:'Salesforce Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;max-width:100%;background:#F3F3F3;color:#181818;font-size:14px;line-height:1.5;padding:16px;",
+    "header": "background:linear-gradient(135deg,#0176D3,#014486);color:white;padding:20px;border-radius:8px 8px 0 0;",
+    "headerTitle": "margin:0 0 4px 0;font-size:20px;font-weight:600;",
+    "headerSubtitle": "margin:0;font-size:12px;opacity:0.9;",
+    "section": "background:white;margin:12px 0;padding:16px;border-radius:8px;border:1px solid #DDDBDA;",
+    "sectionTitle": "font-size:14px;font-weight:600;color:#181818;margin:0 0 12px 0;padding-bottom:8px;border-bottom:1px solid #DDDBDA;",
+    "card": "background:white;border-radius:8px;border:1px solid #DDDBDA;padding:16px;margin:8px 0;",
+    "cardSuccess": "background:white;border-radius:8px;border:1px solid #DDDBDA;border-left:4px solid #2E844A;padding:16px;margin:8px 0;",
+    "cardWarning": "background:white;border-radius:8px;border:1px solid #DDDBDA;border-left:4px solid #DD7A01;padding:16px;margin:8px 0;",
+    "cardError": "background:white;border-radius:8px;border:1px solid #DDDBDA;border-left:4px solid #BA0517;padding:16px;margin:8px 0;",
+    "cardInfo": "background:white;border-radius:8px;border:1px solid #DDDBDA;border-left:4px solid #0176D3;padding:16px;margin:8px 0;",
+    "statsStrip": "display:flex;gap:16px;justify-content:space-around;flex-wrap:wrap;background:white;padding:16px;border-radius:8px;margin:12px 0;",
+    "statItem": "text-align:center;min-width:80px;",
+    "statValue": "font-size:28px;font-weight:700;line-height:1.2;color:#0176D3;",
+    "statValuePositive": "font-size:28px;font-weight:700;line-height:1.2;color:#2E844A;",
+    "statValueWarning": "font-size:28px;font-weight:700;line-height:1.2;color:#DD7A01;",
+    "statValueNegative": "font-size:28px;font-weight:700;line-height:1.2;color:#BA0517;",
+    "statLabel": "font-size:11px;color:#706E6B;text-transform:uppercase;letter-spacing:0.5px;margin-top:4px;",
+    "table": "width:100%;border-collapse:collapse;font-size:13px;",
+    "tableHeader": "background:#F3F3F3;color:#706E6B;font-weight:600;text-align:left;padding:10px 12px;border-bottom:2px solid #DDDBDA;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;",
+    "tableCell": "padding:10px 12px;border-bottom:1px solid #DDDBDA;vertical-align:top;",
+    "badge": "display:inline-block;padding:4px 12px;border-radius:12px;font-weight:600;font-size:12px;",
+    "badgeSuccess": "display:inline-block;padding:4px 12px;border-radius:12px;font-weight:600;font-size:12px;background:#EAF5EC;color:#2E844A;",
+    "badgeWarning": "display:inline-block;padding:4px 12px;border-radius:12px;font-weight:600;font-size:12px;background:#FEF3E0;color:#DD7A01;",
+    "badgeError": "display:inline-block;padding:4px 12px;border-radius:12px;font-weight:600;font-size:12px;background:#FDE8E8;color:#BA0517;",
+    "badgeInfo": "display:inline-block;padding:4px 12px;border-radius:12px;font-weight:600;font-size:12px;background:#EEF4FF;color:#0176D3;",
+    "badgeNeutral": "display:inline-block;padding:4px 12px;border-radius:12px;font-weight:600;font-size:12px;background:#F3F3F3;color:#706E6B;",
+    "progressBar": "height:8px;background:#DDDBDA;border-radius:4px;overflow:hidden;",
+    "progressFillSuccess": "height:100%;border-radius:4px;background:#2E844A;",
+    "progressFillWarning": "height:100%;border-radius:4px;background:#DD7A01;",
+    "progressFillError": "height:100%;border-radius:4px;background:#BA0517;",
+    "alertSuccess": "padding:12px 16px;border-radius:8px;margin:8px 0;background:#EAF5EC;border:1px solid #2E844A;",
+    "alertWarning": "padding:12px 16px;border-radius:8px;margin:8px 0;background:#FEF3E0;border:1px solid #DD7A01;",
+    "alertError": "padding:12px 16px;border-radius:8px;margin:8px 0;background:#FDE8E8;border:1px solid #BA0517;",
+    "alertInfo": "padding:12px 16px;border-radius:8px;margin:8px 0;background:#EEF4FF;border:1px solid #0176D3;",
+    "emptyState": "color:#A8A8A8;font-style:italic;text-align:center;padding:20px;",
+    "grid2col": "display:grid;grid-template-columns:repeat(2,1fr);gap:16px;",
+    "grid3col": "display:grid;grid-template-columns:repeat(3,1fr);gap:16px;",
+    "grid4col": "display:grid;grid-template-columns:repeat(4,1fr);gap:16px;",
+    "flexRow": "display:flex;flex-direction:row;gap:16px;align-items:center;",
+    "flexCol": "display:flex;flex-direction:column;gap:8px;",
+    "textMuted": "color:#706E6B;font-size:12px;",
+    "textPrimary": "color:#0176D3;",
+    "textSuccess": "color:#2E844A;",
+    "textWarning": "color:#DD7A01;",
+    "textError": "color:#BA0517;",
+    "fontBold": "font-weight:700;",
+    "fontSemibold": "font-weight:600;"
+  },
+
+  "patterns": {
+    "accountSummary": {
+      "name": "Account 360 Dashboard",
+      "description": "Comprehensive account overview with metrics, contacts, pipeline, and support",
+      "layout": "dashboard",
+      "components": [
+        {
+          "name": "header",
+          "purpose": "Account identification with gradient background",
+          "elements": ["Name", "Industry", "Type", "Owner.Name"],
+          "styling": "Use header gradient, white text, 20px font for name"
+        },
+        {
+          "name": "keyMetrics",
+          "purpose": "Important numbers at a glance in stats strip",
+          "elements": ["AnnualRevenue", "NumberOfEmployees", "Contact count", "Open Opportunity count"],
+          "styling": "4-column stats strip with large numbers and uppercase labels"
+        },
+        {
+          "name": "contacts",
+          "purpose": "Key stakeholders list",
+          "collection": "Contacts",
+          "elements": ["Name", "Title", "Email", "Phone"],
+          "styling": "Table with header row, alternating backgrounds on hover"
+        },
+        {
+          "name": "opportunities",
+          "purpose": "Open pipeline",
+          "collection": "Opportunities",
+          "elements": ["Name", "StageName", "Amount", "CloseDate"],
+          "styling": "Table with status badges for stage, currency formatting for amount"
+        },
+        {
+          "name": "cases",
+          "purpose": "Support health",
+          "collection": "Cases",
+          "elements": ["CaseNumber", "Subject", "Priority", "Status"],
+          "styling": "Table with priority badges (High=red, Medium=orange, Low=blue)"
+        },
+        {
+          "name": "footer",
+          "purpose": "Account health summary",
+          "elements": ["LastActivityDate", "CreatedDate"],
+          "styling": "Subtle background with muted text"
+        }
+      ],
+      "colorScheme": {
+        "primary": "#0176D3",
+        "headerGradient": "linear-gradient(135deg,#0176D3,#014486)",
+        "success": "#2E844A",
+        "warning": "#DD7A01",
+        "danger": "#BA0517"
+      }
+    },
+    "opportunitySummary": {
+      "name": "Opportunity Summary",
+      "description": "Deal overview with stakeholders and products",
+      "layout": "scorecard",
+      "components": [
+        {
+          "name": "header",
+          "purpose": "Deal identification",
+          "elements": ["Name", "Account.Name", "StageName", "Amount", "CloseDate"],
+          "styling": "Gradient header with stage badge"
+        },
+        {
+          "name": "dealMetrics",
+          "purpose": "Key deal numbers",
+          "elements": ["Amount", "Probability", "ExpectedRevenue"],
+          "styling": "3-column stats strip"
+        },
+        {
+          "name": "contacts",
+          "purpose": "Deal stakeholders",
+          "collection": "OpportunityContactRoles",
+          "elements": ["Contact.Name", "Role", "IsPrimary"],
+          "styling": "List with role badges"
+        },
+        {
+          "name": "products",
+          "purpose": "Line items",
+          "collection": "OpportunityLineItems",
+          "elements": ["Product2.Name", "Quantity", "TotalPrice"],
+          "styling": "Table with currency formatting"
+        }
+      ]
+    },
+    "caseSummary": {
+      "name": "Case Summary Card",
+      "description": "Case overview with timeline and resolution",
+      "layout": "vertical-stack",
+      "components": [
+        {
+          "name": "header",
+          "purpose": "Case identification",
+          "elements": ["CaseNumber", "Subject", "Status", "Priority"],
+          "styling": "Gradient header with status and priority badges"
+        },
+        {
+          "name": "details",
+          "purpose": "Case information",
+          "elements": ["Description", "Type", "Origin", "CreatedDate"],
+          "styling": "Info card with light blue background"
+        },
+        {
+          "name": "timeline",
+          "purpose": "Case history",
+          "collection": "CaseComments",
+          "elements": ["CommentBody", "CreatedDate", "CreatedBy.Name"],
+          "styling": "Timeline with dots and connecting line"
+        },
+        {
+          "name": "resolution",
+          "purpose": "How it was resolved",
+          "elements": ["Resolution", "ClosedDate"],
+          "styling": "Success card with green border"
+        }
+      ]
+    },
+    "leadSummary": {
+      "name": "Lead Scoring Card",
+      "description": "Lead qualification with engagement indicators",
+      "layout": "scorecard",
+      "components": [
+        {
+          "name": "header",
+          "purpose": "Lead identification",
+          "elements": ["Name", "Company", "Title", "Status"],
+          "styling": "Gradient header"
+        },
+        {
+          "name": "contact",
+          "purpose": "Contact information",
+          "elements": ["Email", "Phone", "MobilePhone"],
+          "styling": "Info section"
+        },
+        {
+          "name": "qualification",
+          "purpose": "Lead quality",
+          "elements": ["LeadSource", "Rating", "Industry", "AnnualRevenue"],
+          "styling": "Metric tiles with rating badge (Hot=red, Warm=orange, Cold=blue)"
+        }
+      ]
+    }
+  },
+
+  "htmlTemplateRequirements": {
+    "critical": [
+      "SINGLE LINE - No newline characters anywhere in output",
+      "NO STYLE BLOCKS - Only inline styles (style=\"...\")",
+      "NO CSS CLASSES - Classes without style blocks are useless",
+      "NO SCRIPT TAGS - Security risk, stripped by Lightning",
+      "START WITH <div style=\"...\" - Container with inline styles",
+      "END WITH </div> - Proper HTML closure",
+      "NO MARKDOWN - Raw HTML only",
+      "NO UNSUBSTITUTED MERGE FIELDS - Remove sections with missing data",
+      "NO NULL VALUES - Handle missing data gracefully",
+      "NO EMOJIS - Professional business content only"
+    ],
+    "maxLength": 131072
+  },
+
+  "mergeFieldSyntax": {
+    "description": "GPTfy uses Mustache-style triple braces",
+    "primaryField": "{{{FieldName}}}",
+    "lookupField": "{{{Relationship.FieldName}}}",
+    "childIteration": "{{#ChildCollection}}...{{/ChildCollection}}",
+    "childFieldInsideIteration": "{{{FieldName}}}",
+    "emptyCollectionCheck": "{{^ChildCollection}}No items{{/ChildCollection}}",
+    "examples": {
+      "accountName": "{{{Name}}}",
+      "ownerName": "{{{Owner.Name}}}",
+      "contactsLoop": "{{#Contacts}}<tr><td>{{{Name}}}</td><td>{{{Email}}}</td></tr>{{/Contacts}}",
+      "noContacts": "{{^Contacts}}<div style=\"color:#A8A8A8;font-style:italic;\">No contacts</div>{{/Contacts}}"
+    }
+  }
+}

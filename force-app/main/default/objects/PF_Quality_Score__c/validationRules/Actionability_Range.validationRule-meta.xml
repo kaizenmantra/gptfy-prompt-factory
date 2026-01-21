@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Actionability_Range</fullName>
+    <active>true</active>
+    <description>Ensures Actionability score is between 1 and 10</description>
+    <errorConditionFormula>AND(
+    NOT(ISBLANK(Actionability__c)),
+    OR(
+        Actionability__c &lt; 1,
+        Actionability__c &gt; 10
+    )
+)</errorConditionFormula>
+    <errorDisplayField>Actionability__c</errorDisplayField>
+    <errorMessage>Actionability score must be between 1 and 10</errorMessage>
+</ValidationRule>

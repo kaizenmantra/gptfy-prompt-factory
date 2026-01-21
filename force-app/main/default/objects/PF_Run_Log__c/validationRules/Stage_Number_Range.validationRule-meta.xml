@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Stage_Number_Range</fullName>
+    <active>true</active>
+    <description>Ensures Stage Number is between 1 and 12 when provided</description>
+    <errorConditionFormula>AND(
+    NOT(ISBLANK(Stage_Number__c)),
+    OR(
+        Stage_Number__c &lt; 1,
+        Stage_Number__c &gt; 12
+    )
+)</errorConditionFormula>
+    <errorDisplayField>Stage_Number__c</errorDisplayField>
+    <errorMessage>Stage Number must be between 1 and 12</errorMessage>
+</ValidationRule>

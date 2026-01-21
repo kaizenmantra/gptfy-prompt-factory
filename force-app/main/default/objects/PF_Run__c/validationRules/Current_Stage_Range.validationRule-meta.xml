@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Current_Stage_Range</fullName>
+    <active>true</active>
+    <description>Ensures Current Stage is between 1 and 12</description>
+    <errorConditionFormula>AND(
+    NOT(ISBLANK(Current_Stage__c)),
+    OR(
+        Current_Stage__c &lt; 1,
+        Current_Stage__c &gt; 12
+    )
+)</errorConditionFormula>
+    <errorDisplayField>Current_Stage__c</errorDisplayField>
+    <errorMessage>Current Stage must be between 1 and 12</errorMessage>
+</ValidationRule>

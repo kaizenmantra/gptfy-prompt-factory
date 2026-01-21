@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Visual_Quality_Range</fullName>
+    <active>true</active>
+    <description>Ensures Visual Quality score is between 1 and 10</description>
+    <errorConditionFormula>AND(
+    NOT(ISBLANK(Visual_Quality__c)),
+    OR(
+        Visual_Quality__c &lt; 1,
+        Visual_Quality__c &gt; 10
+    )
+)</errorConditionFormula>
+    <errorDisplayField>Visual_Quality__c</errorDisplayField>
+    <errorMessage>Visual Quality score must be between 1 and 10</errorMessage>
+</ValidationRule>

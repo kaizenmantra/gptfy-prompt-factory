@@ -79,8 +79,9 @@ GPTfy Prompt Factory is a Salesforce application that revolutionizes how users c
 
 ### Prerequisites
 - Salesforce DX CLI installed
-- GitHub CLI (for deployment)
-- Access to an OpenAI-compatible API endpoint
+- **GPTfy Managed Package** (namespace: `ccai__`) installed in target org
+- Salesforce API v64.0 or higher
+- Lightning Experience enabled
 
 ### Installation
 
@@ -95,19 +96,30 @@ cd gptfy-prompt-factory
 sf org login web --alias prompt-factory-org
 ```
 
-3. **Deploy to Salesforce**
+3. **Verify GPTfy Package is Installed**
+```bash
+sf data query --query "SELECT Id FROM ccai__AI_Prompt__c LIMIT 1" --target-org prompt-factory-org
+```
+If this fails, install the GPTfy package first.
+
+4. **Deploy to Salesforce**
 ```bash
 sf project deploy start --target-org prompt-factory-org
 ```
 
-4. **Configure AI Connection**
-   - Navigate to Setup → Custom Metadata Types → AI Connection
-   - Create a record named "Response API"
-   - Configure your Named Credential and endpoint URL
-
 5. **Assign Permissions**
-   - Assign the appropriate permission sets to users
-   - Configure profile-based access as needed
+```bash
+# For administrators
+sf org assign permset --name Prompt_Factory_Admin --target-org prompt-factory-org
+
+# For standard users
+sf org assign permset --name Prompt_Factory_User --target-org prompt-factory-org
+```
+
+6. **Access the Wizard**
+Navigate to: **Platform App → Prompt Factory Wizard tab**
+
+📖 **See [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md) for detailed instructions**
 
 ---
 

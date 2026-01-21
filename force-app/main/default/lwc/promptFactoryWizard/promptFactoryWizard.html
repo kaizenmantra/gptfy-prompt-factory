@@ -1,0 +1,144 @@
+<template>
+    <div class="wizard-container">
+        <!-- Global Error Message -->
+        <div if:true={hasError} class="slds-m-bottom_medium">
+            <div class="slds-notify slds-notify_alert slds-alert_error" role="alert">
+                <span class="slds-assistive-text">Error</span>
+                <h2>{errorMessage}</h2>
+            </div>
+        </div>
+
+        <!-- Progress Tracker -->
+        <div class="slds-m-bottom_medium">
+            <c-pf-progress-tracker
+                stage-statuses={stageStatuses}
+                current-stage={currentStage}
+                onstageclick={handleStageClick}>
+            </c-pf-progress-tracker>
+        </div>
+
+        <!-- Tabbed Interface -->
+        <div>
+            <div class="slds-tabs_default">
+                <!-- Tab Headers -->
+                <ul class="slds-tabs_default__nav" role="tablist">
+                    <li class={configurationTabClass} title="Pipeline Configuration" role="presentation">
+                        <a class="slds-tabs_default__link" href="javascript:void(0);" role="tab"
+                           data-tab="configuration" onclick={handleTabClick}
+                           aria-selected={isConfigurationTab}>
+                            <lightning-icon icon-name="utility:settings" size="x-small" class="slds-m-right_x-small"></lightning-icon>
+                            Pipeline Configuration
+                        </a>
+                    </li>
+                    <li class={activityTabClass} title="Status & Results" role="presentation">
+                        <a class="slds-tabs_default__link" href="javascript:void(0);" role="tab"
+                           data-tab="activity" onclick={handleTabClick}
+                           aria-selected={isActivityTab}>
+                            <lightning-icon icon-name="utility:activity" size="x-small" class="slds-m-right_x-small"></lightning-icon>
+                            Status & Results
+                            <template if:true={isRunning}>
+                                <lightning-badge label="Running" class="slds-m-left_x-small running-badge"></lightning-badge>
+                            </template>
+                        </a>
+                    </li>
+                    <li class={historyTabClass} title="Recent Runs" role="presentation">
+                        <a class="slds-tabs_default__link" href="javascript:void(0);" role="tab"
+                           data-tab="history" onclick={handleTabClick}
+                           aria-selected={isHistoryTab}>
+                            <lightning-icon icon-name="utility:date_time" size="x-small" class="slds-m-right_x-small"></lightning-icon>
+                            Recent Runs
+                        </a>
+                    </li>
+                </ul>
+
+                <!-- Tab Content: Pipeline Configuration -->
+                <div if:true={isConfigurationTab} class="slds-tabs_default__content slds-show" role="tabpanel">
+                    <div class="slds-p-around_medium">
+                        <!-- Show "Start New Run" prompt after a run completes -->
+                        <template if:true={canReset}>
+                            <div class="slds-box slds-box_small slds-theme_info slds-m-bottom_medium">
+                                <div class="slds-grid slds-grid_align-spread slds-grid_vertical-align-center">
+                                    <div>
+                                        <p class="slds-text-body_regular">
+                                            <lightning-icon icon-name="utility:info" size="x-small" class="slds-m-right_x-small"></lightning-icon>
+                                            Previous run finished. Ready to start a new pipeline run.
+                                        </p>
+                                    </div>
+                                    <lightning-button
+                                        label="Reset for New Run"
+                                        variant="brand"
+                                        onclick={handleResetWizard}
+                                        icon-name="utility:refresh">
+                                    </lightning-button>
+                                </div>
+                            </div>
+                        </template>
+                        <c-pf-input-form
+                            prompt-name={inputData.promptName}
+                            root-object={inputData.rootObject}
+                            sample-record-id={inputData.sampleRecordId}
+                            business-context={inputData.businessContext}
+                            output-format={inputData.outputFormat}
+                            ai-model-id={inputData.aiModelId}
+                            ai-model-options={aiModelOptions}
+                            company-url={inputData.companyUrl}
+                            disabled={isRunning}
+                            oninputchange={handleInputChange}
+                            onstartpipeline={handleStartPipeline}>
+                        </c-pf-input-form>
+                    </div>
+                </div>
+
+                <!-- Tab Content: Activity & Logs -->
+                <div if:true={isActivityTab} class="slds-tabs_default__content slds-show" role="tabpanel">
+                    <div class="slds-p-around_medium">
+                        <!-- Activity View -->
+                        <c-pf-activity-view
+                            run-id={runId}
+                            current-stage={currentStage}
+                            pipeline-status={pipelineStatus}
+                            quality-scorecard={qualityScorecard}>
+                        </c-pf-activity-view>
+
+                        <!-- Activity Log -->
+                        <div class="slds-m-top_medium">
+                            <c-pf-activity-log
+                                run-id={runId}
+                                logs={logs}
+                                collapsible>
+                            </c-pf-activity-log>
+                        </div>
+
+                        <!-- Abort Button (only while running) -->
+                        <template if:true={canAbort}>
+                            <div class="slds-m-top_medium">
+                                <lightning-button
+                                    label="Abort Pipeline"
+                                    variant="destructive"
+                                    onclick={handleAbortPipeline}>
+                                </lightning-button>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Tab Content: Recent Runs -->
+                <div if:true={isHistoryTab} class="slds-tabs_default__content slds-show" role="tabpanel">
+                    <div class="slds-p-around_medium">
+                        <c-pf-run-history
+                            record-limit="20">
+                        </c-pf-run-history>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Spinner Overlay -->
+        <div if:true={isLoading} class="loading-overlay">
+            <lightning-spinner
+                alternative-text="Loading"
+                size="medium">
+            </lightning-spinner>
+        </div>
+    </div>
+</template>
