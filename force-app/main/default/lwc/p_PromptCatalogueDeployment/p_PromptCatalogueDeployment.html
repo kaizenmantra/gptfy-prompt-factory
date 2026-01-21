@@ -1,0 +1,118 @@
+<template>
+    <div class="deployment-container">
+        <template if:true={showSpinner}>
+            <div style="height:10rem;position:relative">
+                <div class="slds-spinner_container">
+                    <div role="status" class="slds-spinner slds-spinner_medium slds-spinner_brand">
+                        <span class="slds-assistive-text">Loading</span>
+                        <div class="slds-spinner__dot-a"></div>
+                        <div class="slds-spinner__dot-b"></div>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <template if:false={showSpinner}>
+            <div style="height: 2px;"></div>
+            <div class="slds-scrollable_x" style="width:100%">
+                <table aria-multiselectable="true" class="slds-scrollable_x slds-table slds-table_cell-buffer">
+                    <thead>
+                        <tr class="slds-line-height_reset">
+                            <th class="" scope="col" style="width:300px;">
+                                <div class="slds-truncate slds-var-p-left_x-small" title="Prompt Name">Prompt Name</div>
+                            </th>
+                            <th class="" scope="col" style="width:300px;">
+                                <div class="slds-truncate slds-var-p-left_x-small" title="Primary Object">Primary Object</div>
+                            </th>
+                            <th class="" scope="col">
+                                <div class="slds-truncate slds-var-p-left_x-small" title="Profile">Profile</div>
+                            </th>
+                            <th class="" scope="col">
+                                <div class="slds-truncate slds-var-p-left_x-small" title="Record Type">Record Type</div>
+                            </th>
+                            <th class="" scope="col">
+                                <div class="slds-truncate slds-var-p-left_x-small" title="Visibility Condition">Visibility Condition</div>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template for:each={selectedMappings} for:item="map" for:index="mIndex">
+                            <tr class="slds-hint-parent" key={map.pmtId}>
+                                <td class="slds-cell-wrap" data-label="Prompt Name" scope="row" style="width:300px;">
+                                    <div class="slds-line-clamp slds-truncate" title="Prompt Name">
+                                        <a href={map.pmtUrl}>{map.promptName}</a>
+                                    </div>
+                                </td>
+                                <td class="slds-cell-wrap" data-label="Primary Object" scope="row" style="width:300px;">
+                                    <div class="slds-line-clamp slds-truncate" title="Primary Object">
+                                        {map.primaryObject}
+                                    </div>
+                                </td>
+                                <td data-label="Profile" scope="row">
+                                    <div title="Profile">
+                                        <lightning-dual-listbox 
+                                            name="profiles" 
+                                            label="Profiles"
+                                            options={profileOptions} 
+                                            onchange={handleProfileChange}
+                                            value={map.profileNames} 
+                                            size="3" 
+                                            disable-reordering 
+                                            data-id={mIndex}
+                                            variant="label-hidden">
+                                        </lightning-dual-listbox>
+                                    </div>
+                                </td>
+                                <td data-label="Record Type" scope="row">
+                                    <div title="Record Type">
+                                        <template if:true={map.recordTypeOptions}>
+                                            <lightning-dual-listbox 
+                                                name="recordType" 
+                                                label="Record Types"
+                                                options={map.recordTypeOptions} 
+                                                onchange={handleRecordTypeChange}
+                                                value={map.recordTypes} 
+                                                size="3" 
+                                                disable-reordering 
+                                                data-id={mIndex}
+                                                variant="label-hidden">
+                                            </lightning-dual-listbox>
+                                        </template>
+                                        <template if:false={map.recordTypeOptions}>
+                                            <div class="slds-align_absolute-center">
+                                                ---No Record Types---
+                                            </div>
+                                        </template>
+                                    </div>
+                                </td>
+                                <td data-label="Visibility Condition" scope="row">
+                                    <div title="Visibility Condition">
+                                        <lightning-textarea 
+                                            type="text"
+                                            name="visibilityCondition" 
+                                            label="Visibility Condition" 
+                                            variant="label-hidden"
+                                            value={map.visibilityCondition}
+                                            data-index={mIndex}
+                                            onchange={handleVisibilityConditionChange}
+                                            field-level-help={helpText_VisibilityCondition}>
+                                        </lightning-textarea>
+                                        <div class="slds-m-top_xx-small">
+                                            <lightning-button 
+                                                data-index={mIndex} 
+                                                data-objectname={map.primaryObject} 
+                                                label="Create Visibility Condition" 
+                                                title="Create Visibility Condition" 
+                                                onclick={handleOpenVisibilityCondition}>
+                                            </lightning-button>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </template>
+    </div>
+</template>

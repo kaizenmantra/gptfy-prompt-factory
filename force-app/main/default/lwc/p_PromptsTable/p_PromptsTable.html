@@ -1,0 +1,191 @@
+<!--
+    @description AI Prompts Table with consistent design pattern
+    @author      Salesforce Development Team
+    @date        2025-11-10
+-->
+<template>
+    <div class="container">
+        <div class="main-content">
+            
+            <!-- Loading State -->
+            <template lwc:if={isLoading}>
+                <div class="slds-text-align_center slds-p-vertical_large">
+                    <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+                </div>
+            </template>
+
+            <!-- Content -->
+            <template lwc:else>
+                <!-- Header Section -->
+                <div class="header-section">
+                    <div class="header-content">
+                        <h1 class="slds-text-heading_large">AI Prompts Configuration</h1>
+                    </div>
+                </div>
+
+                <!-- Purpose Tabs Section -->
+                <div class="section">
+                    <div class="section-header">
+                        <lightning-icon 
+                            icon-name="standard:bot"
+                            size="small"
+                            class="section-icon">
+                        </lightning-icon>
+                        <h2>Select Purpose</h2>
+                    </div>
+                    
+                    <div class="section-content">
+                        <div class="purpose-tabs">
+                            <template for:each={purposeTabs} for:item="tab">
+                                <button key={tab.value} 
+                                        class={tab.tabClass} 
+                                        data-purpose={tab.value}
+                                        onclick={handleTabClick}>
+                                    <span class="tab-label">{tab.label}</span>
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Prompts Table Section -->
+                <div class="section">
+                    <div class="section-header">
+                        <lightning-icon 
+                            icon-name="standard:procedure"
+                            size="small"
+                            class="section-icon">
+                        </lightning-icon>
+                        <h2>Prompts</h2>
+                        <span class="skill-count">{filteredPrompts.length} prompts</span>
+                    </div>
+                    
+                    <div class="section-content">
+                        <!-- Table Container -->
+                        <div class="table-wrapper">
+                            <table class="prompts-table">
+                                <thead>
+                                    <tr>
+                                        <th class="checkbox-col">
+                                            <input type="checkbox" 
+                                                   class="select-all-checkbox"
+                                                   onchange={handleSelectAll}
+                                                   checked={allSelected} />
+                                        </th>
+                                        <th class="prompt-name-col">
+                                            <div class="header-content-cell">
+                                                <span>Prompt Name</span>
+                                                <lightning-icon icon-name="utility:arrowdown" 
+                                                              size="xx-small"
+                                                              class="sort-icon"></lightning-icon>
+                                            </div>
+                                        </th>
+                                        <th class="primary-object-col">
+                                            <div class="header-content-cell">
+                                                <span>Primary Object</span>
+                                                <lightning-icon icon-name="utility:arrowdown" 
+                                                              size="xx-small"
+                                                              class="sort-icon"></lightning-icon>
+                                            </div>
+                                        </th>
+                                        <th class="connection-col">
+                                            <div class="header-content-cell">
+                                                <span>Connection</span>
+                                                <lightning-icon icon-name="utility:arrowdown" 
+                                                              size="xx-small"
+                                                              class="sort-icon"></lightning-icon>
+                                            </div>
+                                        </th>
+                                        <th class="description-col">
+                                            <div class="header-content-cell">
+                                                <span>Description</span>
+                                                <lightning-icon icon-name="utility:arrowdown" 
+                                                              size="xx-small"
+                                                              class="sort-icon"></lightning-icon>
+                                            </div>
+                                        </th>
+                                        <th class="status-col">
+                                            <div class="header-content-cell">
+                                                <span>Status</span>
+                                                <lightning-icon icon-name="utility:arrowdown" 
+                                                              size="xx-small"
+                                                              class="sort-icon"></lightning-icon>
+                                            </div>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Loading State -->
+                                    <template lwc:if={isLoadingPrompts}>
+                                        <tr>
+                                            <td colspan="6" class="loading-cell">
+                                                <lightning-spinner alternative-text="Loading" size="small"></lightning-spinner>
+                                            </td>
+                                        </tr>
+                                    </template>
+
+                                    <!-- Data Rows -->
+                                    <template lwc:if={hasPrompts}>
+                                        <template for:each={filteredPrompts} for:item="prompt">
+                                            <tr key={prompt.Id} class="data-row">
+                                                <td class="checkbox-col">
+                                                    <input type="checkbox" 
+                                                           data-id={prompt.Id}
+                                                           checked={prompt.isSelected}
+                                                           onchange={handleRowSelect} />
+                                                </td>
+                                                <td class="prompt-name-col">
+                                                    <a href="#" 
+                                                       data-id={prompt.Id}
+                                                       onclick={handlePromptClick}
+                                                       class="prompt-link">{prompt.Name}</a>
+                                                </td>
+                                                <td class="primary-object-col">{prompt.Object__c}</td>
+                                                <td class="connection-col">
+                                                    <div class="connection-cell">
+                                                        <span class="connection-name">{prompt.ConnectionName}</span>
+                                                        <lightning-button-icon 
+                                                            icon-name="utility:edit" 
+                                                            alternative-text="Edit Connection"
+                                                            size="x-small"
+                                                            class="edit-icon"
+                                                            data-id={prompt.Id}
+                                                            onclick={handleEditConnection}>
+                                                        </lightning-button-icon>
+                                                    </div>
+                                                </td>
+                                                <td class="description-col">
+                                                    <div class="description-text" title={prompt.Description__c}>
+                                                        {prompt.Description__c}
+                                                    </div>
+                                                </td>
+                                                <td class="status-col">
+                                                    <span class={prompt.statusClass}>{prompt.Status__c}</span>
+                                                </td>
+                                            </tr>
+                                        </template>
+                                    </template>
+
+                                    <!-- Empty State -->
+                                    <template lwc:if={showEmptyState}>
+                                        <tr>
+                                            <td colspan="6" class="empty-state-cell">
+                                                <div class="empty-state">
+                                                    <lightning-icon icon-name="utility:info" 
+                                                                  size="small"
+                                                                  class="empty-icon"></lightning-icon>
+                                                    <p class="empty-message">No prompts found for this purpose.</p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
+        </div>
+    </div>
+</template>
