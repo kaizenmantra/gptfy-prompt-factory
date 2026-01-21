@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Max_Tokens__c</fullName>
+    <defaultValue>4096</defaultValue>
+    <description>Maximum number of tokens to generate in responses</description>
+    <externalId>false</externalId>
+    <inlineHelpText>Maximum tokens for DeepSeek responses. Default: 4096. Higher values allow longer responses but cost more.</inlineHelpText>
+    <label>Max Tokens</label>
+    <precision>18</precision>
+    <required>false</required>
+    <scale>0</scale>
+    <trackTrending>false</trackTrending>
+    <type>Number</type>
+    <unique>false</unique>
+</CustomField>

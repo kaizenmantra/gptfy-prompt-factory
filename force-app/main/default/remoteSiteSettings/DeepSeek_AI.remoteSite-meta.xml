@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<RemoteSiteSetting xmlns="http://soap.sforce.com/2006/04/metadata">
+    <description>DeepSeek AI endpoint hosted on Azure AI for advanced reasoning capabilities</description>
+    <disableProtocolSecurity>false</disableProtocolSecurity>
+    <isActive>true</isActive>
+    <url>https://saura-m51w47qu-eastus2.services.ai.azure.com</url>
+</RemoteSiteSetting>
