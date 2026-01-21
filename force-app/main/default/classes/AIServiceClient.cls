@@ -14,6 +14,7 @@ public with sharing class AIServiceClient {
     public enum AIProvider {
         CLAUDE,
         AZURE_OPENAI,
+        DEEPSEEK,
         AUTO  // Automatically detect based on configured credentials
     }
 
@@ -49,28 +50,37 @@ public with sharing class AIServiceClient {
     
     /**
      * @description Detect which AI provider is configured and set as default
-     * Checks the Default__c checkbox on both credential custom settings
+     * Checks the Default__c checkbox on all credential custom settings
      * @return AIProvider enum value
      */
     private static AIProvider detectProvider() {
         Azure_OpenAI_Credentials__c azureCreds = Azure_OpenAI_Credentials__c.getInstance();
         Claude_API_Credentials__c claudeCreds = Claude_API_Credentials__c.getInstance();
+        DeepSeek_Credentials__c deepseekCreds = DeepSeek_Credentials__c.getInstance();
         
         // Check which provider is marked as Default
         Boolean azureDefault = (azureCreds != null && azureCreds.Default__c == true && String.isNotBlank(azureCreds.API_Key__c));
         Boolean claudeDefault = (claudeCreds != null && claudeCreds.Default__c == true && String.isNotBlank(claudeCreds.API_Key__c));
+        Boolean deepseekDefault = (deepseekCreds != null && deepseekCreds.Default__c == true && String.isNotBlank(deepseekCreds.API_Key__c));
         
-        // If Azure is marked as default, use it
+        // Check in priority order (based on which is marked as default)
+        if (deepseekDefault) {
+            return AIProvider.DEEPSEEK;
+        }
+        
         if (azureDefault) {
             return AIProvider.AZURE_OPENAI;
         }
         
-        // If Claude is marked as default, use it
         if (claudeDefault) {
             return AIProvider.CLAUDE;
         }
         
-        // Fallback: If neither is marked as default but credentials exist, prefer Azure
+        // Fallback: If none marked as default but credentials exist, prefer in this order: DeepSeek > Azure > Claude
+        if (deepseekCreds != null && String.isNotBlank(deepseekCreds.API_Key__c)) {
+            return AIProvider.DEEPSEEK;
+        }
+        
         if (azureCreds != null && String.isNotBlank(azureCreds.API_Key__c)) {
             return AIProvider.AZURE_OPENAI;
         }
@@ -91,7 +101,10 @@ public with sharing class AIServiceClient {
     public static AIResponse callAI(String prompt) {
         AIProvider provider = (defaultProvider == AIProvider.AUTO) ? detectProvider() : defaultProvider;
         
-        if (provider == AIProvider.AZURE_OPENAI) {
+        if (provider == AIProvider.DEEPSEEK) {
+            DeepSeekProvider deepseek = new DeepSeekProvider();
+            return deepseek.callAI(prompt);
+        } else if (provider == AIProvider.AZURE_OPENAI) {
             return callAzureOpenAI(prompt);
         } else {
             return callClaude(prompt);
@@ -109,7 +122,10 @@ public with sharing class AIServiceClient {
     public static AIResponse callAI(String systemPrompt, String userPrompt, Integer maxTokens, Decimal temperature) {
         AIProvider provider = (defaultProvider == AIProvider.AUTO) ? detectProvider() : defaultProvider;
         
-        if (provider == AIProvider.AZURE_OPENAI) {
+        if (provider == AIProvider.DEEPSEEK) {
+            DeepSeekProvider deepseek = new DeepSeekProvider();
+            return deepseek.callAI(systemPrompt, userPrompt, maxTokens, temperature);
+        } else if (provider == AIProvider.AZURE_OPENAI) {
             return callAzureOpenAI(systemPrompt, userPrompt, maxTokens, temperature);
         } else {
             return callClaude(systemPrompt, userPrompt, maxTokens, temperature);
@@ -126,7 +142,10 @@ public with sharing class AIServiceClient {
     public static AIResponse callAIJSON(String systemPrompt, String userPrompt, Integer maxTokens) {
         AIProvider provider = (defaultProvider == AIProvider.AUTO) ? detectProvider() : defaultProvider;
         
-        if (provider == AIProvider.AZURE_OPENAI) {
+        if (provider == AIProvider.DEEPSEEK) {
+            DeepSeekProvider deepseek = new DeepSeekProvider();
+            return deepseek.callAIJSON(systemPrompt, userPrompt, maxTokens);
+        } else if (provider == AIProvider.AZURE_OPENAI) {
             return callAzureOpenAIJSON(systemPrompt, userPrompt, maxTokens);
         } else {
             return callClaudeJSON(systemPrompt, userPrompt, maxTokens);
