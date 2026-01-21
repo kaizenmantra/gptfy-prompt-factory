@@ -59,13 +59,13 @@ public with sharing class Stage03_SchemaDiscovery implements IStage {
                 targetPersona
             );
 
-            result.queueDebug(runId, STAGE_NUMBER, 'Calling Claude AI for schema selection');
+            result.queueDebug(runId, STAGE_NUMBER, 'Calling AI for schema selection');
 
-            // Call Claude AI (HTTP callout - no DML before this!)
-            AIServiceClient.AIResponse aiResponse = AIServiceClient.callClaude(prompt, 2048, 0.5);
+            // Call AI (HTTP callout - no DML before this!)
+            AIServiceClient.AIResponse aiResponse = AIServiceClient.callAI(null, prompt, 2048, 0.5);
 
             if (!aiResponse.success) {
-                throw new StageException('Claude AI call failed: ' + aiResponse.errorMessage);
+                throw new StageException('AI call failed: ' + aiResponse.errorMessage);
             }
 
             result.queueInfo(runId, STAGE_NUMBER,
@@ -113,8 +113,8 @@ public with sharing class Stage03_SchemaDiscovery implements IStage {
                     businessContext, targetPersona
                 );
 
-                result.queueDebug(runId, STAGE_NUMBER, 'Calling Claude AI for grandchild selection');
-                AIServiceClient.AIResponse gcResponse = AIServiceClient.callClaude(grandchildPrompt, 2048, 0.5);
+                result.queueDebug(runId, STAGE_NUMBER, 'Calling AI for grandchild selection');
+                AIServiceClient.AIResponse gcResponse = AIServiceClient.callAI(null, grandchildPrompt, 2048, 0.5);
 
                 if (gcResponse.success) {
                     selectedGrandchildren = parseGrandchildSelectionResponse(

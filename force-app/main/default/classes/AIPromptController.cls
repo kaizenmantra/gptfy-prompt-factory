@@ -32,7 +32,7 @@ public with sharing class AIPromptController {
             //wrap.siteOptions = getSiteOptions();
             
             if(String.isNotBlank(recordId)){
-                List<AI_Prompt__c> lstOfPrompts = [SELECT Id, Name, Object__c, AI_Data_Extraction_Mapping__c, AI_Data_Extraction_Mapping__r.Name, AI_Connection__c, Type__c
+                List<AI_Prompt__c> lstOfPrompts = [SELECT Id, Name, Object__c, AI_Data_Extraction_Mapping__c, AI_Data_Extraction_Mapping__r.Name, ccai__AI_Connection__c, Type__c
                                                     //Description__c, Profiles__c, Include_Files__c, Experience_Sites__c, Usage__c,
                                                     //Prompt_Command__c, Record_Type__c, Purpose__c, Type__c, Custom_Prompt__c,
                                                     //Max_Output_Tokens__c, Temperature__c, Top_P__c, Target_Field__c, Visibility_Condition__c, How_it_works__c,
@@ -44,7 +44,7 @@ public with sharing class AIPromptController {
                     //wrap.targetField = pmt.Target_Field__c;
                     wrap.promptName = pmt.Name;
                     //wrap.description = pmt.Description__c;
-                    wrap.aiConnection = pmt.AI_Connection__c;
+                    wrap.aiConnection = pmt.ccai__AI_Connection__c;
                     //wrap.profileIds = pmt.Profiles__c != null && String.isNotBlank(pmt.Profiles__c) ? pmt.Profiles__c.split(';') : new List<String>();
                     //wrap.recordTypeIds = pmt.Record_Type__c != null && String.isNotBlank(pmt.Record_Type__c) ? pmt.Record_Type__c.split(';') : new List<String>();
                     wrap.extractionMappingId = pmt.AI_Data_Extraction_Mapping__c;
@@ -182,11 +182,11 @@ public with sharing class AIPromptController {
         try{
             List<AIDataExtractionController.PicklistWrapper> typeOptions = new List<AIDataExtractionController.PicklistWrapper>();
             List<String> activeAIModal = new List<String>();
-            for(AI_Card_Configuration__c cc : [SELECT Id, Name FROM AI_Card_Configuration__c where Enabled__c = true and Feature__c = :AIConstants.GPTfy_Card_Configuration_MDT_AMODL]){
+            for(ccai__AI_Card_Configuration__c cc : [SELECT Id, Name FROM ccai__AI_Card_Configuration__c where Enabled__c = true and Feature__c = :AIConstants.GPTfy_Card_Configuration_MDT_AMODL]){
                 activeAIModal.add(cc.Name.toLowercase());
             }
             
-            for(AI_Connection__c p : [SELECT Id, Name FROM AI_Connection__c ORDER BY Name LIMIT 50000]){
+            for(ccai__AI_Connection__c p : [SELECT Id, Name FROM ccai__AI_Connection__c ORDER BY Name LIMIT 50000]){
                 if(activeAIModal.contains(p.Name.toLowercase())){
                     AIDataExtractionController.PicklistWrapper wrap = new AIDataExtractionController.PicklistWrapper();
                     wrap.label = p.Name;
@@ -435,7 +435,7 @@ public with sharing class AIPromptController {
                 }else{
                     pmt.Purpose__c = selectedPurpose;
                 }
-                pmt.AI_Connection__c = aiConnection;
+                pmt.ccai__AI_Connection__c = aiConnection;
                 pmt.Object__c = targetObject;
                 pmt.Name = promptName;
                 //pmt.Description__c = description;

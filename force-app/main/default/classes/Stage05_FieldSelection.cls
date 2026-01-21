@@ -363,8 +363,8 @@ public with sharing class Stage05_FieldSelection implements IStage {
 
         result.queueDebug(runId, STAGE_NUMBER, 'Calling Claude AI for field selection');
 
-        // Call Claude AI (HTTP callout - no DML before this!)
-        AIServiceClient.AIResponse aiResponse = AIServiceClient.callClaude(prompt, 4096, 0.5);
+        // Call AI (HTTP callout - no DML before this!)
+        AIServiceClient.AIResponse aiResponse = AIServiceClient.callAI(null, prompt, 4096, 0.5);
 
         if (!aiResponse.success) {
             throw new StageException('Claude AI call failed: ' + aiResponse.errorMessage);

@@ -11,7 +11,7 @@ public with sharing class AIPromptControllerTest {
     @testSetup
     static void makeData(){
         Account a = TestUtility.getAccount(true);
-        AI_Connection__c conn = TestUtility.getConnection('GPTfy', true);
+        ccai__AI_Connection__c conn = TestUtility.getConnection('GPTfy', true);
         TestUtility.createCardConfiguration('GPTfy',AIConstants.GPTfy_Card_Configuration_MDT_AMODL,true);
         TestUtility.insertDataExtraction();
         AI_Data_Extraction_Mapping__c master = [SELECT Id FROM AI_Data_Extraction_Mapping__c LIMIT 1];

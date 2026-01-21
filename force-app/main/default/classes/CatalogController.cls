@@ -16,7 +16,7 @@ public with sharing class CatalogController {
     public static List<Object> getCatalogOptions(){
         
         String namespace = AIExtractionFieldMappingController.NAMESPACE;
-        List<AIExtractionFieldMappingController.PicklistAttributeWrapper> allOptions = AIExtractionFieldMappingController.getPickListValues(namespace+'AI_Connection__c', namespace+'AI_Technology__c');
+        List<AIExtractionFieldMappingController.PicklistAttributeWrapper> allOptions = AIExtractionFieldMappingController.getPickListValues(namespace+'ccai__AI_Connection__c', namespace+'AI_Technology__c');
         
         Set<String> setOfStaticResources = new Set<String>();
         for(AIExtractionFieldMappingController.PicklistAttributeWrapper opt : allOptions){
@@ -30,8 +30,8 @@ public with sharing class CatalogController {
         }
         
         Map<String, String> mapOfResNameToConnectionId = new Map<String, String>();
-        List<AI_Connection__c> lstOfConnections = [SELECT Id, Name, AI_Technology__c FROM AI_Connection__c WHERE AI_Technology__c != NULL];
-        for(AI_Connection__c conn : lstOfConnections){
+        List<ccai__AI_Connection__c> lstOfConnections = [SELECT Id, Name, AI_Technology__c FROM ccai__AI_Connection__c WHERE AI_Technology__c != NULL];
+        for(ccai__AI_Connection__c conn : lstOfConnections){
             mapOfResNameToConnectionId.put(conn.AI_Technology__c, conn.Id);
         }
 
@@ -74,15 +74,15 @@ public with sharing class CatalogController {
         Map<String, List<Object>> promptData = new Map<String, List<Object>>();
         Set<String> setOfObjNames = new Set<String>();
         List<Object> connectionOptions = new List<Object>();
-        List<AI_Prompt__c> lstOfPrompts = [SELECT Id, Name, AI_Connection__c, AI_Connection__r.Name, AI_Data_Extraction_Mapping__c, 
+        List<AI_Prompt__c> lstOfPrompts = [SELECT Id, Name, ccai__AI_Connection__c, AI_Connection__r.Name, AI_Data_Extraction_Mapping__c, 
                                            AI_Data_Extraction_Mapping__r.Name, Description__c, Object__c, Profiles__c,
                               				Purpose__c, Record_Type__c, Status__c, Visibility_Condition__c FROM AI_Prompt__c WHERE Purpose__c != NULL];
         if(lstOfPrompts != null && lstOfPrompts.size()>0){
             Set<String> activeAIModal = new Set<String>();
-            for(AI_Card_Configuration__c mdt : [SELECT Id, Name FROM AI_Card_Configuration__c where Enabled__c = true LIMIT 50000]){
+            for(ccai__AI_Card_Configuration__c mdt : [SELECT Id, Name FROM ccai__AI_Card_Configuration__c where Enabled__c = true LIMIT 50000]){
                 activeAIModal.add(mdt.Name.toLowercase());
             }
-            for(AI_Connection__c p : [SELECT Id, Name FROM AI_Connection__c  WHERE Name IN:activeAIModal ORDER BY Name LIMIT 50000]){
+            for(ccai__AI_Connection__c p : [SELECT Id, Name FROM ccai__AI_Connection__c  WHERE Name IN:activeAIModal ORDER BY Name LIMIT 50000]){
                 Map<String, String> obj = new Map<String, String>();
                obj.put('label', p.Name);
                obj.put('value', p.Id);
@@ -96,7 +96,7 @@ public with sharing class CatalogController {
             obj.put('pmtId', pmt.Id);
             obj.put('name', pmt.Name);
             obj.put('pmtUrl', '/lightning/r/'+namespace+'AI_Prompt__c/'+pmt.Id+'/view');
-            obj.put('aiConnection', pmt.AI_Connection__c);
+            obj.put('aiConnection', pmt.ccai__AI_Connection__c);
             obj.put('aiConnectionName', pmt.AI_Connection__r.Name);
             obj.put('mappingId', pmt.AI_Data_Extraction_Mapping__c);
             obj.put('mappingName', pmt.AI_Data_Extraction_Mapping__r.Name);
@@ -165,7 +165,7 @@ public with sharing class CatalogController {
                 AI_Prompt__c pmt = new AI_Prompt__c();
                 pmt.Id = String.valueOf(mapData.get('pmtId'));
                 pmt.Name = String.valueOf(mapData.get('name'));
-                pmt.AI_Connection__c = String.valueOf(mapData.get('aiConnection'));
+                pmt.ccai__AI_Connection__c = String.valueOf(mapData.get('aiConnection'));
                 pmt.Description__c = String.valueOf(mapData.get('description'));
                 promptsToUpdate.add(pmt);
             }
@@ -203,7 +203,7 @@ public with sharing class CatalogController {
     public static List<FieldSetWrappper> getFields(){
         String namespace = AIExtractionFieldMappingController.NAMESPACE;
         List<FieldSetWrappper> fieldData = new List<FieldSetWrappper>();
-        for(Schema.FieldSetMember field : SobjectType.AI_Connection__c.FieldSets.AI_Model_Creation_Fields.getFields()){ 
+        for(Schema.FieldSetMember field : SobjectType.ccai__AI_Connection__c.FieldSets.AI_Model_Creation_Fields.getFields()){ 
             fieldData.add(new FieldSetWrappper(field, namespace));
         }
         return fieldData; 

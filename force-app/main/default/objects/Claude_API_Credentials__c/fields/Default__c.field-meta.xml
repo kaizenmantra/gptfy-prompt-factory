@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Default__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description>Check this box to make Claude AI the default LLM provider for the Prompt Factory. Only one LLM provider should be set as default at a time.</description>
+    <externalId>false</externalId>
+    <inlineHelpText>Check this box to use Claude AI as the default AI provider. Uncheck to use Azure OpenAI instead. Only one provider should be set as default at a time.</inlineHelpText>
+    <label>Default</label>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>

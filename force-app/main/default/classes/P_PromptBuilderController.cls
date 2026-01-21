@@ -20,7 +20,7 @@ public with sharing class P_PromptBuilderController {
                 throw new AuraHandledException('User input cannot be empty');
             }
             
-            AI_Connection__c connection = getGPTfyConnection();
+            ccai__AI_Connection__c connection = getGPTfyConnection();
             String systemPrompt = buildSystemPrompt();
             String userPrompt = buildUserPrompt(userInput, existingPromptsJson);
             
@@ -119,7 +119,7 @@ public with sharing class P_PromptBuilderController {
                 throw new AuraHandledException('Required fields cannot be empty');
             }
             
-            AI_Connection__c connection = getGPTfyConnection();
+            ccai__AI_Connection__c connection = getGPTfyConnection();
             
             String extractionMappingId = null;
             if (String.isNotBlank(dataContextMapping) && dataContextMapping != 'undefined' && dataContextMapping != 'null') {
@@ -141,7 +141,7 @@ public with sharing class P_PromptBuilderController {
                 Prompt_Command__c = promptCommand,
                 Type__c = 'Text',
                 Status__c = 'Draft',
-                AI_Connection__c = connection.Id,
+                ccai__AI_Connection__c = connection.Id,
                 AI_Data_Extraction_Mapping__c = extractionMappingId,
                 Temperature__c = 0.7,
                 Top_P__c = 1.0,
@@ -545,7 +545,7 @@ public with sharing class P_PromptBuilderController {
      * Makes a direct HTTP callout to the Responses API
      */
     private static HttpResponse callResponsesAPI(String systemPrompt, String userPrompt, 
-                                                AI_Connection__c connection, Integer maxTokens, 
+                                                ccai__AI_Connection__c connection, Integer maxTokens, 
                                                 Decimal temperature, Decimal topP) {
         try {
             Map<String, Object> requestBody = new Map<String, Object>();
@@ -591,13 +591,13 @@ public with sharing class P_PromptBuilderController {
     /**
      * Helper method to get GPTfy connection
      */
-    private static AI_Connection__c getGPTfyConnection() {
-        List<AI_Connection__c> connections = [
+    private static ccai__AI_Connection__c getGPTfyConnection() {
+        List<ccai__AI_Connection__c> connections = [
             SELECT Id, Name, Named_Credential__c, Model__c, Max_Tokens__c, 
                    Temperature__c, Top_P__c, EndPoint_URL__c, AI_Technology__c,
                    Connector_Class__c, Processing_Class__c, Version__c, 
                    Additional_Parameters__c
-            FROM AI_Connection__c
+            FROM ccai__AI_Connection__c
             WHERE Name = 'Response API'
             ORDER BY CreatedDate DESC
             LIMIT 1

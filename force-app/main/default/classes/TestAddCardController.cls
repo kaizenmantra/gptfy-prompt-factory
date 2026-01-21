@@ -16,11 +16,11 @@ private class TestAddCardController {
         TestUtility.createCardConfiguration('GPTfy (OpenAI)', FEATURE_AMODL, true);
         TestUtility.createCardConfiguration('Boost Sales', FEATURE_CTLOG, true);
         
-        AI_Response_Mapping__c responseMapping = TestUtility.createResponseMapping('TestResponse', true);
+        ccai__AI_Response_Mapping__c responseMapping = TestUtility.createResponseMapping('TestResponse', true);
         
-        AI_Connection__c connection = TestUtility.getConnection('GPTfy (OpenAI)1', false);
+        ccai__AI_Connection__c connection = TestUtility.getConnection('GPTfy (OpenAI)1', false);
         connection.AI_Technology__c = 'GPTfy';
-        connection.AI_Response_Mapping__c = responseMapping.Id;
+        connection.ccai__AI_Response_Mapping__c = responseMapping.Id;
         insert connection;
         connection.Name = 'GPTfy (OpenAI)';
         update connection;
@@ -70,7 +70,7 @@ private class TestAddCardController {
         
         Assert.areEqual(true, result1, 'CTLOG creation should succeed');
         Assert.areEqual(true, result2, 'AMODL creation should succeed');
-        Assert.areEqual(1, [SELECT COUNT() FROM AI_Card_Configuration__c WHERE Name = 'Test Card'], 'Card should exist');
+        Assert.areEqual(1, [SELECT COUNT() FROM ccai__AI_Card_Configuration__c WHERE Name = 'Test Card'], 'Card should exist');
     }
     
     @isTest
@@ -94,7 +94,7 @@ private class TestAddCardController {
     @isTest
     static void testUpdateCardConfiguration_Success() {
         Test.setMock(WebServiceMock.class, new MetadataAPIMockHttpResponseGenerator());
-        AI_Card_Configuration__c card = [SELECT Id FROM AI_Card_Configuration__c WHERE Feature__c = :FEATURE_CTLOG LIMIT 1];
+        ccai__AI_Card_Configuration__c card = [SELECT Id FROM ccai__AI_Card_Configuration__c WHERE Feature__c = :FEATURE_CTLOG LIMIT 1];
         Map<String, Object> params = new Map<String, Object>{
             'Id' => card.Id, 'Feature__c' => FEATURE_CTLOG, 'Description__c' => 'Updated', 'Sequence__c' => 2
         };
@@ -104,13 +104,13 @@ private class TestAddCardController {
         Test.stopTest();
         
         Assert.areEqual(true, result, 'Update should succeed');
-        Assert.areEqual('Updated', [SELECT Description__c FROM AI_Card_Configuration__c WHERE Id = :card.Id].Description__c);
+        Assert.areEqual('Updated', [SELECT Description__c FROM ccai__AI_Card_Configuration__c WHERE Id = :card.Id].Description__c);
     }
     
     @isTest
     static void testUpdateCardConfiguration_NonCTLOG() {
         Test.setMock(WebServiceMock.class, new MetadataAPIMockHttpResponseGenerator());
-        AI_Card_Configuration__c card = [SELECT Id FROM AI_Card_Configuration__c WHERE Feature__c = :FEATURE_AMODL LIMIT 1];
+        ccai__AI_Card_Configuration__c card = [SELECT Id FROM ccai__AI_Card_Configuration__c WHERE Feature__c = :FEATURE_AMODL LIMIT 1];
         Map<String, Object> params = new Map<String, Object>{
             'Id' => card.Id, 'Feature__c' => FEATURE_AMODL, 'Enabled__c' => true, 'Sequence__c' => 2
         };
@@ -119,31 +119,31 @@ private class TestAddCardController {
         AddCardController.updateCardConfiguration(params);
         Test.stopTest();
         
-        Assert.areEqual(false, [SELECT Enabled__c FROM AI_Card_Configuration__c WHERE Id = :card.Id].Enabled__c);
+        Assert.areEqual(false, [SELECT Enabled__c FROM ccai__AI_Card_Configuration__c WHERE Id = :card.Id].Enabled__c);
     }
     
     @isTest
     static void testDeleteCardConfiguration_Success() {
         Test.setMock(WebServiceMock.class, new MetadataAPIMockHttpResponseGenerator());
-        AI_Card_Configuration__c card = TestUtility.createCardConfiguration('DeleteTest', FEATURE_CTLOG, true);
+        ccai__AI_Card_Configuration__c card = TestUtility.createCardConfiguration('DeleteTest', FEATURE_CTLOG, true);
         
         Test.startTest();
         Boolean result = AddCardController.deleteCardConfiguration('test', 'Test', 'test', FEATURE_CTLOG, card.Id);
         Test.stopTest();
         
         Assert.isNotNull(result);
-        Assert.areEqual(0, [SELECT COUNT() FROM AI_Card_Configuration__c WHERE Id = :card.Id]);
+        Assert.areEqual(0, [SELECT COUNT() FROM ccai__AI_Card_Configuration__c WHERE Id = :card.Id]);
     }
     
     @isTest
     static void testDeleteCardConfiguration_WithDependencies() {
         Test.setMock(WebServiceMock.class, new MetadataAPIMockHttpResponseGenerator());
-        AI_Connection__c conn = [SELECT Id FROM AI_Connection__c WHERE Name = 'GPTfy (OpenAI)' LIMIT 1];
+        ccai__AI_Connection__c conn = [SELECT Id FROM ccai__AI_Connection__c WHERE Name = 'GPTfy (OpenAI)' LIMIT 1];
         AI_Prompt__c prompt = TestUtility.getAIPrompt('Test', 'Account', 'Active', false);
-        prompt.AI_Connection__c = conn.Id;
+        prompt.ccai__AI_Connection__c = conn.Id;
         insert prompt;
         
-        AI_Card_Configuration__c card = [SELECT Id FROM AI_Card_Configuration__c WHERE Name = 'GPTfy (OpenAI)' AND Feature__c = :FEATURE_AMODL LIMIT 1];
+        ccai__AI_Card_Configuration__c card = [SELECT Id FROM ccai__AI_Card_Configuration__c WHERE Name = 'GPTfy (OpenAI)' AND Feature__c = :FEATURE_AMODL LIMIT 1];
         
         Boolean exceptionThrown = false;
         Test.startTest();
@@ -159,7 +159,7 @@ private class TestAddCardController {
     @isTest
     static void testDeleteCardConfiguration_APIDS() {
         Test.setMock(WebServiceMock.class, new MetadataAPIMockHttpResponseGenerator());
-        AI_Card_Configuration__c card = [SELECT Id FROM AI_Card_Configuration__c WHERE Name = 'DnB' LIMIT 1];
+        ccai__AI_Card_Configuration__c card = [SELECT Id FROM ccai__AI_Card_Configuration__c WHERE Name = 'DnB' LIMIT 1];
         
         Test.startTest();
         AddCardController.deleteCardConfiguration('test', 'Test', 'DnB', FEATURE_APIDS, card.Id);
@@ -189,7 +189,7 @@ private class TestAddCardController {
     
     @isTest
     static void testGetCardConfigurationRecord() {
-        AI_Card_Configuration__c card = [SELECT Id FROM AI_Card_Configuration__c LIMIT 1];
+        ccai__AI_Card_Configuration__c card = [SELECT Id FROM ccai__AI_Card_Configuration__c LIMIT 1];
         Test.startTest();
         AddCardController.metadataWrap result = AddCardController.getCardConfigurationRecord(card.Id);
         Test.stopTest();
@@ -199,17 +199,17 @@ private class TestAddCardController {
     // CONNECTION TESTS
     @isTest
     static void testCreateConnection() {
-        AI_Response_Mapping__c rm = TestUtility.createResponseMapping('TestRM', true);
-        Request_Mapping__c reqm = TestUtility.createRequestMapping('TestReqM', true);
+        ccai__AI_Response_Mapping__c rm = TestUtility.createResponseMapping('TestRM', true);
+        ccai__Request_Mapping__c reqm = TestUtility.createRequestMapping('TestReqM', true);
         Map<String, Object> params = new Map<String, Object>{
             'Name' => 'TestConn', NAMESPACE + 'Named_Credential__c' => 'TestCred',
             NAMESPACE + 'AI_Technology__c' => 'GPTfy', NAMESPACE + 'Infrastructure__c' => 'Others',
             NAMESPACE + 'Version__c' => '1', NAMESPACE + 'Temperature__c' => 0.7,
-            'Response_Mapping__c' => rm.Id, 'Request_Mapping__c' => reqm.Id
+            'Response_Mapping__c' => rm.Id, 'ccai__Request_Mapping__c' => reqm.Id
         };
         
         Test.startTest();
-        AI_Connection__c result = AddCardController.createConnection(params);
+        ccai__AI_Connection__c result = AddCardController.createConnection(params);
         Test.stopTest();
         
         Assert.isNotNull(result.Id);
@@ -218,7 +218,7 @@ private class TestAddCardController {
     
     @isTest
     static void testGetResponseAndRequestMapping() {
-        AI_Connection__c conn = [SELECT Id FROM AI_Connection__c WHERE Name = 'GPTfy (OpenAI)' LIMIT 1];
+        ccai__AI_Connection__c conn = [SELECT Id FROM ccai__AI_Connection__c WHERE Name = 'GPTfy (OpenAI)' LIMIT 1];
         
         Test.startTest();
         String respResult = AddCardController.getResponseMapping(conn.Id);
@@ -263,36 +263,36 @@ private class TestAddCardController {
     
     @isTest
     static void testHandleCardActivate_ValidationErrors() {
-        AI_Response_Mapping__c rm = TestUtility.createResponseMapping('TestRM2', true);
+        ccai__AI_Response_Mapping__c rm = TestUtility.createResponseMapping('TestRM2', true);
         
         // Test missing fields
-        AI_Connection__c conn1 = TestUtility.getConnection('InvalidConn1', false);
+        ccai__AI_Connection__c conn1 = TestUtility.getConnection('InvalidConn1', false);
         conn1.AI_Technology__c = '';
         conn1.Infrastructure__c = '';
         conn1.Version__c = '';
         conn1.Temperature__c = null;
-        conn1.AI_Response_Mapping__c = rm.Id;
+        conn1.ccai__AI_Response_Mapping__c = rm.Id;
         insert conn1;
         TestUtility.createCardConfiguration('InvalidConn1', FEATURE_AMODL, true);
         
         // Test invalid temperature
-        AI_Connection__c conn2 = TestUtility.getConnection('InvalidTemp', false);
+        ccai__AI_Connection__c conn2 = TestUtility.getConnection('InvalidTemp', false);
         conn2.AI_Technology__c = 'GPTfy';
         conn2.Infrastructure__c = 'Others';
         conn2.Version__c = '1';
         conn2.Temperature__c = 1.5;
-        conn2.AI_Response_Mapping__c = rm.Id;
+        conn2.ccai__AI_Response_Mapping__c = rm.Id;
         insert conn2;
         TestUtility.createCardConfiguration('InvalidTemp', FEATURE_AMODL, true);
         
         // Test invalid named credential
-        AI_Connection__c conn3 = TestUtility.getConnection('InvalidNC', false);
+        ccai__AI_Connection__c conn3 = TestUtility.getConnection('InvalidNC', false);
         conn3.Named_Credential__c = 'NonExistent';
         conn3.AI_Technology__c = 'GPTfy';
         conn3.Infrastructure__c = 'Others';
         conn3.Version__c = '1';
         conn3.Temperature__c = 0.5;
-        conn3.AI_Response_Mapping__c = rm.Id;
+        conn3.ccai__AI_Response_Mapping__c = rm.Id;
         insert conn3;
         TestUtility.createCardConfiguration('InvalidNC', FEATURE_AMODL, true);
         

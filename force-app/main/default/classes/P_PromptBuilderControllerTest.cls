@@ -14,7 +14,7 @@ private class P_PromptBuilderControllerTest {
     @TestSetup
     static void setupTestData() {
         // Create AI Connection
-        AI_Connection__c connection = new AI_Connection__c(
+        ccai__AI_Connection__c connection = new ccai__AI_Connection__c(
             Name = 'GPTfy Test Connection',
             AI_Technology__c = 'GPTfy',
             Named_Credential__c = 'GPTfy',
@@ -43,7 +43,7 @@ private class P_PromptBuilderControllerTest {
             Prompt_Command__c = 'Generate a sentiment analysis for this account.',
             Type__c = 'Text',
             Status__c = 'Active',
-            AI_Connection__c = connection.Id,
+            ccai__AI_Connection__c = connection.Id,
             AI_Data_Extraction_Mapping__c = mapping.Id
         );
         Database.insert(prompt, AccessLevel.USER_MODE);
