@@ -40,6 +40,7 @@ public with sharing class StageFactory {
             when 8 {
                 return new Stage08_PromptAssembly();
             }
+            /*
             when 9 {
                 return new Stage09_CreateAndDeploy();
             }
@@ -52,6 +53,7 @@ public with sharing class StageFactory {
             when 12 {
                 return new Stage12_QualityAudit();
             }
+            */
             when else {
                 throw new StageFactoryException('Invalid stage number: ' + stageNumber +
                     '. Must be between 1 and 12.');

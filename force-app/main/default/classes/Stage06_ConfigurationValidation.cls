@@ -111,6 +111,9 @@ public with sharing class Stage06_ConfigurationValidation implements IStage {
             result.outputs.put('strategicInsights', inputs.get('strategicInsights'));
             result.outputs.put('companyWebsite', inputs.get('companyWebsite'));
             result.outputs.put('selectedObjects', inputs.get('selectedObjects'));
+            
+            // CRITICAL: Pass through data summary for template design
+            result.outputs.put('dataSummary', inputs.get('dataSummary'));
 
             // Mark as completed (with warning if there are failures)
             if (failedChecks > 0) {

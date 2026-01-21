@@ -62,6 +62,11 @@ public with sharing class Stage01_IntelligenceRetrieval implements IStage {
             result.outputs.put('outputFormat', run.Output_Format__c);
             result.outputs.put('promptName', run.Prompt_Name__c);
             result.outputs.put('companyWebsite', run.Company_Website__c);
+            
+            // Log company website for observability
+            if (String.isNotBlank(run.Company_Website__c)) {
+                result.queueInfo(runId, STAGE_NUMBER, 'Company Website: ' + run.Company_Website__c);
+            }
 
             result.markCompleted();
             result.queueInfo(runId, STAGE_NUMBER, 'Intelligence retrieval completed successfully');

@@ -185,6 +185,10 @@ public with sharing class Stage05_FieldSelection implements IStage {
             result.outputs.put('companyProfile', inputs.get('companyProfile'));
             result.outputs.put('strategicInsights', inputs.get('strategicInsights'));
             result.outputs.put('companyWebsite', inputs.get('companyWebsite'));
+            
+            // CRITICAL: Pass through data summary for template design
+            result.outputs.put('dataSummary', inputs.get('dataSummary'));
+            result.outputs.put('dataAvailability', inputs.get('dataAvailability'));
             // Don't pass dataAvailability - it can be large and causes stack overflow
             // Downstream stages can re-query if needed
 

@@ -24,27 +24,10 @@ public with sharing class PromptFactoryController {
     @AuraEnabled(cacheable=true)
     public static List<Map<String, String>> getAIModelOptions() {
         List<Map<String, String>> options = new List<Map<String, String>>();
-
-        try {
-            // Query GPTfy AI Connections
-            List<ccai__AI_Connection__c> connections = [
-                SELECT Id, Name
-                FROM ccai__AI_Connection__c
-                ORDER BY Name ASC
-                LIMIT 50
-            ];
-
-            for (ccai__AI_Connection__c conn : connections) {
-                options.add(new Map<String, String>{
-                    'label' => conn.Name,
-                    'value' => conn.Id
-                });
-            }
-        } catch (Exception e) {
-            // If GPTfy is not installed or query fails, return empty list
-            System.debug(LoggingLevel.WARN, 'Could not query AI Connections: ' + e.getMessage());
-        }
-
+        // Managed package is missing in this org, return standard options
+        options.add(new Map<String, String>{ 'label' => 'GPT-4o (OpenAI)', 'value' => 'gpt-4o' });
+        options.add(new Map<String, String>{ 'label' => 'Claude 3.5 Sonnet', 'value' => 'claude-3-5-sonnet' });
+        options.add(new Map<String, String>{ 'label' => 'Gemini Pro 1.5', 'value' => 'gemini-1.5-pro' });
         return options;
     }
 

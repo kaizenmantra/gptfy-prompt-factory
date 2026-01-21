@@ -35,9 +35,22 @@ public with sharing class Stage08_PromptAssembly implements IStage {
             List<Object> businessObjectivesRaw = (List<Object>) inputs.get('businessObjectives');
 
             // NEW: Extract Strategic Context from Stage 2
+            // CRITICAL: Use companyIntelligence (actual research) over companyProfile (AI summary)
+            String companyIntelligence = (String) inputs.get('companyIntelligence');
             String companyProfile = (String) inputs.get('companyProfile');
             String strategicInsights = (String) inputs.get('strategicInsights');
             String industryContext = (String) inputs.get('industryContext');
+            
+            // Prefer the actual company research over generic AI summary
+            String effectiveCompanyContext = String.isNotBlank(companyIntelligence) ? companyIntelligence : companyProfile;
+            
+            // Log what company context we're using
+            if (String.isNotBlank(companyIntelligence)) {
+                String preview = companyIntelligence.length() > 100 ? companyIntelligence.substring(0, 100) + '...' : companyIntelligence;
+                result.queueInfo(runId, STAGE_NUMBER, 'Using company research: ' + preview);
+            } else if (String.isNotBlank(companyProfile)) {
+                result.queueInfo(runId, STAGE_NUMBER, 'Using company profile (no direct research available)');
+            }
 
             result.queueInfo(runId, STAGE_NUMBER, 'Assembling prompt for ' + rootObject);
 
@@ -63,10 +76,10 @@ public with sharing class Stage08_PromptAssembly implements IStage {
                 }
             }
 
-            // Build AI instructions
+            // Build AI instructions with REAL company research
             String aiInstructions = buildAIInstructions(
                 businessContext, targetPersona, businessObjectivesRaw, rootObject,
-                companyProfile, strategicInsights, industryContext);
+                effectiveCompanyContext, strategicInsights, industryContext);
 
             // Build grounding rules
             String groundingRules = buildGroundingRules(rootObject, targetPersona);
@@ -319,6 +332,43 @@ public with sharing class Stage08_PromptAssembly implements IStage {
             instructions += String.join(objectives, ', ') + '\n\n';
         }
 
+        // === CRITICAL: ANALYSIS REQUIREMENTS ===
+        instructions += '=== CRITICAL: ANALYSIS REQUIREMENTS ===\n\n';
+        instructions += 'You are NOT just displaying data - you are providing INTELLIGENT BUSINESS ANALYSIS.\n';
+        instructions += 'The template below contains merge fields that will be replaced with real Salesforce data.\n';
+        instructions += 'Your job is to ANALYZE this data and provide ACTIONABLE INSIGHTS.\n\n';
+        
+        instructions += 'ANALYSIS YOU MUST PERFORM:\n\n';
+        
+        instructions += '1. OPPORTUNITY HEALTH ANALYSIS:\n';
+        instructions += '   - Identify stale opportunities (close dates in the past or soon)\n';
+        instructions += '   - Flag deals stuck in early stages for too long\n';
+        instructions += '   - Calculate total pipeline value and weighted pipeline\n';
+        instructions += '   - Recommend next steps for each opportunity\n\n';
+        
+        instructions += '2. CASE/SUPPORT RISK ANALYSIS:\n';
+        instructions += '   - Flag high-priority open cases that need attention\n';
+        instructions += '   - Identify aging cases (open for extended periods)\n';
+        instructions += '   - Calculate customer satisfaction risk based on case patterns\n';
+        instructions += '   - Recommend resolution priorities\n\n';
+        
+        instructions += '3. ENGAGEMENT PATTERN ANALYSIS:\n';
+        instructions += '   - Identify last contact date and engagement gaps\n';
+        instructions += '   - Flag accounts with no recent activity (going cold)\n';
+        instructions += '   - Analyze contact coverage (do we have the right stakeholders?)\n';
+        instructions += '   - Recommend engagement actions\n\n';
+        
+        instructions += '4. EXECUTIVE SUMMARY:\n';
+        instructions += '   - Provide an overall account health score or assessment\n';
+        instructions += '   - List top 3 priorities for this account\n';
+        instructions += '   - Identify the biggest risk and biggest opportunity\n';
+        instructions += '   - Recommend immediate actions\n\n';
+        
+        instructions += 'OUTPUT STRUCTURE:\n';
+        instructions += 'Your output should include BOTH the templated data AND your analytical sections.\n';
+        instructions += 'Add analysis sections with headers like "Executive Summary", "Key Risks", "Recommended Actions".\n';
+        instructions += 'Do NOT just render tables - add CONTEXT and INTERPRETATION before/after data sections.\n\n';
+        
         instructions += 'The output should be visually stunning, data-rich, and immediately actionable.\n';
         instructions += 'Use ONLY the merge field embeddings provided in the template below. Do not add or modify merge fields.\n';
         instructions += 'Merge fields use triple-brace syntax and will be substituted by GPTfy at runtime.\n';
@@ -340,12 +390,12 @@ public with sharing class Stage08_PromptAssembly implements IStage {
         String rules = '--- GROUNDING RULES ---\n';
         rules += '**Grounding Rules:**\n\n';
 
-        rules += '1. **Accuracy:** Use ONLY data from the provided ' + rootObject + ' record. Never fabricate or assume information.\n';
+        rules += '1. **Accuracy:** Use ONLY data from the provided ' + rootObject + ' record. Never fabricate company names or contact details.\n';
         rules += '2. **Tone:** Maintain a professional, enterprise-appropriate tone for ' + targetPersona + '.\n';
         rules += '3. **Format:** Preserve the HTML structure with inline styles. Do NOT use CSS classes.\n';
         rules += '4. **Consistency:** Use consistent date formats (MM/DD/YYYY), currency formats ($X,XXX), and terminology.\n';
         rules += '5. **Relevance:** Focus on insights that align with the business objectives.\n';
-        rules += '6. **No Speculation:** Base all statements on available data. Do not make predictions.\n';
+        rules += '6. **ANALYZE AND INTERPRET:** Go beyond raw data display. Identify patterns, risks, opportunities, and provide actionable recommendations.\n';
 
         return rules;
     }

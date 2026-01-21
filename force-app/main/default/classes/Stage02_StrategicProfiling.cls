@@ -33,10 +33,19 @@ public with sharing class Stage02_StrategicProfiling implements IStage {
             // Step 1: If company website provided, perform company research
             String companyIntelligence = '';
             if (String.isNotBlank(companyWebsite)) {
-                result.queueInfo(runId, STAGE_NUMBER, 'Researching company: ' + companyWebsite);
+                result.queueInfo(runId, STAGE_NUMBER, '>>> COMPANY RESEARCH: Starting research for website: ' + companyWebsite);
                 companyIntelligence = performCompanyResearch(companyWebsite, rootObject, runId, result);
+                // DEBUG: Log whether research returned anything
+                if (String.isNotBlank(companyIntelligence)) {
+                    result.queueInfo(runId, STAGE_NUMBER, '>>> COMPANY RESEARCH: Received ' + companyIntelligence.length() + ' chars of intelligence');
+                    // Log first 300 chars to see what was returned
+                    String preview = companyIntelligence.length() > 300 ? companyIntelligence.substring(0, 300) : companyIntelligence;
+                    result.queueInfo(runId, STAGE_NUMBER, '>>> COMPANY RESEARCH PREVIEW: ' + preview);
+                } else {
+                    result.queueWarning(runId, STAGE_NUMBER, '>>> COMPANY RESEARCH: Returned EMPTY - this is the bug!');
+                }
             } else {
-                result.queueInfo(runId, STAGE_NUMBER, 'No company website provided, skipping company research');
+                result.queueWarning(runId, STAGE_NUMBER, '>>> COMPANY WEBSITE IS BLANK - skipping company research. This explains generic output!');
             }
 
             // Step 2: Build enhanced profiling prompt with company context
@@ -58,7 +67,11 @@ public with sharing class Stage02_StrategicProfiling implements IStage {
             Map<String, Object> profilingResult = parseProfilingResponse(aiResponse.content);
 
             // Build outputs
-            result.outputs.put('targetPersona', profilingResult.get('targetPersona'));
+            String targetPersona = (String) profilingResult.get('targetPersona');
+            String companyProfile = (String) profilingResult.get('companyProfile');
+            String industryContext = (String) profilingResult.get('industryContext');
+            
+            result.outputs.put('targetPersona', targetPersona);
             result.outputs.put('businessObjectives', profilingResult.get('businessObjectives'));
             result.outputs.put('keyMetrics', profilingResult.get('keyMetrics'));
             result.outputs.put('audienceLevel', profilingResult.get('audienceLevel'));
@@ -67,9 +80,53 @@ public with sharing class Stage02_StrategicProfiling implements IStage {
 
             // Store company intelligence for downstream stages
             result.outputs.put('companyIntelligence', companyIntelligence);
-            result.outputs.put('companyProfile', profilingResult.get('companyProfile'));
-            result.outputs.put('industryContext', profilingResult.get('industryContext'));
-            result.outputs.put('strategicInsights', profilingResult.get('strategicInsights'));
+            result.outputs.put('companyProfile', companyProfile);
+            result.outputs.put('industryContext', industryContext);
+            
+            // Flatten strategicInsights list to string for easier consumption
+            Object insightsObj = profilingResult.get('strategicInsights');
+            String insightsStr = '';
+            if (insightsObj instanceof List<Object>) {
+                List<String> insightsList = new List<String>();
+                for (Object item : (List<Object>) insightsObj) {
+                    insightsList.add('- ' + String.valueOf(item));
+                }
+                insightsStr = String.join(insightsList, '\n');
+            }
+            result.outputs.put('strategicInsights', insightsStr);
+
+            // === OBSERVABILITY LOGGING ===
+            // Log company research summary for troubleshooting
+            if (String.isNotBlank(companyIntelligence)) {
+                String intelligenceSummary = companyIntelligence.length() > 200 
+                    ? companyIntelligence.substring(0, 200) + '...' 
+                    : companyIntelligence;
+                result.queueInfo(runId, STAGE_NUMBER, 'Company Research: ' + intelligenceSummary);
+            }
+            
+            // Log extracted profile
+            if (String.isNotBlank(companyProfile)) {
+                String profileSummary = companyProfile.length() > 150 
+                    ? companyProfile.substring(0, 150) + '...' 
+                    : companyProfile;
+                result.queueInfo(runId, STAGE_NUMBER, 'Company Profile: ' + profileSummary);
+            }
+            
+            // Log industry context
+            if (String.isNotBlank(industryContext)) {
+                String industrySummary = industryContext.length() > 150 
+                    ? industryContext.substring(0, 150) + '...' 
+                    : industryContext;
+                result.queueInfo(runId, STAGE_NUMBER, 'Industry Context: ' + industrySummary);
+            }
+            
+            // Log strategic insights
+            if (String.isNotBlank(insightsStr)) {
+                result.queueInfo(runId, STAGE_NUMBER, 'Strategic Insights: ' + insightsStr);
+            }
+            
+            // Log target persona
+            result.queueInfo(runId, STAGE_NUMBER, 'Target Persona: ' + targetPersona);
 
             // Pass through inputs
             result.outputs.put('rootObject', rootObject);
@@ -80,8 +137,7 @@ public with sharing class Stage02_StrategicProfiling implements IStage {
             result.outputs.put('companyWebsite', companyWebsite);
 
             result.markCompleted();
-            result.queueInfo(runId, STAGE_NUMBER,
-                'Strategic profiling completed. Persona: ' + profilingResult.get('targetPersona'));
+            result.queueInfo(runId, STAGE_NUMBER, 'Strategic profiling completed successfully');
 
         } catch (Exception e) {
             String errorMsg = 'Failed to complete strategic profiling: ' + e.getMessage();
@@ -104,35 +160,70 @@ public with sharing class Stage02_StrategicProfiling implements IStage {
         // Extract company name from website if needed
         String companyName = extractCompanyName(companyWebsite);
         
-        String researchPrompt = 'You are a business intelligence analyst. Research and provide detailed information about this company.\n\n' +
-            'COMPANY WEBSITE: ' + companyWebsite + '\n' +
-            'COMPANY NAME: ' + companyName + '\n\n' +
-            'RESEARCH THE FOLLOWING:\n\n' +
-            '1. COMPANY OVERVIEW:\n' +
-            '   - What does this company do?\n' +
-            '   - What industry/sector are they in?\n' +
-            '   - What is their market position?\n' +
-            '   - Company size (if known)\n\n' +
-            '2. PRODUCTS & SERVICES:\n' +
-            '   - What are their main products/services?\n' +
-            '   - What solutions do they offer?\n' +
-            '   - Who are their target customers?\n\n' +
-            '3. BUSINESS MODEL:\n' +
-            '   - How do they generate revenue?\n' +
-            '   - What is their go-to-market strategy?\n' +
-            '   - Key differentiators from competitors?\n\n' +
-            '4. STRATEGIC CONTEXT (for ' + rootObject + ' data):\n' +
-            '   - What would be relevant insights about their ' + rootObject + ' relationships?\n' +
-            '   - What business challenges might they face?\n' +
-            '   - What opportunities could AI-generated insights highlight?\n\n' +
-            'Provide a comprehensive but concise summary (500-800 words) that can be used to enrich ' +
-            'AI-generated content about their ' + rootObject + ' records. Focus on actionable business context.\n\n' +
-            'Return ONLY the research summary as plain text, no JSON formatting.';
+        String researchPrompt = 'You are a senior industry analyst, enterprise sales strategist, and customer support domain expert.\n\n' +
+            'Your task is to create a **rich, reusable industry and company profile** for the organization represented by the following website:\n\n' +
+            '**' + companyWebsite + '** (' + companyName + ')\n\n' +
+            'The website is provided **only to uniquely identify the company**.\n' +
+            'You may and should use **broader public knowledge, industry norms, and reasonable inference** to enrich your analysis. ' +
+            'Clearly distinguish factual information from informed inference when appropriate.\n\n' +
+            'The output will be used as **upstream context** for:\n' +
+            '* Account 360 summaries\n' +
+            '* Deal coaching and opportunity analysis\n' +
+            '* Customer sentiment analysis\n' +
+            '* Sales, support, and operations enablement\n\n' +
+            'Prioritize **accuracy, industry-native language, and go-to-market realism**. Avoid generic descriptions.\n\n' +
+            '--- YOUR OUTPUT MUST COVER THESE 10 SECTIONS ---\n\n' +
+            '## 1. Industry Context\n' +
+            '* Primary industry and sub-industries\n' +
+            '* Regulatory environment and constraints (if applicable)\n' +
+            '* Industry dynamics that materially affect sales, support, and customer relationships\n' +
+            '* Common pressures, risks, and priorities in this industry\n\n' +
+            '## 2. Company Overview & Business Model\n' +
+            '* What type of company this is and how it operates\n' +
+            '* Core value propositions\n' +
+            '* How the company generates revenue\n' +
+            '* How trust, risk, or compliance factor into the business (if relevant)\n\n' +
+            '## 3. Lines of Business & Offerings\n' +
+            '* Major lines of business or divisions\n' +
+            '* Key products and services per line\n' +
+            '* Differences across consumer, commercial, and enterprise offerings (if applicable)\n' +
+            '* Which offerings are relationship-driven vs. transactional\n\n' +
+            '## 4. Customers & Segmentation\n' +
+            '* Who the company sells to\n' +
+            '* B2B, B2C, B2B2C, or hybrid (explain)\n' +
+            '* Primary customer segments and personas\n' +
+            '* How customers are grouped internally (e.g., retail, SMB, enterprise, institutional)\n\n' +
+            '## 5. Go-To-Market & Sales Motion\n' +
+            '* How the company sells (Direct, Digital, Field, Partners/Channels)\n' +
+            '* Typical sales motion by segment (simple vs. consultative vs. long-cycle)\n' +
+            '* Role of relationships vs. automation\n\n' +
+            '## 6. Customer-Facing Roles & Terminology\n' +
+            '* What the company calls Customers (e.g., clients, members, policyholders)\n' +
+            '* What the company calls Sales roles (e.g., relationship managers, account executives)\n' +
+            '* Differences in terminology by segment\n\n' +
+            '## 7. Organizational Model (High-Level)\n' +
+            '* How the organization is structured (product, segment, geo)\n' +
+            '* Separation or integration between sales, service, and operations\n\n' +
+            '## 8. Industry-Specific Language & Parlance\n' +
+            '* Common terms and phrases used in this industry\n' +
+            '* Concepts that are core to how this company thinks and communicates\n' +
+            '* Words that should be used—or avoided—when engaging this company\n\n' +
+            '## 9. Buying & Support Dynamics\n' +
+            '* Likely buyer roles and influencers\n' +
+            '* What matters most in purchasing and renewal decisions\n' +
+            '* Common customer concerns, objections, or support needs\n\n' +
+            '## 10. Enablement & Prompting Guidance\n' +
+            '* How downstream AI systems should speak to this company\n' +
+            '* Guidance for generating Account 360s and Executive Summaries\n\n' +
+            '--- OUTPUT REQUIREMENTS ---\n' +
+            '* Structured, scannable, and reusable\n' +
+            '* Bullet points preferred\n' +
+            '* Return ONLY the profile as plain text (markdown allowed).';
 
         result.queueDebug(runId, STAGE_NUMBER, 'Calling AI for company research: ' + companyName);
 
-        // Use slightly higher temperature for creative research synthesis
-        AIServiceClient.AIResponse researchResponse = AIServiceClient.callAI(null, researchPrompt, 2048, 0.8);
+        // Use lower temperature for more factual recall
+        AIServiceClient.AIResponse researchResponse = AIServiceClient.callAI(null, researchPrompt, 2048, 0.3);
 
         if (!researchResponse.success) {
             result.queueWarning(runId, STAGE_NUMBER, 
@@ -201,6 +292,11 @@ public with sharing class Stage02_StrategicProfiling implements IStage {
         prompt += '=== YOUR TASK ===\n';
         prompt += 'Analyze the business context and company intelligence to create a comprehensive profile.\n\n';
         
+        prompt += 'CRITICAL RULE: DO NOT SUMMARIZE INTO GENERIC TEXT.\n';
+        prompt += 'If the Company Intelligence above identifies a specific company (e.g., Wells Fargo), you MUST use that specific name and industry details in your output.\n';
+        prompt += 'Never write "The company operates in a customer-focused industry".\n';
+        prompt += 'Instead write "Wells Fargo operates in Retail Banking and Commercial Lending".\n\n';
+        
         prompt += 'EXTRACT THE FOLLOWING:\n\n';
         
         prompt += '1. TARGET PERSONA:\n';
@@ -218,13 +314,14 @@ public with sharing class Stage02_StrategicProfiling implements IStage {
         prompt += '4. AUDIENCE LEVEL:\n';
         prompt += '   - Technical expertise level (Executive, Manager, Practitioner)\n\n';
         
-        prompt += '5. COMPANY PROFILE (if company info available):\n';
-        prompt += '   - Brief summary of company, products, and market\n';
-        prompt += '   - How their business model relates to the ' + rootObject + ' data\n\n';
+        prompt += '5. COMPANY PROFILE:\n';
+        prompt += '   - STRICT REQUIREMENT: Copy the specific industry and product details from the Company Intelligence above.\n';
+        prompt += '   - Do NOT generalize. If it says "Medicare Advantage", use that exact term.\n';
+        prompt += '   - Name the specific industry (e.g., "Health Insurance", "Retail Banking").\n\n';
         
         prompt += '6. INDUSTRY CONTEXT:\n';
-        prompt += '   - Relevant industry terminology and best practices\n';
-        prompt += '   - Common challenges and opportunities in this space\n\n';
+        prompt += '   - STRICT REQUIREMENT: Use specific terminology (e.g., "claims", "underwriting", "deposits", "supply chain").\n';
+        prompt += '   - Avoid generic terms like "customer engagement" if a more specific term exists (e.g., "patient enrollment").\n\n';
         
         prompt += '7. STRATEGIC INSIGHTS:\n';
         prompt += '   - What kind of AI-generated insights would be most valuable?\n';

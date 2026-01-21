@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
-    <fullName>Company_Website__c</fullName>
+    <fullName>Company_URL__c</fullName>
     <description>Website URL of the company/customer being analyzed. Used for company research to enrich prompt context with business intelligence about the target organization.</description>
     <externalId>false</externalId>
     <label>Company Website</label>
