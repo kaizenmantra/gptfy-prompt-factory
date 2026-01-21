@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Persona_Fit_Range</fullName>
+    <active>true</active>
+    <description>Ensures Persona Fit score is between 1 and 10</description>
+    <errorConditionFormula>AND(
+    NOT(ISBLANK(Persona_Fit__c)),
+    OR(
+        Persona_Fit__c &lt; 1,
+        Persona_Fit__c &gt; 10
+    )
+)</errorConditionFormula>
+    <errorDisplayField>Persona_Fit__c</errorDisplayField>
+    <errorMessage>Persona Fit score must be between 1 and 10</errorMessage>
+</ValidationRule>

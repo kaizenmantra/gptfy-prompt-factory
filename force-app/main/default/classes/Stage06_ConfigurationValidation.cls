@@ -1,0 +1,339 @@
+/**
+ * @description Stage 6: Configuration Validation
+ * Validates all selected objects and fields are accessible, checks CRUD and FLS permissions,
+ * and verifies relationship fields exist
+ */
+public with sharing class Stage06_ConfigurationValidation implements IStage {
+
+    private static final Integer STAGE_NUMBER = 6;
+
+    /**
+     * @description Wrapper for validation result details
+     */
+    public class ValidationItem {
+        @AuraEnabled public String category;
+        @AuraEnabled public String item;
+        @AuraEnabled public Boolean passed;
+        @AuraEnabled public String message;
+
+        public ValidationItem(String category, String item, Boolean passed, String message) {
+            this.category = category;
+            this.item = item;
+            this.passed = passed;
+            this.message = message;
+        }
+    }
+
+    /**
+     * @description Executes Stage 6: Configuration Validation
+     * @param runId ID of the PF_Run__c record
+     * @param inputs Map containing selectedFields and objects from previous stages
+     * @return StageResult with validation checklist in outputs
+     */
+    public StageResult execute(Id runId, Map<String, Object> inputs) {
+        StageResult result = new StageResult('Stage 6: Configuration Validation');
+        // Don't store inputs - causes stack overflow during serialization
+        // result.inputs = inputs;
+
+        try {
+            PromptFactoryLogger.info(runId, STAGE_NUMBER, 'Starting configuration validation');
+
+            // Extract inputs
+            Map<String, Object> selectedFieldsRaw = (Map<String, Object>) inputs.get('selectedFields');
+            if (selectedFieldsRaw == null || selectedFieldsRaw.isEmpty()) {
+                throw new StageException('No selected fields provided for validation');
+            }
+
+            // Convert to typed map
+            Map<String, List<String>> selectedFields = convertSelectedFieldsMap(selectedFieldsRaw);
+
+            PromptFactoryLogger.info(runId, STAGE_NUMBER,
+                'Validating configuration for ' + selectedFields.size() + ' objects');
+
+            // Perform validation
+            List<ValidationItem> validationChecklist = performValidation(selectedFields, runId);
+
+            // Analyze validation results
+            Integer totalChecks = validationChecklist.size();
+            Integer passedChecks = 0;
+            Integer failedChecks = 0;
+            List<String> failures = new List<String>();
+
+            for (ValidationItem item : validationChecklist) {
+                if (item.passed) {
+                    passedChecks++;
+                } else {
+                    failedChecks++;
+                    failures.add(item.category + ' - ' + item.item + ': ' + item.message);
+                }
+            }
+
+            PromptFactoryLogger.info(runId, STAGE_NUMBER,
+                'Validation complete: ' + passedChecks + '/' + totalChecks + ' checks passed');
+
+            // Log failures if any
+            if (!failures.isEmpty()) {
+                for (String failure : failures) {
+                    PromptFactoryLogger.warning(runId, STAGE_NUMBER, failure);
+                }
+            }
+
+            // Build validation summary
+            String validationSummary = buildValidationSummary(passedChecks, failedChecks, totalChecks);
+
+            // Build outputs
+            result.outputs.put('validationChecklist', validationChecklist);
+            result.outputs.put('totalChecks', totalChecks);
+            result.outputs.put('passedChecks', passedChecks);
+            result.outputs.put('failedChecks', failedChecks);
+            result.outputs.put('validationSummary', validationSummary);
+            result.outputs.put('allValidationsPassed', failedChecks == 0);
+
+            // Pass through critical inputs (avoid large data to prevent serialization issues)
+            result.outputs.put('rootObject', inputs.get('rootObject'));
+            result.outputs.put('businessContext', inputs.get('businessContext'));
+            result.outputs.put('targetPersona', inputs.get('targetPersona'));
+            result.outputs.put('businessObjectives', inputs.get('businessObjectives'));
+            // recordData omitted - causes stack overflow during serialization
+            result.outputs.put('objectsWithData', inputs.get('objectsWithData'));
+            result.outputs.put('selectedFields', selectedFields);
+            result.outputs.put('dataAvailability', inputs.get('dataAvailability'));
+            result.outputs.put('promptName', inputs.get('promptName'));
+            result.outputs.put('sampleRecordId', inputs.get('sampleRecordId'));
+            result.outputs.put('outputFormat', inputs.get('outputFormat'));
+            // Pass through selectedGrandchildren for DCM creation in Stage 8/9
+            result.outputs.put('selectedGrandchildren', inputs.get('selectedGrandchildren'));
+            // Pass through selectedObjects - needed for DCM creation even if objects have no data
+            // Pass through enriched context from Stage 2 for downstream stages
+            result.outputs.put('companyIntelligence', inputs.get('companyIntelligence'));
+            result.outputs.put('industryContext', inputs.get('industryContext'));
+            result.outputs.put('companyProfile', inputs.get('companyProfile'));
+            result.outputs.put('strategicInsights', inputs.get('strategicInsights'));
+            result.outputs.put('companyWebsite', inputs.get('companyWebsite'));
+            result.outputs.put('selectedObjects', inputs.get('selectedObjects'));
+
+            // Mark as completed (with warning if there are failures)
+            if (failedChecks > 0) {
+                result.markWarning(failedChecks + ' validation checks failed');
+            } else {
+                result.markCompleted();
+            }
+
+            PromptFactoryLogger.info(runId, STAGE_NUMBER,
+                'Configuration validation completed');
+
+        } catch (Exception e) {
+            String errorMsg = 'Failed to complete configuration validation: ' + e.getMessage();
+            result.markFailed(errorMsg);
+            PromptFactoryLogger.logException(runId, STAGE_NUMBER, 'Stage execution failed', e);
+        }
+
+        return result;
+    }
+
+    /**
+     * @description Converts raw map to typed selectedFields map
+     * @param selectedFieldsRaw Raw map from inputs
+     * @return Typed map of object name to field list
+     */
+    private Map<String, List<String>> convertSelectedFieldsMap(Map<String, Object> selectedFieldsRaw) {
+        Map<String, List<String>> selectedFields = new Map<String, List<String>>();
+
+        for (String objectName : selectedFieldsRaw.keySet()) {
+            List<Object> fieldsRaw = (List<Object>) selectedFieldsRaw.get(objectName);
+            List<String> fields = new List<String>();
+
+            for (Object field : fieldsRaw) {
+                fields.add(String.valueOf(field));
+            }
+
+            selectedFields.put(objectName, fields);
+        }
+
+        return selectedFields;
+    }
+
+    /**
+     * @description Performs comprehensive validation of objects and fields
+     * @param selectedFields Map of object to field list
+     * @param runId Run ID for logging
+     * @return List of validation items with results
+     */
+    private List<ValidationItem> performValidation(Map<String, List<String>> selectedFields, Id runId) {
+        List<ValidationItem> checklist = new List<ValidationItem>();
+
+        // Validate each object
+        for (String objectName : selectedFields.keySet()) {
+
+            // Check object accessibility
+            checklist.add(validateObjectAccessibility(objectName));
+
+            // Check object CRUD permissions
+            checklist.addAll(validateObjectCRUD(objectName));
+
+            // Check field-level security for each field
+            List<String> fields = selectedFields.get(objectName);
+            for (String fieldName : fields) {
+                checklist.add(validateFieldAccessibility(objectName, fieldName));
+            }
+
+            // Validate relationship fields
+            checklist.addAll(validateRelationshipFields(objectName, fields));
+        }
+
+        return checklist;
+    }
+
+    /**
+     * @description Validates object accessibility and queryability
+     * @param objectName API name of the object
+     * @return ValidationItem for object accessibility
+     */
+    private ValidationItem validateObjectAccessibility(String objectName) {
+        Schema.DescribeSObjectResult describe = SchemaHelper.getObjectDescribe(objectName);
+
+        if (describe == null) {
+            return new ValidationItem('Object Access', objectName, false,
+                'Object does not exist or is not accessible');
+        }
+
+        if (!describe.isAccessible()) {
+            return new ValidationItem('Object Access', objectName, false,
+                'Object is not accessible to current user');
+        }
+
+        if (!describe.isQueryable()) {
+            return new ValidationItem('Object Access', objectName, false,
+                'Object is not queryable');
+        }
+
+        return new ValidationItem('Object Access', objectName, true,
+            'Object is accessible and queryable');
+    }
+
+    /**
+     * @description Validates CRUD permissions on object
+     * @param objectName API name of the object
+     * @return List of ValidationItems for CRUD checks
+     */
+    private List<ValidationItem> validateObjectCRUD(String objectName) {
+        List<ValidationItem> crudChecks = new List<ValidationItem>();
+        Schema.DescribeSObjectResult describe = SchemaHelper.getObjectDescribe(objectName);
+
+        if (describe == null) {
+            return crudChecks; // Already validated in accessibility check
+        }
+
+        // Check Read permission (required)
+        crudChecks.add(new ValidationItem('CRUD Permissions', objectName + '.Read',
+            describe.isAccessible(),
+            describe.isAccessible() ? 'Read permission granted' : 'Read permission denied'));
+
+        // Check Create permission (informational only)
+        crudChecks.add(new ValidationItem('CRUD Permissions', objectName + '.Create',
+            describe.isCreateable(),
+            describe.isCreateable() ? 'Create permission granted' : 'Create permission denied'));
+
+        // Check Update permission (informational only)
+        crudChecks.add(new ValidationItem('CRUD Permissions', objectName + '.Update',
+            describe.isUpdateable(),
+            describe.isUpdateable() ? 'Update permission granted' : 'Update permission denied'));
+
+        return crudChecks;
+    }
+
+    /**
+     * @description Validates field-level security for a field
+     * @param objectName API name of the object
+     * @param fieldName API name of the field
+     * @return ValidationItem for field accessibility
+     */
+    private ValidationItem validateFieldAccessibility(String objectName, String fieldName) {
+        Schema.SObjectType objectType = Schema.getGlobalDescribe().get(objectName);
+
+        if (objectType == null) {
+            return new ValidationItem('Field Access', objectName + '.' + fieldName, false,
+                'Object does not exist');
+        }
+
+        Schema.SObjectField field = objectType.getDescribe().fields.getMap().get(fieldName);
+
+        if (field == null) {
+            return new ValidationItem('Field Access', objectName + '.' + fieldName, false,
+                'Field does not exist');
+        }
+
+        Schema.DescribeFieldResult fieldDescribe = field.getDescribe();
+
+        if (!fieldDescribe.isAccessible()) {
+            return new ValidationItem('Field Access', objectName + '.' + fieldName, false,
+                'Field is not accessible to current user');
+        }
+
+        return new ValidationItem('Field Access', objectName + '.' + fieldName, true,
+            'Field is accessible');
+    }
+
+    /**
+     * @description Validates relationship fields exist and are accessible
+     * @param objectName API name of the object
+     * @param fields List of field names to check
+     * @return List of ValidationItems for relationship fields
+     */
+    private List<ValidationItem> validateRelationshipFields(String objectName, List<String> fields) {
+        List<ValidationItem> relationshipChecks = new List<ValidationItem>();
+        Schema.DescribeSObjectResult describe = SchemaHelper.getObjectDescribe(objectName);
+
+        if (describe == null) {
+            return relationshipChecks;
+        }
+
+        Map<String, Schema.SObjectField> fieldMap = describe.fields.getMap();
+
+        for (String fieldName : fields) {
+            Schema.SObjectField field = fieldMap.get(fieldName);
+
+            if (field != null) {
+                Schema.DescribeFieldResult fieldDescribe = field.getDescribe();
+
+                // Check if it's a relationship field
+                if (fieldDescribe.getType() == Schema.DisplayType.REFERENCE) {
+                    List<Schema.sObjectType> referenceTypes = fieldDescribe.getReferenceTo();
+
+                    if (!referenceTypes.isEmpty()) {
+                        String referencedObject = referenceTypes[0].getDescribe().getName();
+                        Boolean referenceAccessible = SchemaHelper.isObjectAccessible(referencedObject);
+
+                        relationshipChecks.add(new ValidationItem('Relationship',
+                            objectName + '.' + fieldName + ' -> ' + referencedObject,
+                            referenceAccessible,
+                            referenceAccessible ? 'Referenced object is accessible' :
+                                                 'Referenced object is not accessible'));
+                    }
+                }
+            }
+        }
+
+        return relationshipChecks;
+    }
+
+    /**
+     * @description Builds a human-readable validation summary
+     * @param passed Number of checks passed
+     * @param failed Number of checks failed
+     * @param total Total number of checks
+     * @return Formatted summary string
+     */
+    private String buildValidationSummary(Integer passed, Integer failed, Integer total) {
+        String summary = passed + ' of ' + total + ' validation checks passed';
+        if (failed > 0) {
+            summary += ' (' + failed + ' failed)';
+        }
+        return summary;
+    }
+
+    /**
+     * @description Custom exception for stage errors
+     */
+    public class StageException extends Exception {}
+}

@@ -1,0 +1,170 @@
+{
+  "version": "2.0",
+  "description": "GPTfy Output Validation Rules for Prompt Factory",
+  "lastUpdated": "2026-01-11",
+  "context": "GPTfy renders HTML in Salesforce Lightning components which do not support <style> blocks, CSS classes, or <script> tags",
+
+  "criticalRules": {
+    "rule1_singleLine": {
+      "name": "Single-Line Output",
+      "description": "The entire HTML output must be on a single line with no newline characters",
+      "severity": "ERROR",
+      "reason": "GPTfy stores prompt output as a single field value. Line breaks cause parsing issues",
+      "checkPattern": "\\n|\\r",
+      "mustNotMatch": true
+    },
+    "rule2_noStyleBlocks": {
+      "name": "No <style> Blocks",
+      "description": "Output must NOT contain any <style> tags",
+      "severity": "ERROR",
+      "reason": "Lightning components strip or ignore <style> blocks. Only inline styles are supported",
+      "checkPattern": "<style[^>]*>",
+      "mustNotMatch": true
+    },
+    "rule3_noCssClasses": {
+      "name": "No CSS Classes",
+      "description": "Output must NOT use class= attributes",
+      "severity": "ERROR",
+      "reason": "Without a <style> block, CSS classes have no definitions",
+      "checkPattern": "class\\s*=\\s*['\"]",
+      "mustNotMatch": true
+    },
+    "rule4_noScriptTags": {
+      "name": "No <script> Tags",
+      "description": "Output must NOT contain any <script> tags",
+      "severity": "ERROR",
+      "reason": "Scripts are a security risk and are stripped by Salesforce Lightning",
+      "checkPattern": "<script",
+      "mustNotMatch": true
+    },
+    "rule5_noMarkdownWrappers": {
+      "name": "No Markdown Wrappers",
+      "description": "Output must NOT contain markdown code block markers",
+      "severity": "ERROR",
+      "reason": "LLMs sometimes wrap output in ``` markers which should not appear in final HTML",
+      "checkPattern": "```",
+      "mustNotMatch": true
+    },
+    "rule6_startsWithDivStyle": {
+      "name": "Starts with <div style=",
+      "description": "Output must begin with a <div style= tag",
+      "severity": "ERROR",
+      "reason": "Ensures proper container structure and confirms inline-styles-only approach",
+      "checkPattern": "^<div style=\"",
+      "mustMatch": true
+    },
+    "rule7_endsWithDiv": {
+      "name": "Ends with </div>",
+      "description": "Output must end with a closing </div> tag",
+      "severity": "ERROR",
+      "reason": "Ensures the HTML structure is complete and properly closed",
+      "checkPattern": "</div>$",
+      "mustMatch": true
+    }
+  },
+
+  "placeholderRules": {
+    "rule8_noPlaceholders": {
+      "name": "No Placeholders",
+      "description": "Output must not contain placeholder text",
+      "severity": "ERROR",
+      "patterns": [
+        {"pattern": "\\[X\\]", "description": "Generic [X] placeholder"},
+        {"pattern": "\\[x\\]", "description": "Generic [x] placeholder"},
+        {"pattern": "\\{[a-zA-Z_]+\\}", "description": "Single-brace {placeholder} patterns"},
+        {"pattern": "\\{\\{\\{[^}]+\\}\\}\\}", "description": "Unsubstituted merge fields"},
+        {"pattern": "TBD", "description": "TBD marker"},
+        {"pattern": "TODO", "description": "TODO marker"},
+        {"pattern": ">null<", "description": "Null value displayed"},
+        {"pattern": ">undefined<", "description": "Undefined value displayed"}
+      ]
+    }
+  },
+
+  "securityRules": {
+    "rule9_noEventHandlers": {
+      "name": "No Event Handlers",
+      "description": "Output must not contain inline event handlers",
+      "severity": "ERROR",
+      "patterns": ["onclick", "onerror", "onload", "onmouseover", "onfocus", "onblur", "onsubmit", "onchange", "onkeyup", "onkeydown"],
+      "reason": "XSS risk - event handlers can execute arbitrary JavaScript"
+    },
+    "rule10_noJavascriptUrls": {
+      "name": "No javascript: URLs",
+      "description": "Output must not contain javascript: protocol URLs",
+      "severity": "ERROR",
+      "checkPattern": "javascript:",
+      "reason": "XSS risk"
+    },
+    "rule11_noIframeEmbed": {
+      "name": "No iframe/object/embed Tags",
+      "description": "Output must not contain iframe, object, embed, or frame tags",
+      "severity": "ERROR",
+      "checkPattern": "<(iframe|object|embed|frame)\\b",
+      "reason": "Security risk - can load external content"
+    },
+    "rule12_noDataUrls": {
+      "name": "No data: URLs",
+      "description": "Output must not contain data:text/html URLs",
+      "severity": "ERROR",
+      "checkPattern": "data:text/html",
+      "reason": "Can be used for XSS"
+    }
+  },
+
+  "qualityRules": {
+    "minStyleCount": {
+      "name": "Minimum Inline Styles",
+      "description": "Output should have at least 10 inline style attributes for proper styling",
+      "severity": "WARNING",
+      "minCount": 10
+    },
+    "minLength": {
+      "name": "Minimum Content Length",
+      "description": "Output should be at least 500 characters",
+      "severity": "WARNING",
+      "minLength": 500
+    },
+    "noEmojis": {
+      "name": "No Emojis",
+      "description": "Output should not contain emoji characters (unprofessional in business context)",
+      "severity": "WARNING"
+    },
+    "noAbsoluteDates": {
+      "name": "No Absolute Dates in Recommendations",
+      "description": "Recommendations should use relative timeframes, not absolute dates",
+      "severity": "WARNING",
+      "checkPattern": "(January|February|March|April|May|June|July|August|September|October|November|December) [0-9]{1,2}, [0-9]{4}",
+      "reason": "Absolute dates in recommendations become stale quickly"
+    }
+  },
+
+  "contentQualityDimensions": {
+    "actionableInsights": {
+      "name": "Actionable Insights",
+      "description": "Tell the user what to DO, not just what IS",
+      "required": true,
+      "lookFor": ["recommend", "suggest", "action", "next step", "priority", "focus on", "consider"]
+    },
+    "industryContext": {
+      "name": "Industry/Customer Context",
+      "description": "Tailor language to the specific industry",
+      "required": true
+    },
+    "businessValue": {
+      "name": "Business Value",
+      "description": "Answer the 'so what?' question - connect data to business outcomes",
+      "required": true
+    },
+    "dataUtilization": {
+      "name": "Data Utilization",
+      "description": "Use ALL relevant available data from DCM",
+      "required": true
+    },
+    "analyticalDepth": {
+      "name": "Analytical Depth",
+      "description": "Go beyond surface-level data display - include scoring, health indicators",
+      "required": true
+    }
+  }
+}

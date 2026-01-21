@@ -1,0 +1,115 @@
+{
+  "version": "2.0",
+  "description": "GPTfy Merge Field Rules for Prompt Factory",
+  "lastUpdated": "2026-01-11",
+
+  "syntaxRules": {
+    "rule1_tripleBraces": {
+      "name": "Always Use Triple Braces",
+      "description": "Triple braces {{{...}}} output raw/unescaped values. Double braces {{...}} HTML-escape the output.",
+      "correct": "{{{Description}}}",
+      "incorrect": "{{Description}}",
+      "reason": "AI prompts must use triple braces to preserve data integrity (special chars like & won't become &amp;)"
+    },
+    "rule2_primaryObjectNoPrefix": {
+      "name": "Primary Object Fields - No Prefix",
+      "description": "For the primary/root object, use field names WITHOUT object prefix.",
+      "correct": ["{{{Name}}}", "{{{Industry}}}", "{{{AnnualRevenue}}}"],
+      "incorrect": ["{{{Account.Name}}}", "{{{Lead.FirstName}}}"],
+      "reason": "GPTfy provides the primary object in root context"
+    },
+    "rule3_relationshipTraversal": {
+      "name": "Relationship Traversal - Dot Notation",
+      "description": "Use dot notation to traverse lookup/relationship fields from the primary object.",
+      "maxDepth": 5,
+      "correct": ["{{{Owner.Name}}}", "{{{Contact.FirstName}}}", "{{{CreatedBy.CompanyName}}}"],
+      "incorrect": ["{{{Account.Owner.Name}}}"],
+      "reason": "Don't prefix with primary object when traversing relationships"
+    },
+    "rule4_childCollections": {
+      "name": "Child Collections - Use Plural Relationship Name",
+      "description": "Reference child collections using the PLURAL relationship name.",
+      "commonRelationships": {
+        "Contact": "Contacts",
+        "Opportunity": "Opportunities",
+        "Case": "Cases",
+        "Task": "Tasks",
+        "Event": "Events",
+        "CaseComment": "CaseComments",
+        "OpportunityLineItem": "OpportunityLineItems"
+      },
+      "iterationSyntax": "{{#Contacts}}...{{/Contacts}}",
+      "emptySyntax": "{{^Contacts}}No contacts{{/Contacts}}"
+    },
+    "rule5_noExamplesInDocs": {
+      "name": "No Example Merge Fields in Documentation",
+      "description": "NEVER include {{{...}}} syntax in documentation/narrative sections of prompt text.",
+      "correct": "Use Name field for account name",
+      "incorrect": "Use {{{Account.Name}}} for account name",
+      "reason": "GPTfy validates ALL {{{...}}} patterns - docs cause validation errors"
+    },
+    "rule6_apiNameRequirements": {
+      "name": "API Name Requirements",
+      "description": "Use correct API name suffixes and case-sensitive names.",
+      "customFields": "__c suffix (e.g., MyField__c)",
+      "customRelationships": "__r suffix (e.g., MyRelationship__r.Name)",
+      "managedPackages": "Include namespace (e.g., NS__Field__c)",
+      "caseSensitive": true
+    }
+  },
+
+  "validMergeFieldPatterns": {
+    "primaryField": "^\\{\\{\\{[A-Za-z][A-Za-z0-9_]*(__c)?\\}\\}\\}$",
+    "lookupField": "^\\{\\{\\{[A-Za-z][A-Za-z0-9_]*(__r)?\\.([A-Za-z][A-Za-z0-9_]*(__c)?)(\\.[A-Za-z][A-Za-z0-9_]*(__c)?)*\\}\\}\\}$",
+    "childIteration": "^\\{\\{#[A-Za-z][A-Za-z0-9_]*\\}\\}",
+    "childClose": "^\\{\\{/[A-Za-z][A-Za-z0-9_]*\\}\\}",
+    "emptyCheck": "^\\{\\{\\^[A-Za-z][A-Za-z0-9_]*\\}\\}"
+  },
+
+  "forbiddenPatterns": [
+    {"pattern": "\\{\\{\\{Account\\.Name\\}\\}\\}", "reason": "Don't prefix primary object fields"},
+    {"pattern": "\\{\\{\\{Lead\\.FirstName\\}\\}\\}", "reason": "Don't prefix primary object fields"},
+    {"pattern": "\\{\\{\\{Case\\.IsClosed\\}\\}\\}", "reason": "Don't prefix primary object fields"},
+    {"pattern": "\\{\\{[^#/\\^][^}]*\\}\\}[^}]", "reason": "Double braces (should be triple)"}
+  ],
+
+  "promptTypes": {
+    "Text": {
+      "mergeFields": true,
+      "promptComponents": false,
+      "useCase": "Free-form AI prompts with dynamic field injection"
+    },
+    "JSON": {
+      "mergeFields": false,
+      "promptComponents": true,
+      "useCase": "Structured multi-field responses with auto-update"
+    },
+    "Canvas": {
+      "mergeFields": "via elements",
+      "promptComponents": "via elements",
+      "useCase": "Dashboard-style multi-prompt display"
+    },
+    "Agentic": {
+      "mergeFields": true,
+      "promptComponents": false,
+      "useCase": "AI agent skills with Apex class execution"
+    }
+  },
+
+  "dcmRules": {
+    "hierarchyLevels": {
+      "PRIMARY": 1,
+      "CHILD": 2,
+      "GRANDCHILD": 3
+    },
+    "relationshipNameRequirements": {
+      "mustBePlural": true,
+      "noSpaces": true,
+      "mustMatchSalesforceAPI": true
+    },
+    "noSelfReferencing": true,
+    "externalIdRequired": true,
+    "fieldTypeRequired": true,
+    "validFieldTypes": ["OBJECT", "FIELD"]
+  }
+}

@@ -14,16 +14,16 @@ private with sharing class ChatGPTUtillsTest{
         insert acc;
         Contentversion cv = TestUtility.getContentversion('Test', 'Test', 'Test', true);
         
-        AI_Response_Mapping__c responseMapping = TestUtility.createResponseMapping('TestResponse',true);
+        ccai__AI_Response_Mapping__c responseMapping = TestUtility.createResponseMapping('TestResponse',true);
         
         AI_Response_Mapping_Line__c oResponseMappingLine = new AI_Response_Mapping_Line__c();
-        oResponseMappingLine.AI_Response_Mapping__c = responseMapping.Id;
+        oResponseMappingLine.ccai__AI_Response_Mapping__c = responseMapping.Id;
         oResponseMappingLine.Security_Audit_Field_Name__c = 'Message__c';
         oResponseMappingLine.Mapping_Field_Name__c = 'Name';
         insert oResponseMappingLine;
         
-        AI_Connection__c conn = TestUtility.getConnection('GPTfy', false);
-        conn.AI_Response_Mapping__c = responseMapping.Id;
+        ccai__AI_Connection__c conn = TestUtility.getConnection('GPTfy', false);
+        conn.ccai__AI_Response_Mapping__c = responseMapping.Id;
         insert conn;
         
         TestUtility.insertDataExtraction();
@@ -35,7 +35,7 @@ private with sharing class ChatGPTUtillsTest{
         prompt.Prompt_Command__c = 'Give a sample response.';
         prompt.Grounding_Content__c = 'Only answer what has been asked for.';
         prompt.Grounding_Ethical__c = 'Do not hallucinate.';
-        prompt.AI_Connection__c = conn.Id;
+        prompt.ccai__AI_Connection__c = conn.Id;
         prompt.AI_Data_Extraction_Mapping__c = master.Id;
         prompt.AI_Locale_GPTfy_Console__c = AIConstants.PMT_LOCALE_GPTFY_CONSOLE_COMPANY_DEFAULT;
         prompt.AI_Locale_Automation__c = AIConstants.PMT_LOCALE_AUTOMATION_RECORD_OWNER;
@@ -80,7 +80,7 @@ private with sharing class ChatGPTUtillsTest{
     static void initiateChatGptTest(){
         Account acc = new Account(Name = 'Test Account');
         insert acc;
-        AI_Connection__c conn = [SELECT Id FROM AI_Connection__c LIMIT 1];
+        ccai__AI_Connection__c conn = [SELECT Id FROM ccai__AI_Connection__c LIMIT 1];
         conn.AI_Technology__c = 'OpenAI_ChatGPT';
         update conn;
         AI_Prompt__c pmt = [SELECT Id FROM AI_Prompt__c LIMIT 1];
@@ -102,26 +102,26 @@ private with sharing class ChatGPTUtillsTest{
         Account acc = [Select Id from Account where Name='Test Account22' limit 1];
         Contact con = new Contact(FirstName = 'Test', LastName = 'Test', Email='test@test.com', Description = 'Test 1234', Phone='9876543210', AccountId=acc.Id);
         insert con;
-        AI_Connection__c conn = [SELECT Id FROM AI_Connection__c LIMIT 1];
+        ccai__AI_Connection__c conn = [SELECT Id FROM ccai__AI_Connection__c LIMIT 1];
         conn.AI_Technology__c = 'OpenAI_ChatGPT';
         update conn;
         AI_Prompt__c pmt = [SELECT Id FROM AI_Prompt__c LIMIT 1];
         
-        AI_Prompt_Action__c action = TestUtility.getAIPromptAction(pmt.Id,AIConstants.ACTION_TYPE_UPDATE_FIELD, false);
+        ccai__AI_Prompt_Action__c action = TestUtility.getAIPromptAction(pmt.Id,AIConstants.ACTION_TYPE_UPDATE_FIELD, false);
         action.Field_API_Name__c = 'Name';
         action.Object_Name__c = 'Account';
         insert action;
         
-        AI_Prompt_Action__c action2 = TestUtility.getAIPromptAction(pmt.Id,AIConstants.ACTION_TYPE_UPDATE_FIELD, false);
+        ccai__AI_Prompt_Action__c action2 = TestUtility.getAIPromptAction(pmt.Id,AIConstants.ACTION_TYPE_UPDATE_FIELD, false);
         action2.Field_API_Name__c = 'Owner.FirstName';
         action2.Object_Name__c = 'Account';
         insert action2;
         
-        AI_Prompt_Action__c actionCreateRecord = TestUtility.getAIPromptAction(pmt.Id,AIConstants.ACTION_TYPE_CREATE_RECORD, false);
+        ccai__AI_Prompt_Action__c actionCreateRecord = TestUtility.getAIPromptAction(pmt.Id,AIConstants.ACTION_TYPE_CREATE_RECORD, false);
         actionCreateRecord.Object_Name__c = 'Account';
         insert actionCreateRecord;
         
-        AI_Prompt_Action_Detail__c actionDetails = TestUtility.getAIPromptActionDetail(actionCreateRecord.Id,'Name',AIConstants.ACTION_DETAIL_TYPE_HARDCODED, false);
+        ccai__AI_Prompt_Action_Detail__c actionDetails = TestUtility.getAIPromptActionDetail(actionCreateRecord.Id,'Name',AIConstants.ACTION_DETAIL_TYPE_HARDCODED, false);
         actionDetails.Value__c = 'TestValue';
         insert actionDetails;
         
@@ -142,7 +142,7 @@ private with sharing class ChatGPTUtillsTest{
     static void initiateCohereTest(){
         Account acc = new Account(Name = 'Test Account');
         insert acc;
-        AI_Connection__c conn = [SELECT Id FROM AI_Connection__c LIMIT 1];
+        ccai__AI_Connection__c conn = [SELECT Id FROM ccai__AI_Connection__c LIMIT 1];
         conn.AI_Technology__c = 'Cohere_AI';
         update conn;
         AI_Prompt__c pmt = [SELECT Id FROM AI_Prompt__c LIMIT 1];
@@ -169,7 +169,7 @@ private with sharing class ChatGPTUtillsTest{
         cv = [SELECT Id, ContentDocumentId FROM ContentVersion where Id = :cv.Id];
         
         
-        AI_Connection__c conn = [SELECT Id FROM AI_Connection__c LIMIT 1];
+        ccai__AI_Connection__c conn = [SELECT Id FROM ccai__AI_Connection__c LIMIT 1];
         conn.AI_Technology__c = 'AnyAI_AnyPlatform';
         conn.Model__c = AIConstants.AWS_BEDROCK_MODEL;
         conn.EndPoint_URL__c = '/retrieveAndGenerate';
@@ -195,7 +195,7 @@ private with sharing class ChatGPTUtillsTest{
         Account acc = new Account(Name = 'Test Account');
         insert acc;
         
-        AI_Connection__c conn = [SELECT Id FROM AI_Connection__c LIMIT 1];
+        ccai__AI_Connection__c conn = [SELECT Id FROM ccai__AI_Connection__c LIMIT 1];
         conn.AI_Technology__c = 'AnyAI_AnyPlatform';
         conn.Model__c = AIConstants.AWS_BEDROCK_MODEL;
         //conn.EndPoint_URL__c = '/retrieveAndGenerate';
@@ -220,7 +220,7 @@ private with sharing class ChatGPTUtillsTest{
         Account acc = new Account(Name = 'Test Account');
         insert acc;
         
-        AI_Connection__c conn = [SELECT Id FROM AI_Connection__c LIMIT 1];
+        ccai__AI_Connection__c conn = [SELECT Id FROM ccai__AI_Connection__c LIMIT 1];
         conn.AI_Technology__c = 'AnyAI_AnyPlatform';
         conn.Model__c = AIConstants.AZURE_RAG_GPT_35_TURBO_MODEL;
         //conn.EndPoint_URL__c = '/retrieveAndGenerate';
@@ -259,7 +259,7 @@ private with sharing class ChatGPTUtillsTest{
         cv = [SELECT Id, ContentDocumentId FROM ContentVersion where Id = :cv.Id]; 
 		System.Assert(cv != NULL);
 
-        AI_Connection__c conn = [SELECT Id FROM AI_Connection__c LIMIT 1];
+        ccai__AI_Connection__c conn = [SELECT Id FROM ccai__AI_Connection__c LIMIT 1];
         conn.AI_Technology__c = AIConstants.PRODUCT_NAME;
         conn.Model__c = AIConstants.GPT_4o_MODEL;
         conn.Type__c = 'File';
@@ -304,7 +304,7 @@ private with sharing class ChatGPTUtillsTest{
 
         cv = [SELECT Id, ContentDocumentId FROM ContentVersion where Id = :cv.Id]; 
         
-        AI_Connection__c conn = [SELECT Id FROM AI_Connection__c LIMIT 1];
+        ccai__AI_Connection__c conn = [SELECT Id FROM ccai__AI_Connection__c LIMIT 1];
         conn.AI_Technology__c = AIConstants.PRODUCT_NAME;
         conn.Model__c = AIConstants.GPT_4o_MODEL;
         conn.Type__c = 'File';
@@ -338,7 +338,7 @@ private with sharing class ChatGPTUtillsTest{
 
         cv = [SELECT Id, ContentDocumentId FROM ContentVersion where Id = :cv.Id]; 
         System.Assert(cv != NULL);
-        AI_Connection__c conn = [SELECT Id FROM AI_Connection__c LIMIT 1];
+        ccai__AI_Connection__c conn = [SELECT Id FROM ccai__AI_Connection__c LIMIT 1];
         conn.AI_Technology__c = 'AnyAI_AnyPlatform';
         conn.Model__c = AIConstants.GPT_4o_MODEL;
         conn.Type__c = 'File';
@@ -388,7 +388,7 @@ private with sharing class ChatGPTUtillsTest{
         Account acc = new Account(Name = 'Test Account');
         insert acc;
         
-        AI_Connection__c con = [SELECT Id FROM AI_Connection__c LIMIT 1];
+        ccai__AI_Connection__c con = [SELECT Id FROM ccai__AI_Connection__c LIMIT 1];
         con.Model__c = AIConstants.DAVINCI_MODEL;
         update con;
         
@@ -406,7 +406,7 @@ private with sharing class ChatGPTUtillsTest{
         Account acc = new Account(Name = 'Test Account');
         insert acc;
         
-        AI_Connection__c con = [SELECT Id FROM AI_Connection__c LIMIT 1];
+        ccai__AI_Connection__c con = [SELECT Id FROM ccai__AI_Connection__c LIMIT 1];
         con.Model__c = AIConstants.AWS_BEDROCK_MODEL;
         update con;
         
@@ -424,7 +424,7 @@ private with sharing class ChatGPTUtillsTest{
         Account acc = new Account(Name = 'Test Account');
         insert acc;
         
-        AI_Connection__c con = [SELECT Id FROM AI_Connection__c LIMIT 1];
+        ccai__AI_Connection__c con = [SELECT Id FROM ccai__AI_Connection__c LIMIT 1];
         con.Model__c = AIConstants.TEXT_BISON_001_MODEL;
         update con;
         
@@ -446,7 +446,7 @@ private with sharing class ChatGPTUtillsTest{
         Account acc = new Account(Name = 'Test Account');
         insert acc;
         
-        AI_Connection__c conn = [SELECT Id FROM AI_Connection__c LIMIT 1];
+        ccai__AI_Connection__c conn = [SELECT Id FROM ccai__AI_Connection__c LIMIT 1];
         conn.AI_Technology__c = 'OpenAI_ChatGPT';
         conn.Model__c = AIConstants.DAVINCI_MODEL;
         update conn;
@@ -465,7 +465,7 @@ private with sharing class ChatGPTUtillsTest{
         Account acc = new Account(Name = 'Test Account');
         insert acc;
         
-        AI_Connection__c conn = [SELECT Id FROM AI_Connection__c LIMIT 1];
+        ccai__AI_Connection__c conn = [SELECT Id FROM ccai__AI_Connection__c LIMIT 1];
         conn.AI_Technology__c = 'GPTfy';
         conn.Model__c = AIConstants.X_LARGE_MODEL;
         update conn;
@@ -484,7 +484,7 @@ private with sharing class ChatGPTUtillsTest{
         Account acc = new Account(Name = 'Test Account');
         insert acc;
         
-        AI_Connection__c conn = [SELECT Id FROM AI_Connection__c LIMIT 1];
+        ccai__AI_Connection__c conn = [SELECT Id FROM ccai__AI_Connection__c LIMIT 1];
         conn.AI_Technology__c = 'OpenAI_Azure';
         conn.Model__c = AIConstants.DAVINCI_MODEL;
         update conn;
@@ -503,7 +503,7 @@ private with sharing class ChatGPTUtillsTest{
         Account acc = new Account(Name = 'Test Account');
         insert acc;
         
-        AI_Connection__c conn = [SELECT Id FROM AI_Connection__c LIMIT 1];
+        ccai__AI_Connection__c conn = [SELECT Id FROM ccai__AI_Connection__c LIMIT 1];
         conn.AI_Technology__c = 'Google_Vertex';
         conn.Model__c = AIConstants.GCP_CHAT_BISON_MODEL;
         update conn;
@@ -522,7 +522,7 @@ private with sharing class ChatGPTUtillsTest{
         Account acc = new Account(Name = 'Test Account');
         insert acc;
         
-        AI_Connection__c conn = [SELECT Id FROM AI_Connection__c LIMIT 1];
+        ccai__AI_Connection__c conn = [SELECT Id FROM ccai__AI_Connection__c LIMIT 1];
         conn.AI_Technology__c = 'Google_Vertex';
         conn.Model__c = AIConstants.GCP_DIALOGFLOW_MODEL;
         update conn;
@@ -587,7 +587,7 @@ private with sharing class ChatGPTUtillsTest{
         AIExtractionFieldMappingController.saveFieldMappings(pmt.AI_Data_Extraction_Mapping__c, 'ContentVersion', new List<AIExtractionFieldMappingController.FieldWrapper>{cvField2});
         
         
-        AI_Connection__c conn = [SELECT Id FROM AI_Connection__c LIMIT 1];
+        ccai__AI_Connection__c conn = [SELECT Id FROM ccai__AI_Connection__c LIMIT 1];
         conn.AI_Technology__c = AIConstants.PRODUCT_NAME;
         conn.Model__c = AIConstants.GPT_4o_MODEL;
         conn.Type__c = 'File';

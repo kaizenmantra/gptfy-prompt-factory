@@ -9,7 +9,7 @@ private class P_PromptsTableController_Test {
     @TestSetup
     static void setupTestData() {
         // Create AI Connection for testing
-        AI_Connection__c connection = new AI_Connection__c(
+        ccai__AI_Connection__c connection = new ccai__AI_Connection__c(
             Name = 'Test Connection',
             Type__c = 'Azure',
             AI_Technology__c = 'GPT-4'
@@ -22,7 +22,7 @@ private class P_PromptsTableController_Test {
         prompts.add(new AI_Prompt__c(
             Name = 'Test Prompt 1',
             Object__c = 'Case',
-            AI_Connection__c = connection.Id,
+            ccai__AI_Connection__c = connection.Id,
             Description__c = 'Test Description 1',
             Status__c = 'Active',
             Purpose__c = 'Facilitate Customer Success'
@@ -31,7 +31,7 @@ private class P_PromptsTableController_Test {
         prompts.add(new AI_Prompt__c(
             Name = 'Test Prompt 2',
             Object__c = 'Account',
-            AI_Connection__c = connection.Id,
+            ccai__AI_Connection__c = connection.Id,
             Description__c = 'Test Description 2',
             Status__c = 'Active',
             Purpose__c = 'Facilitate Customer Success'
@@ -40,7 +40,7 @@ private class P_PromptsTableController_Test {
         prompts.add(new AI_Prompt__c(
             Name = 'Test Prompt 3',
             Object__c = 'Lead',
-            AI_Connection__c = connection.Id,
+            ccai__AI_Connection__c = connection.Id,
             Description__c = 'Test Description 3',
             Status__c = 'Draft',
             Purpose__c = 'Configuration'

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Package xmlns="http://soap.sforce.com/2006/04/metadata">
+    <!-- Apex Classes - Only the ones we modified -->
+    <types>
+        <members>PromptFactoryController</members>
+        <members>Stage01_IntelligenceRetrieval</members>
+        <members>Stage02_StrategicProfiling</members>
+        <members>Stage03_SchemaDiscovery</members>
+        <members>Stage04_DataProfiling</members>
+        <members>Stage05_FieldSelection</members>
+        <members>Stage06_ConfigurationValidation</members>
+        <members>Stage07_TemplateDesign</members>
+        <members>AIServiceClient</members>
+        <members>ILLMProvider</members>
+        <members>DeepSeekProvider</members>
+        <name>ApexClass</name>
+    </types>
+    
+    <!-- LWC - Only promptFactoryWizard -->
+    <types>
+        <members>promptFactoryWizard</members>
+        <name>LightningComponentBundle</name>
+    </types>
+    
+    <!-- Custom Object - PF_Run__c (for new field) -->
+    <types>
+        <members>PF_Run__c</members>
+        <members>Azure_OpenAI_Credentials__c</members>
+        <members>Claude_API_Credentials__c</members>
+        <members>DeepSeek_Credentials__c</members>
+        <name>CustomObject</name>
+    </types>
+    
+    <!-- Remote Site Settings for AI callouts -->
+    <types>
+        <members>Azure_OpenAI</members>
+        <members>DeepSeek_AI</members>
+        <name>RemoteSiteSetting</name>
+    </types>
+    
+    <version>62.0</version>
+</Package>

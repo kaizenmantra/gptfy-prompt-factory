@@ -39,11 +39,11 @@ public with sharing class AIPromptSelector {
             'Include_Files__c',
             'Response_Validation_Condition__c',
             'Response_Validation_Message__c',
-            'AI_Connection__r.AI_Response_Mapping__c', 
+            'AI_Connection__r.ccai__AI_Response_Mapping__c', 
             'AI_Connection__r.AI_Request_Mapping__c',
             'Agentic_Function_Class__c',
             'AI_Data_Extraction_Mapping__r.AI_Data_Source__c, AI_Data_Extraction_Mapping__r.AI_Data_Source__r.Connector_Class__c, AI_Data_Extraction_Mapping__r.AI_Data_Source__r.Name, AI_Data_Extraction_Mapping__r.AI_Data_Source__r.EndPoint_URL__c, AI_Data_Extraction_Mapping__r.AI_Data_Source__r.Named_Credential__c, AI_Data_Extraction_Mapping__r.AI_Data_Source__r.Source__c,AI_Data_Extraction_Mapping__r.Apex_Security_Layer__r.Apex_Class_Name__c, AI_Data_Extraction_Mapping__r.Object_Name__c',
-            'AI_Connection__c,AI_Connection__r.Additional_Parameters__c,AI_Connection__r.Version__c,AI_Connection__r.Connector_Class__c,AI_Connection__r.Top_P__c,AI_Connection__r.AI_Technology__c,AI_Connection__r.Name,AI_Connection__r.EndPoint_URL__c,AI_Connection__r.Model__c,AI_Connection__r.Temperature__c,AI_Connection__r.Max_Total_Tokens__c,AI_Connection__r.Max_Tokens__c,AI_Connection__r.Named_Credential__c,AI_Connection__r.Processing_Class__c,AI_Connection__r.Type__c',
+            'ccai__AI_Connection__c,AI_Connection__r.Additional_Parameters__c,AI_Connection__r.Version__c,AI_Connection__r.Connector_Class__c,AI_Connection__r.Top_P__c,AI_Connection__r.AI_Technology__c,AI_Connection__r.Name,AI_Connection__r.EndPoint_URL__c,AI_Connection__r.Model__c,AI_Connection__r.Temperature__c,AI_Connection__r.Max_Total_Tokens__c,AI_Connection__r.Max_Tokens__c,AI_Connection__r.Named_Credential__c,AI_Connection__r.Processing_Class__c,AI_Connection__r.Type__c',
             'AI_Model_File_Processing__c,AI_Model_File_Processing__r.Additional_Parameters__c,AI_Model_File_Processing__r.Version__c,AI_Model_File_Processing__r.Connector_Class__c,AI_Model_File_Processing__r.Top_P__c,AI_Model_File_Processing__r.AI_Technology__c,AI_Model_File_Processing__r.Name,AI_Model_File_Processing__r.EndPoint_URL__c,AI_Model_File_Processing__r.Model__c,AI_Model_File_Processing__r.Temperature__c,AI_Model_File_Processing__r.Max_Total_Tokens__c,AI_Model_File_Processing__r.Max_Tokens__c,AI_Model_File_Processing__r.Named_Credential__c,AI_Model_File_Processing__r.Processing_Class__c'
         };
     }

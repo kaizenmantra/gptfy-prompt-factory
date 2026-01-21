@@ -1,12 +1,69 @@
-# List files or directories below to ignore them when running force:source:push, force:source:pull, and force:source:status
-# More information: https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_exclude_source.htm
-#
+# Salesforce DX Project: Ignore List
 
-package.xml
+# Standard Salesforce apps (retrieved but not needed for deployment)
+**/applications/standard__*.app-meta.xml
 
-# LWC configuration files
-**/jsconfig.json
+# Unrelated FlexiPages (keep only Prompt Factory related)
+**/flexipages/Account_Record_Page.flexipage-meta.xml
+**/flexipages/Case_*.flexipage-meta.xml
+**/flexipages/Contact_Record_Page.flexipage-meta.xml
+**/flexipages/Contract_Record_Page.flexipage-meta.xml
+**/flexipages/DataGovernanceConsole_UtilityBar.flexipage-meta.xml
+**/flexipages/Dev_Artifact*.flexipage-meta.xml
+**/flexipages/Entity_Record_Page.flexipage-meta.xml
+**/flexipages/Event_Record_Page.flexipage-meta.xml
+**/flexipages/FlowsApp_UtilityBar.flexipage-meta.xml
+**/flexipages/GPTfy_test_cases.flexipage-meta.xml
+**/flexipages/GPTfy_Use_cases.flexipage-meta.xml
+**/flexipages/Knowledge_Record_Page*.flexipage-meta.xml
+**/flexipages/Lead_Record_Page.flexipage-meta.xml
+**/flexipages/Lightning*.flexipage-meta.xml
+**/flexipages/New_AI_recommendation*.flexipage-meta.xml
+**/flexipages/Opportunity_Record_Page.flexipage-meta.xml
+**/flexipages/Platform_UtilityBar.flexipage-meta.xml
+**/flexipages/Product_Record_Page.flexipage-meta.xml
+**/flexipages/Regex_Lightning_Page1.flexipage-meta.xml
+**/flexipages/RFP*.flexipage-meta.xml
+**/flexipages/SalesCloudMobile_UtilityBar.flexipage-meta.xml
+**/flexipages/Security_Layer*.flexipage-meta.xml
+**/flexipages/Tasks.flexipage-meta.xml
+**/flexipages/User_Record_Page*.flexipage-meta.xml
+**/flexipages/Visit_Record_Page.flexipage-meta.xml
+
+# Unrelated tabs (keep only Prompt Factory Wizard)
+**/tabs/AI_Recommendation__c.tab-meta.xml
+**/tabs/Appointment__c.tab-meta.xml
+**/tabs/Communication_log__c.tab-meta.xml
+**/tabs/Company_Intelligence__c.tab-meta.xml
+**/tabs/Custom_object_1__c.tab-meta.xml
+**/tabs/Dev_Artifact*.tab-meta.xml
+**/tabs/Entity__c.tab-meta.xml
+**/tabs/Ext*.tab-meta.xml
+**/tabs/External*.tab-meta.xml
+**/tabs/Family_Relatives*.tab-meta.xml
+**/tabs/Financial*.tab-meta.xml
+**/tabs/Forecast__c.tab-meta.xml
+**/tabs/Items_Google_Drive__x.tab-meta.xml
+**/tabs/Knowledge__kav.tab-meta.xml
+**/tabs/Lead_*.tab-meta.xml
+**/tabs/RFP*.tab-meta.xml
+**/tabs/Risk_Assessment__c.tab-meta.xml
+**/tabs/Subscription__c.tab-meta.xml
+**/tabs/Usage__c.tab-meta.xml
+**/tabs/Visit__c.tab-meta.xml
+
+# Unrelated permission sets (keep only Prompt Factory)
+**/permissionsets/Einstein_permission_set.permissionset-meta.xml
+**/permissionsets/SGPT_Admin_Clone.permissionset-meta.xml
+**/permissionsets/sfdcInternalInt__*.permissionset-meta.xml
+**/permissionsets/sfdc_chatbot_service_permset.permissionset-meta.xml
+
+# LWC configuration
 **/.eslintrc.json
 
 # LWC Jest
 **/__tests__/**
+
+# Node modules
+**/node_modules/**
+**/package-lock.json

@@ -10,7 +10,7 @@ public with sharing class CatalogControllerTest {
 	
      @testSetup
     static void makeData(){
-        AI_Connection__c conn = TestUtility.getConnection('GPTfy (OpenAI)', false);
+        ccai__AI_Connection__c conn = TestUtility.getConnection('GPTfy (OpenAI)', false);
         conn.AI_Technology__c = 'GPTfy';
         insert conn;
         TestUtility.createCardConfiguration('GPTfy (OpenAI)','AMODL',true);
@@ -54,7 +54,7 @@ public with sharing class CatalogControllerTest {
     
     @isTest
     static void updatePromptTest(){
-        AI_Connection__c aiConnection = [Select Id from AI_Connection__c LIMIT 1];
+        ccai__AI_Connection__c aiConnection = [Select Id from ccai__AI_Connection__c LIMIT 1];
     	AI_Prompt__c aiPrompt = [Select Id from AI_Prompt__c LIMIT 1];
     	Map<String,Object> promptMap = new Map<String,Object>();
         promptMap.put('pmtId',aiPrompt.Id);

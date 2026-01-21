@@ -1,0 +1,107 @@
+<template>
+    <div class="form-container">
+        <div class="slds-grid slds-wrap slds-gutters_small">
+            <!-- Row 1: Prompt Name + Root Object -->
+            <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 field-col">
+                <lightning-input
+                    label="Prompt Name"
+                    type="text"
+                    value={promptName}
+                    onchange={handlePromptNameChange}
+                    placeholder="e.g., High-Value Account Summary"
+                    required
+                    disabled={disabled}
+                    class="form-field">
+                </lightning-input>
+            </div>
+            <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 field-col">
+                <lightning-combobox
+                    label="Root Object"
+                    value={rootObject}
+                    options={rootObjectOptions}
+                    onchange={handleRootObjectChange}
+                    placeholder="Select object"
+                    required
+                    disabled={disabled}
+                    class="form-field">
+                </lightning-combobox>
+            </div>
+
+            <!-- Row 2: Output Format + AI Model -->
+            <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 field-col">
+                <lightning-combobox
+                    label="Output Format"
+                    value={outputFormat}
+                    options={outputFormatOptions}
+                    onchange={handleOutputFormatChange}
+                    placeholder="Select format"
+                    required
+                    disabled={disabled}
+                    class="form-field">
+                </lightning-combobox>
+            </div>
+            <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 field-col">
+                <lightning-combobox
+                    label="AI Model"
+                    value={aiModelId}
+                    options={aiModelOptions}
+                    onchange={handleAIModelChange}
+                    placeholder="Select AI Model (optional)"
+                    disabled={disabled}
+                    class="form-field">
+                </lightning-combobox>
+            </div>
+
+            <!-- Row 3: Sample Record ID + Company URL -->
+            <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 field-col">
+                <lightning-input
+                    label="Sample Record ID"
+                    type="text"
+                    value={sampleRecordId}
+                    onchange={handleSampleRecordIdChange}
+                    placeholder="e.g., 001XX000003DGb2"
+                    disabled={disabled}
+                    field-level-help="Optional: Provide a record ID to help validate your prompt"
+                    class="form-field">
+                </lightning-input>
+            </div>
+            <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 field-col">
+                <lightning-input
+                    label="Company Website"
+                    type="text"
+                    value={companyUrl}
+                    onchange={handleCompanyUrlChange}
+                    placeholder="e.g., acme.com"
+                    disabled={disabled}
+                    field-level-help="Optional: Used for company research during prompt generation"
+                    class="form-field">
+                </lightning-input>
+            </div>
+
+            <!-- Row 4: Business Context (full width) -->
+            <div class="slds-col slds-size_1-of-1 field-col">
+                <lightning-textarea
+                    label="Business Context"
+                    value={businessContext}
+                    onchange={handleBusinessContextChange}
+                    placeholder="Describe the business use case, target audience, key metrics, and desired insights..."
+                    required
+                    disabled={disabled}
+                    class="form-field context-textarea">
+                </lightning-textarea>
+            </div>
+        </div>
+
+        <!-- Action Footer -->
+        <div class="action-footer">
+            <lightning-button
+                label="Start Pipeline Run"
+                variant="brand"
+                onclick={handleStartPipeline}
+                disabled={isStartDisabled}
+                icon-name="utility:play"
+                class="start-button">
+            </lightning-button>
+        </div>
+    </div>
+</template>

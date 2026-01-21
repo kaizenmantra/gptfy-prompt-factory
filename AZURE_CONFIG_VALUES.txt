@@ -1,0 +1,68 @@
+╔══════════════════════════════════════════════════════════════════╗
+║  AZURE OPENAI CONFIGURATION VALUES - COPY & PASTE READY         ║
+╚══════════════════════════════════════════════════════════════════╝
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+REMOTE SITE SETTING
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Remote Site Name:
+Azure_OpenAI
+
+Remote Site URL:
+https://saura-m51w47qu-eastus2.cognitiveservices.azure.com
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CUSTOM SETTING: Azure OpenAI Credentials
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+API Endpoint:
+https://saura-m51w47qu-eastus2.cognitiveservices.azure.com/openai/deployments/gpt-4o-for-coding/chat/completions?api-version=2024-12-01-preview
+
+API Key:
+<YOUR_AZURE_OPENAI_API_KEY>
+
+Deployment Name:
+gpt-4o-for-coding
+
+Max Tokens:
+4096
+
+Temperature:
+0.7
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DIRECT URLS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Remote Site Settings:
+https://agentictso.lightning.force.com/lightning/setup/SecurityRemoteProxy/home
+
+Custom Settings:
+https://agentictso.lightning.force.com/lightning/setup/CustomSettings/home
+
+Prompt Factory Wizard:
+https://agentictso.lightning.force.com/lightning/n/Prompt_Factory_Wizard
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+DEPLOYMENT INFO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Azure Endpoint: saura-m51w47qu-eastus2.cognitiveservices.azure.com
+Model: gpt-4o
+Model Version: 2024-11-20
+Deployment: gpt-4o-for-coding
+API Version: 2024-12-01-preview
+Rate Limit: 100,000 tokens/min, 600 requests/min
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+NOTES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ Connection tested successfully
+✅ Deployed to agentictso@gptfy.com
+✅ Automatic provider detection enabled
+✅ Full backward compatibility with Claude AI
+
+Date: January 21, 2026
+Branch: feature/azure-openai-4o

@@ -1,0 +1,136 @@
+/* ===================================
+   GPTfy Prompt Factory - Clean Design
+   =================================== */
+
+/* Main container styling */
+:host {
+    --pf-primary: #0176d3;
+    --pf-primary-dark: #014486;
+    --pf-success: #2e844a;
+    --pf-warning: #fe9339;
+    --pf-error: #ea001e;
+    --pf-gray-100: #f3f3f3;
+    --pf-gray-200: #e5e5e5;
+    --pf-gray-300: #c9c9c9;
+    --pf-shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.08);
+    --pf-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+    --pf-radius: 0.5rem;
+    --pf-radius-lg: 0.75rem;
+}
+
+/* Wizard container - clean background */
+.wizard-container {
+    position: relative;
+    padding: 1rem;
+    background: #ffffff;
+}
+
+/* Grid layout */
+.slds-grid {
+    gap: 1.5rem;
+}
+
+/* Section spacing */
+.slds-m-around_medium {
+    margin: 1.5rem !important;
+}
+
+/* Alert styling enhancement */
+.slds-notify_alert {
+    border-radius: var(--pf-radius);
+    box-shadow: var(--pf-shadow-sm);
+}
+
+/* Loading overlay */
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    border-radius: var(--pf-radius-lg);
+}
+
+/* Tab styling enhancements */
+.slds-tabs_default__nav {
+    border-bottom: 2px solid #e5e5e5;
+}
+
+.slds-tabs_default__item {
+    margin-bottom: -2px;
+}
+
+.slds-tabs_default__link {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1.25rem;
+    font-weight: 600;
+    color: #706e6b;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.slds-tabs_default__item.slds-is-active .slds-tabs_default__link {
+    color: #0176d3;
+    border-bottom-color: #0176d3;
+    background: linear-gradient(180deg, rgba(1, 118, 211, 0.05) 0%, transparent 100%);
+}
+
+.slds-tabs_default__link:hover {
+    color: #0176d3;
+    text-decoration: none;
+}
+
+.slds-tabs_default__content {
+    border: 1px solid #e5e5e5;
+    border-top: none;
+    border-radius: 0 0 0.5rem 0.5rem;
+    background: #ffffff;
+}
+
+/* Running badge in tab */
+.running-badge {
+    background: linear-gradient(135deg, #2e844a 0%, #45a049 100%);
+    color: white;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* Action buttons styling */
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e5e5e5;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .slds-large-size_3-of-10,
+    .slds-large-size_7-of-10 {
+        width: 100% !important;
+        padding-right: 0 !important;
+    }
+
+    .slds-grid {
+        gap: 1rem;
+    }
+
+    .slds-m-around_medium {
+        margin: 1rem !important;
+    }
+
+    .slds-tabs_default__link {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
+    }
+}

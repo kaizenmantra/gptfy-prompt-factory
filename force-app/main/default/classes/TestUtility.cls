@@ -39,8 +39,8 @@ public with sharing class TestUtility {
         return c;
     }
 	
-    public static AI_Connection__c getConnection(String tech, Boolean isInsert){
-        AI_Connection__c obj = new AI_Connection__c();
+    public static ccai__AI_Connection__c getConnection(String tech, Boolean isInsert){
+        ccai__AI_Connection__c obj = new ccai__AI_Connection__c();
         obj.Named_Credential__c = 'GPTfy';
         obj.Name = tech;
         obj.AI_Technology__c = tech;
@@ -57,8 +57,8 @@ public with sharing class TestUtility {
         return obj;
     }
     
-    public static AI_Connection__c getAgenticConnection(String tech, Boolean isInsert){
-        AI_Connection__c obj = new AI_Connection__c();
+    public static ccai__AI_Connection__c getAgenticConnection(String tech, Boolean isInsert){
+        ccai__AI_Connection__c obj = new ccai__AI_Connection__c();
         obj.Named_Credential__c = 'GPTfy';
         obj.Name = tech;
         obj.AI_Technology__c = tech;
@@ -301,8 +301,8 @@ public with sharing class TestUtility {
         return ds;
     }
     
-    public static AI_Cross_Object_Filter__c createCrossObjectFilter(String promptSchId, String objName, Boolean isInsert){
-        AI_Cross_Object_Filter__c filter = new AI_Cross_Object_Filter__c();
+    public static ccai__AI_Cross_Object_Filter__c createCrossObjectFilter(String promptSchId, String objName, Boolean isInsert){
+        ccai__AI_Cross_Object_Filter__c filter = new ccai__AI_Cross_Object_Filter__c();
         filter.operator__c = 'Equals';
         filter.Object_API__c = 'Contact';
         filter.Object_Label__c = 'Contact';
@@ -317,8 +317,8 @@ public with sharing class TestUtility {
         return filter;
     }
 
-    public static AI_Card_Configuration__c createCardConfiguration(String name,String feature,Boolean isInsert){
-        AI_Card_Configuration__c card = new AI_Card_Configuration__c();
+    public static ccai__AI_Card_Configuration__c createCardConfiguration(String name,String feature,Boolean isInsert){
+        ccai__AI_Card_Configuration__c card = new ccai__AI_Card_Configuration__c();
         card.Name = name;
         card.Enabled__c = true;
         card.Feature__c = feature;
@@ -330,8 +330,8 @@ public with sharing class TestUtility {
         return card;
     }
 
-	public static AI_Response_Mapping__c createResponseMapping(String name,Boolean isInsert){
-        AI_Response_Mapping__c resMapping = new AI_Response_Mapping__c();
+	public static ccai__AI_Response_Mapping__c createResponseMapping(String name,Boolean isInsert){
+        ccai__AI_Response_Mapping__c resMapping = new ccai__AI_Response_Mapping__c();
         resMapping.Name = name;
         if(isInsert){
             insert resMapping;
@@ -340,8 +340,8 @@ public with sharing class TestUtility {
     }
     
     
-    public static Request_Mapping__c createRequestMapping(String name,Boolean isInsert){
-        Request_Mapping__c reqMapping = new Request_Mapping__c();
+    public static ccai__Request_Mapping__c createRequestMapping(String name,Boolean isInsert){
+        ccai__Request_Mapping__c reqMapping = new ccai__Request_Mapping__c();
         reqMapping.Name = name;
         if(isInsert){
             insert reqMapping;
@@ -390,8 +390,8 @@ public with sharing class TestUtility {
         return cv;
     }
     
-    public static AI_Prompt_Action__c getAIPromptAction(String promptId, String action, Boolean isInsert){
-        AI_Prompt_Action__c pa = new AI_Prompt_Action__c();
+    public static ccai__AI_Prompt_Action__c getAIPromptAction(String promptId, String action, Boolean isInsert){
+        ccai__AI_Prompt_Action__c pa = new ccai__AI_Prompt_Action__c();
         pa.AI_Prompt__c = promptId;
         pa.Action__c = action;
         if(isInsert){
@@ -400,9 +400,9 @@ public with sharing class TestUtility {
         return pa;
     }
     
-    public static AI_Prompt_Action_Detail__c getAIPromptActionDetail(String actionId, String actionFieldName,String actionType, Boolean isInsert){
-         AI_Prompt_Action_Detail__c actionDetail = new AI_Prompt_Action_Detail__c();
-            actionDetail.AI_Prompt_Action__c = actionId;
+    public static ccai__AI_Prompt_Action_Detail__c getAIPromptActionDetail(String actionId, String actionFieldName,String actionType, Boolean isInsert){
+         ccai__AI_Prompt_Action_Detail__c actionDetail = new ccai__AI_Prompt_Action_Detail__c();
+            actionDetail.ccai__AI_Prompt_Action__c = actionId;
             actionDetail.Field_API_Name__c = actionFieldName;
             actionDetail.Type__c = actionType;
         if(isInsert){
@@ -411,10 +411,10 @@ public with sharing class TestUtility {
         return actionDetail;
     }
     
-    public static AI_Prompt_Element__c getAIPromptElement(String promptId, String parentpromptId,String summarypromptId, 
+    public static ccai__AI_Prompt_Element__c getAIPromptElement(String promptId, String parentpromptId,String summarypromptId, 
                                                            Integer sequence, String width, Integer height, String Icon, 
                                                            Boolean inheritPromptSecurity, Boolean isInsert){
-        AI_Prompt_Element__c promptElement = new AI_Prompt_Element__c(
+        ccai__AI_Prompt_Element__c promptElement = new ccai__AI_Prompt_Element__c(
             AI_Parent_Prompt__c = parentpromptId,
             AI_Prompt__c = promptId,
             AI_Summary_Prompt__c = summarypromptId,

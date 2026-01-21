@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Model__c</fullName>
+    <defaultValue>&quot;claude-3-5-sonnet-20241022&quot;</defaultValue>
+    <description>Claude AI model identifier. Default: claude-3-5-sonnet-20241022</description>
+    <externalId>false</externalId>
+    <label>Model</label>
+    <length>100</length>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>Text</type>
+    <unique>false</unique>
+</CustomField>

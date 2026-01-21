@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Business_Value_Range</fullName>
+    <active>true</active>
+    <description>Ensures Business Value score is between 1 and 10</description>
+    <errorConditionFormula>AND(
+    NOT(ISBLANK(Business_Value__c)),
+    OR(
+        Business_Value__c &lt; 1,
+        Business_Value__c &gt; 10
+    )
+)</errorConditionFormula>
+    <errorDisplayField>Business_Value__c</errorDisplayField>
+    <errorMessage>Business Value score must be between 1 and 10</errorMessage>
+</ValidationRule>

@@ -1,0 +1,47 @@
+/* ===================================
+   Input Form - Simple Flat Design
+   =================================== */
+
+/* Form Container */
+.form-container {
+    background-color: #fff;
+}
+
+/* Field Columns */
+.field-col {
+    padding-bottom: 0.75rem;
+}
+
+/* Form Fields */
+.form-field {
+    --slds-c-input-radius-border: 0.25rem;
+}
+
+/* Context Textarea */
+.context-textarea {
+    --slds-c-textarea-sizing-min-height: 100px;
+}
+
+/* Action Footer */
+.action-footer {
+    display: flex;
+    justify-content: flex-start;
+    padding-top: 0.5rem;
+}
+
+.start-button {
+    --slds-c-button-brand-color-background: #0176d3;
+    --slds-c-button-brand-color-background-hover: #014486;
+}
+
+/* Disabled State */
+.form-field[disabled] {
+    opacity: 0.65;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .field-col {
+        padding-bottom: 0.5rem;
+    }
+}

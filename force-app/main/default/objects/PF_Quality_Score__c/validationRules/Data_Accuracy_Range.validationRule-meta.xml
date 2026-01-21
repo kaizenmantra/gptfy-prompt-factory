@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Data_Accuracy_Range</fullName>
+    <active>true</active>
+    <description>Ensures Data Accuracy score is between 1 and 10</description>
+    <errorConditionFormula>AND(
+    NOT(ISBLANK(Data_Accuracy__c)),
+    OR(
+        Data_Accuracy__c &lt; 1,
+        Data_Accuracy__c &gt; 10
+    )
+)</errorConditionFormula>
+    <errorDisplayField>Data_Accuracy__c</errorDisplayField>
+    <errorMessage>Data Accuracy score must be between 1 and 10</errorMessage>
+</ValidationRule>

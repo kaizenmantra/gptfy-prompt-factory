@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Pass_Threshold_Range</fullName>
+    <active>true</active>
+    <description>Ensures Pass Threshold is between 1 and 10</description>
+    <errorConditionFormula>AND(
+    NOT(ISBLANK(Pass_Threshold__c)),
+    OR(
+        Pass_Threshold__c &lt; 1,
+        Pass_Threshold__c &gt; 10
+    )
+)</errorConditionFormula>
+    <errorDisplayField>Pass_Threshold__c</errorDisplayField>
+    <errorMessage>Pass Threshold must be between 1 and 10</errorMessage>
+</ValidationRule>

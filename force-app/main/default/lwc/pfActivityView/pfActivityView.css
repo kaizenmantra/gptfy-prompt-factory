@@ -1,0 +1,250 @@
+/* ===================================
+   Activity View - Premium Design
+   =================================== */
+
+.activity-view-container {
+    /* Removed min-height to avoid unnecessary whitespace */
+}
+
+/* Box styling */
+.slds-box {
+    background: linear-gradient(180deg, #ffffff 0%, #fafaf9 100%);
+    border: 1px solid #e5e5e5;
+    border-radius: 0.75rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    padding: 1.5rem;
+}
+
+/* Stage Header */
+.stage-header,
+.scorecard-header,
+.error-header,
+.warning-header {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.stage-header lightning-icon,
+.scorecard-header lightning-icon,
+.error-header lightning-icon,
+.warning-header lightning-icon {
+    flex-shrink: 0;
+}
+
+/* Headings */
+.slds-text-heading_medium {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #032d60;
+    line-height: 1.3;
+}
+
+.slds-text-color_weak {
+    color: #706e6b;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+/* Overall Score Display */
+.overall-score-container {
+    padding: 2rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border: 1px solid #e5e5e5;
+    border-radius: 0.75rem;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.03);
+}
+
+.overall-score {
+    font-size: 3.5rem;
+    font-weight: 800;
+    margin: 0.75rem 0;
+    letter-spacing: -0.02em;
+}
+
+.overall-score.success {
+    background: linear-gradient(135deg, #2e844a 0%, #45a049 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.overall-score.warning {
+    background: linear-gradient(135deg, #fe9339 0%, #ffab5e 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.overall-score.error {
+    background: linear-gradient(135deg, #ea001e 0%, #ff4d4d 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Quality Grid */
+.quality-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.quality-item {
+    padding: 1.25rem;
+    background: #ffffff;
+    border: 1px solid #e5e5e5;
+    border-radius: 0.5rem;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.quality-item:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+}
+
+.quality-item-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.quality-item-header span {
+    font-weight: 600;
+    color: #3e3e3c;
+}
+
+.quality-score {
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.quality-score.score-excellent {
+    color: #2e844a;
+}
+
+.quality-score.score-good {
+    color: #b86e00;
+}
+
+.quality-score.score-poor {
+    color: #c23934;
+}
+
+/* Theme boxes */
+.slds-theme_success {
+    background: linear-gradient(135deg, #ebf7ee 0%, #d8f0dd 100%);
+    border: 1px solid #b4dfc0;
+    border-left: 4px solid #2e844a;
+    border-radius: 0.5rem;
+    padding: 1.25rem;
+}
+
+.slds-theme_error {
+    background: linear-gradient(135deg, #fff0f0 0%, #ffe5e5 100%);
+    border: 1px solid #f5c6c6;
+    border-left: 4px solid #ea001e;
+    border-radius: 0.5rem;
+    padding: 1.25rem;
+}
+
+.slds-theme_warning {
+    background: linear-gradient(135deg, #fff8f0 0%, #fff0e0 100%);
+    border: 1px solid #f5dfc6;
+    border-left: 4px solid #fe9339;
+    border-radius: 0.5rem;
+    padding: 1.25rem;
+}
+
+.slds-theme_shade {
+    background: linear-gradient(135deg, #f8f9fa 0%, #f0f2f5 100%);
+    border: 1px solid #e5e5e5;
+    border-radius: 0.5rem;
+    padding: 1.25rem;
+}
+
+/* List styling */
+.slds-list_dotted {
+    margin-left: 1.25rem;
+    margin-top: 0.5rem;
+}
+
+.slds-list_dotted li {
+    margin-bottom: 0.5rem;
+    color: #3e3e3c;
+    line-height: 1.5;
+}
+
+/* Empty State */
+.empty-state {
+    background: #fafaf9;
+    border: 1px dashed #c9c9c9;
+    border-radius: 0.5rem;
+}
+
+.empty-state-icon {
+    --slds-c-icon-color-foreground-default: #b0adab;
+}
+
+/* Welcome state enhancements */
+.slds-text-heading_medium {
+    margin-bottom: 0.5rem;
+}
+
+/* Progress bar styling */
+.slds-progress-bar {
+    height: 8px;
+    background-color: #e5e5e5;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.slds-progress-bar__value {
+    border-radius: 4px;
+    transition: width 0.4s ease-out;
+}
+
+/* Progress bar color overrides based on score */
+.score-excellent .slds-progress-bar__value {
+    background: linear-gradient(90deg, #2e844a 0%, #45a049 100%);
+}
+
+.score-good .slds-progress-bar__value {
+    background: linear-gradient(90deg, #fe9339 0%, #ffab5e 100%);
+}
+
+.score-poor .slds-progress-bar__value {
+    background: linear-gradient(90deg, #ea001e 0%, #ff4d4d 100%);
+}
+
+/* Spinner section */
+.slds-text-align_center {
+    padding: 2rem 1rem;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .slds-box {
+        padding: 1rem;
+    }
+
+    .quality-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .overall-score {
+        font-size: 2.5rem;
+    }
+
+    .quality-score {
+        font-size: 1.5rem;
+    }
+
+    .overall-score-container {
+        padding: 1.5rem;
+    }
+}
