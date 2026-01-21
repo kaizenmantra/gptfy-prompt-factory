@@ -162,6 +162,13 @@ public with sharing class Stage07_TemplateDesign implements IStage {
             result.outputs.put('selectedGrandchildren', inputs.get('selectedGrandchildren'));
             // Pass through selectedObjects - needed for DCM creation even if objects have no data
             result.outputs.put('selectedObjects', inputs.get('selectedObjects'));
+            
+            // CRITICAL FIX: Pass through enriched context from Stage 2 for Stage 8
+            result.outputs.put('companyIntelligence', inputs.get('companyIntelligence'));
+            result.outputs.put('industryContext', inputs.get('industryContext'));
+            result.outputs.put('companyProfile', inputs.get('companyProfile'));
+            result.outputs.put('strategicInsights', inputs.get('strategicInsights'));
+            result.outputs.put('companyWebsite', inputs.get('companyWebsite'));
 
             result.markCompleted();
             result.queueInfo(runId, STAGE_NUMBER, 'Template design completed successfully');

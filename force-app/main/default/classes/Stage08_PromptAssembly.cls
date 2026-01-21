@@ -34,6 +34,11 @@ public with sharing class Stage08_PromptAssembly implements IStage {
             Map<String, Object> selectedFieldsRaw = (Map<String, Object>) inputs.get('selectedFields');
             List<Object> businessObjectivesRaw = (List<Object>) inputs.get('businessObjectives');
 
+            // NEW: Extract Strategic Context from Stage 2
+            String companyProfile = (String) inputs.get('companyProfile');
+            String strategicInsights = (String) inputs.get('strategicInsights');
+            String industryContext = (String) inputs.get('industryContext');
+
             result.queueInfo(runId, STAGE_NUMBER, 'Assembling prompt for ' + rootObject);
 
             // Validate merge fields against selected fields
@@ -60,7 +65,8 @@ public with sharing class Stage08_PromptAssembly implements IStage {
 
             // Build AI instructions
             String aiInstructions = buildAIInstructions(
-                businessContext, targetPersona, businessObjectivesRaw, rootObject);
+                businessContext, targetPersona, businessObjectivesRaw, rootObject,
+                companyProfile, strategicInsights, industryContext);
 
             // Build grounding rules
             String groundingRules = buildGroundingRules(rootObject, targetPersona);
@@ -209,7 +215,10 @@ public with sharing class Stage08_PromptAssembly implements IStage {
             String businessContext,
             String targetPersona,
             List<Object> businessObjectivesRaw,
-            String rootObject) {
+            String rootObject,
+            String companyProfile,
+            String strategicInsights,
+            String industryContext) {
 
         String instructions = 'You are a Salesforce AI assistant generating HTML content for GPTfy.\n\n';
 
@@ -280,9 +289,25 @@ public with sharing class Stage08_PromptAssembly implements IStage {
         // === BUSINESS CONTEXT ===
         instructions += 'Generate a premium, executive-style dashboard for: ' + targetPersona + '\n\n';
 
+        // === STRATEGIC CONTEXT (Account 360) ===
+        if (String.isNotBlank(companyProfile) || String.isNotBlank(strategicInsights) || String.isNotBlank(industryContext)) {
+             instructions += '=== STRATEGIC CONTEXT (Account 360) ===\n';
+             instructions += 'Use this intelligence to make the content highly relevant and personalized.\n\n';
+             
+             if (String.isNotBlank(companyProfile)) {
+                 instructions += 'COMPANY PROFILE:\n' + companyProfile + '\n\n';
+             }
+             if (String.isNotBlank(industryContext)) {
+                 instructions += 'INDUSTRY CONTEXT:\n' + industryContext + '\n\n';
+             }
+             if (String.isNotBlank(strategicInsights)) {
+                 instructions += 'STRATEGIC INSIGHTS:\n' + strategicInsights + '\n\n';
+             }
+        }
+
         // Include full business context from user input
         if (String.isNotBlank(businessContext)) {
-            instructions += 'Business Context:\n' + businessContext + '\n\n';
+            instructions += 'SPECIFIC REQUIREMENTS:\n' + businessContext + '\n\n';
         }
 
         if (businessObjectivesRaw != null && !businessObjectivesRaw.isEmpty()) {
