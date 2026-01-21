@@ -51,6 +51,440 @@ Transform the Prompt Factory from a generic prompt generator into a **Decisive A
 
 ---
 
+## Configuration Philosophy: File-Based Architecture
+
+**Key Insight**: Instead of creating Custom Metadata Types or new objects, store all configuration as **markdown files** (Static Resources or Salesforce Files).
+
+### Why Markdown Files Win
+
+#### Customer Editability
+- **Non-technical users** can edit markdown files directly
+- No need to understand Salesforce metadata or objects
+- Can use any text editor or even edit in Salesforce
+- Natural language documentation format
+
+#### Simplicity
+- **No schema design**: No Custom Metadata Types to create
+- **No deployment friction**: Upload a file vs. deploy metadata
+- **No object proliferation**: Keep data model clean
+- **Easy versioning**: Git for static resources, record history for files
+
+#### Flexibility
+- **Schema evolution**: Change structure without redeployment
+- **Rich content**: Can include examples, comments, documentation inline
+- **Structured data**: Use YAML/JSON frontmatter + markdown content
+- **Composability**: Reference other files, include snippets
+
+### Storage Options
+
+#### Option 1: Static Resources (Recommended for Initial Implementation)
+```apex
+// Deployed with package, version controlled
+StaticResource cigna_business_context = [SELECT Body FROM StaticResource WHERE Name = 'cigna_business_context'];
+String content = cigna_business_context.Body.toString();
+```
+
+**Pros**:
+- Versioned with code in git
+- Deployed with package
+- Cacheable and fast
+- No user upload required
+
+**Cons**:
+- Requires deployment to change
+- Not customer-editable at runtime
+
+#### Option 2: Salesforce Files (Future Enhancement for Customer Editability)
+```apex
+// Attached to specific record (e.g., PF_Run__c or custom settings record)
+ContentVersion file = [SELECT VersionData FROM ContentVersion WHERE Title = 'cigna_business_context' AND IsLatest = true];
+String content = file.VersionData.toString();
+```
+
+**Pros**:
+- Customer can upload/edit at runtime
+- No deployment needed
+- Can attach to LWC component or record
+- Version history built-in
+
+**Cons**:
+- Need file upload UI
+- Validation/error handling for malformed files
+- Caching strategy needed
+
+#### Hybrid Approach (Recommended Long-Term)
+1. **Ship defaults as Static Resources** - e.g., `default_patterns.md`, `default_archetypes.md`
+2. **Allow customer overrides as Files** - e.g., upload `cigna_custom_patterns.md`
+3. **Merge at runtime** - Customer file overrides defaults
+
+### What Gets Stored in Markdown
+
+#### 1. Customer Business Context
+```markdown
+# cigna_business_context.md
+
+## Industry Profile
+- Primary: Healthcare Payer
+- Lines of Business: Medicare Advantage, Commercial
+
+## Terminology
+- Use "Member" not "Customer"
+- Use "Plan" not "Product"
+
+## Deal Patterns
+- CFO involvement at $500K+
+- Security review adds 2-3 weeks
+```
+
+#### 2. Analytical Patterns
+```markdown
+# pattern_negotiation_pressure.md
+
+## Pattern: Negotiation Pressure Detection
+
+### Trigger Rules
+- Stage contains: Proposal, Quote, Negotiation
+- Keywords: discount, CFO, budget, pricing
+- Min Probability: 60%
+
+### Analysis Questions
+1. Who is driving the discount request?
+2. What value justification is missing?
+3. What concession alternatives exist besides price?
+
+### Evidence Requirements
+- OpportunityStage
+- Description or NextStep
+- Probability
+
+### Forbidden Phrases
+- "offer competitive pricing"
+- "emphasize value proposition"
+```
+
+#### 3. Persona Archetypes
+```markdown
+# archetype_deal_coach.md
+
+## Archetype: Deal Coach Brief
+
+### Target Reader
+Sales Representative or Account Executive
+
+### Output Structure
+1. Deal Health Summary (3-5 bullets)
+2. Key Risks & Blockers (2-3 items)
+3. Next Best Actions (prioritized list)
+4. Stakeholder Engagement Status
+
+### Tone
+Prescriptive, action-oriented, coaching
+
+### Evidence Depth
+High - cite specific fields and values
+```
+
+#### 4. UI Components (HTML Templates)
+```markdown
+# component_risk_scorecard.html
+
+<div class="slds-card risk-assessment">
+  <div class="slds-card__header">
+    <h2>Risk Assessment</h2>
+  </div>
+  <div class="slds-card__body">
+    <div class="risk-level {{RISK_CLASS}}">
+      {{RISK_LEVEL}}
+    </div>
+    <ul class="risk-factors">
+      {{RISK_FACTORS}}
+    </ul>
+  </div>
+</div>
+```
+
+### File Reading Implementation in Apex
+
+```apex
+public class ConfigurationLoader {
+    
+    // Cache for performance
+    private static Map<String, String> fileCache = new Map<String, String>();
+    
+    /**
+     * Load markdown file from Static Resource
+     */
+    public static String loadStaticResource(String resourceName) {
+        if (fileCache.containsKey(resourceName)) {
+            return fileCache.get(resourceName);
+        }
+        
+        StaticResource sr = [SELECT Body FROM StaticResource WHERE Name = :resourceName LIMIT 1];
+        String content = sr.Body.toString();
+        fileCache.put(resourceName, content);
+        return content;
+    }
+    
+    /**
+     * Load markdown file from Salesforce Files (ContentVersion)
+     * Falls back to Static Resource if not found
+     */
+    public static String loadFile(String fileName, String fallbackResourceName) {
+        try {
+            // Try customer-uploaded file first
+            ContentVersion cv = [
+                SELECT VersionData 
+                FROM ContentVersion 
+                WHERE Title = :fileName 
+                AND IsLatest = true 
+                LIMIT 1
+            ];
+            return cv.VersionData.toString();
+        } catch (Exception e) {
+            // Fall back to static resource
+            return loadStaticResource(fallbackResourceName);
+        }
+    }
+    
+    /**
+     * Parse YAML frontmatter + markdown content
+     */
+    public static Map<String, Object> parseMarkdown(String content) {
+        Map<String, Object> result = new Map<String, Object>();
+        
+        // Simple frontmatter parser (--- at start and end)
+        if (content.startsWith('---')) {
+            Integer endIdx = content.indexOf('---', 3);
+            if (endIdx > 0) {
+                String frontmatter = content.substring(3, endIdx).trim();
+                String body = content.substring(endIdx + 3).trim();
+                
+                result.put('metadata', parseYAML(frontmatter));
+                result.put('content', body);
+            }
+        } else {
+            result.put('content', content);
+        }
+        
+        return result;
+    }
+    
+    // Simple YAML parser for key: value pairs
+    private static Map<String, String> parseYAML(String yaml) {
+        Map<String, String> result = new Map<String, String>();
+        for (String line : yaml.split('\n')) {
+            if (line.contains(':')) {
+                List<String> parts = line.split(':', 2);
+                result.put(parts[0].trim(), parts[1].trim());
+            }
+        }
+        return result;
+    }
+}
+```
+
+### Benefits of This Approach
+
+#### For Customers (Non-Technical Users)
+1. **Zero Technical Barrier**: Edit markdown files like documents, no Salesforce knowledge needed
+2. **Self-Service Configuration**: Upload files to customize behavior without contacting support
+3. **Familiar Format**: Markdown is used in Slack, Notion, GitHub - widely understood
+4. **Inline Documentation**: Files include examples and comments explaining each section
+5. **Immediate Changes**: Upload new file, system uses it next run (no deployment)
+
+#### For Development Team
+1. **Zero Schema Overhead**: No Custom Metadata design, no object relationships
+2. **Rapid Iteration**: Change configuration without deployment cycle
+3. **Version Control**: Git for defaults (Static Resources), Salesforce versioning for customer overrides
+4. **Easy Testing**: Swap files to test different configurations
+5. **No Governor Limits**: Static Resources don't count against SOQL queries
+6. **Debugging Friendly**: Read the file content to see exactly what the system is using
+
+#### For Implementation Team
+1. **Easy Migration**: Copy files between orgs (dev → staging → prod)
+2. **Customer Onboarding**: Just upload their business context file during implementation
+3. **Customization**: Edit markdown during implementation, no code deployment
+4. **Reusable Templates**: Create templates for different industries (Healthcare, Financial Services, etc.)
+5. **Documentation**: Files serve as configuration documentation for the customer
+
+#### Architecture Benefits
+1. **Separation of Concerns**: Business logic (Apex) separate from configuration (files)
+2. **Composability**: Files can reference each other, include snippets
+3. **Extensibility**: Add new pattern/archetype files without changing code
+4. **Backward Compatibility**: Old code still works if file format evolves (graceful degradation)
+
+### Customer File Upload Workflow (Future Enhancement)
+
+**Goal**: Allow customers to upload/edit configuration files without touching code
+
+#### Approach 1: Files Attached to LWC Component
+
+```javascript
+// In promptFactoryWizard.js or new config component
+import { LightningElement } from 'lwc';
+import { loadScript } from 'lightning/platformResourceLoader';
+
+export default class PromptFactoryConfig extends LightningElement {
+    handleFileUpload(event) {
+        const files = event.target.files;
+        // Upload to Salesforce Files (ContentVersion)
+        // Tag with specific name: 'custom_business_context'
+        // Apex will auto-detect and use instead of default
+    }
+}
+```
+
+**Apex Side**:
+```apex
+// ConfigurationLoader checks for custom file first
+public static String loadCustomerContext() {
+    // Try custom uploaded file
+    List<ContentVersion> customFiles = [
+        SELECT VersionData 
+        FROM ContentVersion 
+        WHERE Title = 'custom_business_context' 
+        AND IsLatest = true
+        LIMIT 1
+    ];
+    
+    if (!customFiles.isEmpty()) {
+        return customFiles[0].VersionData.toString();
+    }
+    
+    // Fall back to default static resource
+    return loadStaticResource('default_business_context');
+}
+```
+
+#### Approach 2: Files Attached to Custom Settings Record
+
+Create a Custom Setting: `PF_Configuration__c`
+- Single org-wide record
+- Field: `Config_Record_Id__c` (Text, stores ContentDocument ID)
+
+Customers upload files and link them to this record, making it easy to find the "current" config.
+
+#### Approach 3: Files in Known Folder (Recommended)
+
+Create a "GPTfy Configuration" folder in Salesforce Files:
+- Customers upload files to this folder
+- Apex searches this folder by name
+- No UI changes needed - use standard Salesforce file management
+
+```apex
+public static String loadFromFolder(String fileName, String folderName) {
+    // Find folder
+    List<ContentWorkspace> folders = [
+        SELECT Id 
+        FROM ContentWorkspace 
+        WHERE Name = :folderName 
+        LIMIT 1
+    ];
+    
+    if (folders.isEmpty()) {
+        return loadStaticResource('default_' + fileName);
+    }
+    
+    // Find file in folder
+    List<ContentDocument> docs = [
+        SELECT LatestPublishedVersionId 
+        FROM ContentDocument 
+        WHERE Title = :fileName 
+        AND ParentId = :folders[0].Id 
+        LIMIT 1
+    ];
+    
+    if (docs.isEmpty()) {
+        return loadStaticResource('default_' + fileName);
+    }
+    
+    // Load content
+    ContentVersion cv = [
+        SELECT VersionData 
+        FROM ContentVersion 
+        WHERE Id = :docs[0].LatestPublishedVersionId
+    ];
+    
+    return cv.VersionData.toString();
+}
+```
+
+#### Validation & Error Handling
+
+When customers upload files, validate:
+1. **File format**: Must be `.md` or `.html`
+2. **Markdown syntax**: Basic parsing test
+3. **Required sections**: e.g., customer context must have "Terminology" section
+4. **Friendly errors**: "Your file is missing the ## Terminology section"
+
+```apex
+public class ConfigValidator {
+    public static ValidationResult validate(String content, String fileType) {
+        ValidationResult result = new ValidationResult();
+        
+        if (fileType == 'customer_context') {
+            // Check for required sections
+            if (!content.contains('## Terminology')) {
+                result.errors.add('Missing required section: ## Terminology');
+            }
+            if (!content.contains('## Deal Patterns')) {
+                result.errors.add('Missing required section: ## Deal Patterns');
+            }
+        }
+        
+        return result;
+    }
+}
+```
+
+### Implementation Strategy
+
+**Phase 1**: Static Resources only (ship with package)
+- All defaults deployed as Static Resources
+- Hardcoded file names in Apex
+
+**Phase 2**: Add file upload UI (customer can override)
+- Create "Configuration Manager" LWC component
+- Allow upload to "GPTfy Configuration" folder
+- Apex checks folder first, falls back to Static Resources
+
+**Phase 3**: Validation & versioning
+- Validate uploaded files before accepting
+- Show friendly error messages
+- Version history via ContentVersion (built-in)
+
+**Phase 4**: Advanced features
+- Inline markdown editor in Salesforce
+- Preview changes before saving
+- Diff view (compare custom vs. default)
+
+---
+
+### Why This Is The Right Architecture Choice
+
+**User's Original Insight**: "I want to kind of keep a simpler architecture so that we don't have to put things in custom metadata or create more objects."
+
+**Decision**: ✅ **Markdown files win**
+
+This architecture choice aligns perfectly with:
+1. **Single-tenant deployment**: Each customer can have their own files, no multi-tenant schema constraints
+2. **Customer empowerment**: Non-technical users can edit business context, terminology, patterns
+3. **Rapid iteration**: Change configuration without waiting for deployment cycles
+4. **Simplicity**: No Custom Metadata Types, no new objects, no schema design
+5. **Flexibility**: Files can evolve structure over time without breaking changes
+
+**The Trade-Off We're Making**:
+- ❌ Give up: Schema enforcement, SOQL queryability, metadata relationships
+- ✅ Get: Simplicity, customer editability, deployment-free changes, version control
+
+**For this product, this is the right trade-off** because:
+- Configuration is **customer-specific**, not shared across orgs
+- Configuration is **narrative/documentation** (markdown-friendly), not transactional data
+- Customers **want control** over terminology and patterns without technical overhead
+- Implementation teams need **fast customization** during onboarding
+
+---
+
 ## The 4-Layer Architecture
 
 We implement this via four distinct layers of intelligence:
@@ -138,32 +572,42 @@ A Markdown/JSON file deployed with the package containing verified customer-spec
 ```
 
 #### Where It Lives
-**Option 1**: Custom Metadata Type
+
+**Primary Storage**: Markdown file as Static Resource or Salesforce File
+
 ```apex
-PF_Customer_Context__mdt record with Long Text fields
+// Stage01 or Stage02
+String context = ConfigurationLoader.loadFile(
+    'cigna_business_context',  // Customer uploaded file name
+    'default_business_context' // Fallback static resource
+);
+Map<String, Object> parsed = ConfigurationLoader.parseMarkdown(context);
 ```
 
-**Option 2**: Static Resource
-```
-StaticResource: customer_business_context.md
-```
+**File Location Options**:
+1. **Static Resource** (v1): `cigna_business_context.md` deployed with package
+2. **Salesforce File** (v2): Uploaded by customer, attached to custom settings or LWC
+3. **Hybrid** (v3): Customer file overrides default static resource
 
 #### How It's Used
-1. **Stage02** loads this FIRST (before website scraping)
-2. Website scraping **validates/enriches**, doesn't create from scratch
-3. **Stage08** injects relevant sections into final prompt based on detected patterns
+1. **Stage01** loads customer context file at pipeline start
+2. **Stage02** uses context as baseline for industry classification and pattern detection
+3. Website scraping **validates/enriches**, doesn't create from scratch
+4. **Stage08** injects relevant sections (terminology, deal patterns) into final prompt assembly
 
 #### Benefits
 - ✅ No LLM guessing about industry
-- ✅ No hallucination about business context
+- ✅ No hallucination about business context  
 - ✅ Terminology is correct from day 1
 - ✅ Deal patterns are based on actual customer reality
+- ✅ **Customer can edit** without touching code or metadata
+- ✅ **No deployment required** to update (when using Salesforce Files)
 
 #### Relationship with Website Scraping
-- **Keep website scraping** for now
-- Use it to validate/enrich, not create from scratch
+- **Keep website scraping** for now (optional fallback/enrichment)
 - Customer context file is "ground truth"
 - Website provides additional public-facing messaging
+- Future: Make website scraping optional if customer context is comprehensive
 
 ---
 
@@ -174,131 +618,238 @@ StaticResource: customer_business_context.md
 #### The Insight
 We have 15-20 production prompts (Deal Coach, Account 360, Sentiment Journey, etc.) that already work. Instead of inventing patterns theoretically or asking the LLM to be creative, **extract proven patterns and apply them deterministically**.
 
-#### Library Structure
+#### Library Structure: Markdown Files
+
+All patterns, archetypes, and components are stored as individual markdown files.
 
 ##### A. Analytical Patterns (What to Analyze)
-```json
-{
-  "pattern_id": "negotiation_pressure",
-  "pattern_name": "Negotiation Pressure Detection",
-  "trigger": {
-    "stage_contains": ["Proposal", "Quote", "Negotiation"],
-    "description_keywords": ["discount", "CFO", "budget", "pricing"],
-    "min_probability": 60
-  },
-  "analysis_questions": [
-    "Who is driving the discount request?",
-    "What value justification is missing?",
-    "What concession alternatives exist besides price?"
-  ],
-  "output_section": "Negotiation Risk Assessment",
-  "forbidden_phrases": [
-    "offer competitive pricing",
-    "emphasize value proposition",
-    "align with stakeholders"
-  ],
-  "evidence_requirements": [
-    "OpportunityStage",
-    "Description or NextStep",
-    "Probability"
-  ]
-}
+
+**File**: `pattern_negotiation_pressure.md`
+
+```markdown
+---
+pattern_id: negotiation_pressure
+pattern_name: Negotiation Pressure Detection
+output_section: Negotiation Risk Assessment
+---
+
+# Negotiation Pressure Detection Pattern
+
+## Trigger Rules
+- Stage contains: Proposal, Quote, Negotiation
+- Keywords in Description: discount, CFO, budget, pricing
+- Min Probability: 60%
+
+## Analysis Questions
+1. Who is driving the discount request?
+2. What value justification is missing?
+3. What concession alternatives exist besides price?
+
+## Evidence Requirements
+- OpportunityStage (required)
+- Description or NextStep (required)
+- Probability (required)
+
+## Forbidden Phrases
+- "offer competitive pricing"
+- "emphasize value proposition"
+- "align with stakeholders"
+
+## Example Usage
+When an Opportunity is at Proposal stage with 75% probability and Description mentions 
+"CFO requesting 20% discount", this pattern triggers and requires the LLM to analyze 
+who's driving the request and what value justification is missing.
 ```
 
-**Other Pattern Examples**:
-- `stalled_deal_revival` - Triggers when Stage hasn't changed in 30+ days
-- `expansion_opportunity` - Triggers when Account has multiple Opportunities
-- `executive_engagement` - Triggers when no C-level contact in roles
-- `risk_mitigation` - Triggers on legal/compliance keywords
-- `competitive_threat` - Triggers on competitor mentions
+**Other Pattern Examples** (each as separate `.md` file):
+- `pattern_stalled_deal_revival.md` - Triggers when Stage hasn't changed in 30+ days
+- `pattern_expansion_opportunity.md` - Triggers when Account has multiple Opportunities
+- `pattern_executive_engagement.md` - Triggers when no C-level contact in roles
+- `pattern_risk_mitigation.md` - Triggers on legal/compliance keywords
+- `pattern_competitive_threat.md` - Triggers on competitor mentions
 
 ##### B. UI Components (How to Display)
-```json
-{
-  "component_id": "risk_scorecard",
-  "component_name": "Risk Assessment Card",
-  "html_template": "<div class='risk-card'>...</div>",
-  "merge_fields": [
-    "{{RiskLevel}}",
-    "{{RiskFactors}}",
-    "{{MitigationActions}}"
-  ],
-  "used_in": ["Deal Coach", "Executive Risk Brief"],
-  "styling": "red-yellow-green-indicator"
-}
+
+**File**: `component_risk_scorecard.html` (HTML with markdown metadata)
+
+```html
+<!--
+---
+component_id: risk_scorecard
+component_name: Risk Assessment Card
+used_in: Deal Coach, Executive Risk Brief
+styling: red-yellow-green-indicator
+---
+-->
+
+<div class="slds-card risk-assessment-card">
+  <div class="slds-card__header">
+    <h2 class="slds-text-heading_small">Risk Assessment</h2>
+  </div>
+  <div class="slds-card__body">
+    <div class="risk-level {{RISK_CLASS}}">
+      <span class="risk-indicator">{{RISK_LEVEL}}</span>
+    </div>
+    <ul class="slds-list_dotted risk-factors">
+      {{RISK_FACTORS}}
+    </ul>
+    <div class="mitigation-actions">
+      <h3>Recommended Actions</h3>
+      {{MITIGATION_ACTIONS}}
+    </div>
+  </div>
+</div>
+
+<!-- Merge Fields:
+  {{RISK_CLASS}} - CSS class: risk-high, risk-medium, risk-low
+  {{RISK_LEVEL}} - Text: High Risk, Medium Risk, Low Risk
+  {{RISK_FACTORS}} - <li> items generated by LLM
+  {{MITIGATION_ACTIONS}} - <li> items generated by LLM
+-->
 ```
 
-**Other Component Examples**:
-- `next_best_action_list` - Prioritized action items
-- `timeline_visualization` - Stage progression timeline
-- `stakeholder_map` - Relationship visualization
-- `health_score_gauge` - Visual health indicator
+**Other Component Examples** (each as separate file):
+- `component_next_best_action_list.html` - Prioritized action items
+- `component_timeline_visualization.html` - Stage progression timeline
+- `component_stakeholder_map.html` - Relationship visualization
+- `component_health_score_gauge.html` - Visual health indicator
 
 ##### C. Persona Archetypes (Who Is Reading)
-```json
-{
-  "archetype_id": "deal_coach",
-  "archetype_name": "Deal Coach Brief",
-  "target_reader": "Sales Representative or Account Executive",
-  "sections": [
-    "Deal Health Summary",
-    "Key Risks & Blockers",
-    "Next Best Actions",
-    "Stakeholder Engagement Status"
-  ],
-  "tone": "Prescriptive, action-oriented, coaching",
-  "length": "Executive brief (3-5 bullets per section)",
-  "evidence_depth": "High - cite specific fields and values"
-}
+
+**File**: `archetype_deal_coach.md`
+
+```markdown
+---
+archetype_id: deal_coach
+archetype_name: Deal Coach Brief
+target_reader: Sales Representative or Account Executive
+tone: Prescriptive, action-oriented, coaching
+length: Executive brief (3-5 bullets per section)
+evidence_depth: High - cite specific fields and values
+---
+
+# Deal Coach Brief Archetype
+
+## Purpose
+Provide actionable coaching to sales reps on how to advance their deals.
+
+## Output Structure
+1. **Deal Health Summary** (3-5 bullets)
+   - Current stage and trajectory
+   - Key strengths and momentum indicators
+   
+2. **Key Risks & Blockers** (2-3 items)
+   - What could derail the deal
+   - Missing information or stakeholders
+   
+3. **Next Best Actions** (prioritized list)
+   - Specific, actionable steps
+   - Who to contact, what to ask
+   
+4. **Stakeholder Engagement Status**
+   - Who's engaged, who's missing
+   - Relationship strength assessment
+
+## Tone Guidelines
+- Direct and prescriptive ("Schedule a call with..." not "Consider reaching out...")
+- Action-oriented (every insight leads to a next step)
+- Coach-like (explain WHY, not just WHAT)
+
+## Evidence Binding
+Every insight MUST cite:
+- Specific record (Record 1, 2, or 3)
+- Specific field name and value
+- OR state "Missing data: <FieldName>"
+
+## UI Components Used
+- `component_health_score_gauge.html`
+- `component_next_best_action_list.html`
+- `component_stakeholder_map.html`
 ```
 
-**Other Archetype Examples**:
-- `executive_risk_brief` - For leadership (summary, risks, escalations)
-- `account_360` - Holistic account view (relationships, health, expansion)
-- `renewal_health` - Customer success focus (adoption, satisfaction, risk)
-- `sentiment_journey` - Support focus (case patterns, satisfaction trends)
+**Other Archetype Examples** (each as separate `.md` file):
+- `archetype_executive_risk_brief.md` - For leadership (summary, risks, escalations)
+- `archetype_account_360.md` - Holistic account view (relationships, health, expansion)
+- `archetype_renewal_health.md` - Customer success focus (adoption, satisfaction, risk)
+- `archetype_sentiment_journey.md` - Support focus (case patterns, satisfaction trends)
 
 #### How to Build the Library
 
-**Phase 1: Analysis** (Week 1)
+**Phase 1: Extraction** (Week 1)
 1. Collect 5 best production prompts (Deal Coach, Account 360, etc.)
-2. Analyze for common patterns (expect 70% overlap)
-3. Extract:
-   - Trigger conditions (what signals activate each pattern)
-   - Analysis questions (what the prompt asks the LLM to determine)
-   - Output structure (sections, tone, length)
-   - Forbidden language (generic phrases to avoid)
+2. Analyze each prompt for:
+   - **Trigger conditions**: What signals activate each analytical lens?
+   - **Analysis questions**: What does the prompt ask the LLM to determine?
+   - **Output structure**: What sections, tone, length?
+   - **Forbidden language**: What generic phrases to avoid?
+3. Document findings in markdown (human-readable notes)
 
-**Phase 2: Structuring** (Week 1-2)
-1. Create Custom Metadata Types:
-   - `PF_Analytical_Pattern__mdt`
-   - `PF_UI_Component__mdt`
-   - `PF_Persona_Archetype__mdt`
-2. Store in metadata or Static Resources (JSON files)
-3. Build query/matching logic in Apex
+**Phase 2: Markdown File Creation** (Week 1-2)
+1. Create pattern files:
+   - `pattern_negotiation_pressure.md`
+   - `pattern_stalled_deal_revival.md`
+   - `pattern_expansion_opportunity.md`
+   - etc. (5-8 patterns initially)
+2. Create archetype files:
+   - `archetype_deal_coach.md`
+   - `archetype_executive_risk_brief.md`
+   - etc. (2-3 archetypes initially)
+3. Create component files:
+   - `component_risk_scorecard.html`
+   - `component_next_best_action_list.html`
+   - etc. (5-8 components initially)
+4. Store all as **Static Resources** (deployed with package)
 
-**Phase 3: Integration** (Week 2-3)
-1. **Stage02** detects applicable patterns based on triggers
-2. **Stage08** queries library for selected patterns + archetype
-3. Compose final prompt by assembling pieces
+**Phase 3: Loader Implementation** (Week 2)
+1. Implement `ConfigurationLoader` class (see "File Reading Implementation" above)
+2. Implement `PatternMatcher` class:
+   - Loads all pattern files
+   - Evaluates trigger rules against record data
+   - Returns 3-5 applicable patterns ranked by relevance
+3. Implement `PromptAssembler` class:
+   - Loads archetype file
+   - Loads selected pattern files
+   - Loads customer context file
+   - Assembles final meta-prompt
 
-#### Storage Options
+**Phase 4: Integration** (Week 2-3)
+1. **Stage01** loads customer context file
+2. **Stage02** uses `PatternMatcher` to detect applicable patterns
+3. **Stage08** uses `PromptAssembler` to compose final prompt
+4. Test end-to-end
 
-**Option 1: Custom Metadata** (Recommended)
-- Easy to modify without deployment
-- Version controlled
-- Can be packaged
-- Query in Apex easily
+#### Storage Strategy
 
-**Option 2: Static Resources**
-- JSON files
-- More flexible structure
-- Requires parsing
-- Good for complex nested data
+**Recommended Approach**: Markdown files as Static Resources (Phase 1), with Salesforce Files for customer overrides (Phase 2+)
 
-**Option 3: Hybrid** (Recommended)
-- Metadata for pattern definitions
-- Static Resources for HTML templates
+**Why This Wins**:
+- ✅ **No Custom Metadata complexity**: No schema design, no objects
+- ✅ **Customer editable**: Non-technical users can edit markdown
+- ✅ **Version controlled**: Static Resources in git
+- ✅ **Fast**: Cached in-memory after first load
+- ✅ **Flexible**: Change structure without redeployment
+- ✅ **Documentation built-in**: Markdown is self-documenting
+- ✅ **Easy migration**: Copy files between orgs
+
+**File Organization**:
+```
+Static Resources:
+├── patterns/
+│   ├── pattern_negotiation_pressure.md
+│   ├── pattern_stalled_deal_revival.md
+│   └── pattern_expansion_opportunity.md
+├── archetypes/
+│   ├── archetype_deal_coach.md
+│   └── archetype_executive_risk_brief.md
+├── components/
+│   ├── component_risk_scorecard.html
+│   └── component_next_best_action_list.html
+└── customer_context/
+    ├── cigna_business_context.md
+    └── default_business_context.md
+```
+
+**Future Enhancement**: Allow customers to upload their own files (Salesforce Files) to override defaults
 
 ---
 
@@ -627,37 +1178,50 @@ Optional "live" web context for highly strategic accounts:
 
 **Tasks**:
 1. **Context File Creation** (2 days)
-   - Design context file structure (see Layer 1 for example)
-   - Create Cigna example context (Industry, Terminology, Deal Patterns, Stakeholders, Red Flags)
-   - Store as Custom Metadata: `PF_Customer_Context__mdt` OR Static Resource
+   - Design markdown structure (see "Customer Business Context File" section)
+   - Create Cigna example: `cigna_business_context.md`
+     - Industry Profile
+     - Terminology (Member not Customer, Plan not Product)
+     - Deal Patterns (CFO involvement, security review timelines)
+     - Stakeholder Map (CMO, CFO, CIO roles)
+     - Red Flags (discount requests before value demo)
+   - Store as Static Resource: `cigna_business_context`
 
-2. **Stage01 Integration** (1 day)
-   - Load context file at pipeline start
+2. **ConfigurationLoader Enhancement** (1 day)
+   - Extend `loadFile()` to support customer context files
+   - Add caching for performance
+   - Parse markdown with YAML frontmatter
+
+3. **Stage01 Integration** (1 day)
+   - Load customer context file at pipeline start
+   - Cache in `PF_Run__c.Customer_Context__c` (Long Text Area field)
    - Pass to Stage02 as baseline
 
-3. **Stage02 Integration** (2 days)
+4. **Stage02 Integration** (2 days)
    - START with customer context (not website)
    - Use context for:
-     - Industry classification (no guessing)
+     - Industry classification (no guessing needed)
      - Forbidden topics (exclusion list)
-     - Deal pattern hints
+     - Deal pattern detection hints
    - Website scraping becomes **optional validation**, not primary source
 
-4. **Stage08 Integration** (1 day)
-   - Inject customer terminology into meta-prompt
+5. **Stage08 Integration** (1 day)
+   - Inject customer terminology sections into meta-prompt
    - Apply customer-specific deal patterns
-   - Use customer stakeholder maps in analysis
+   - Use customer stakeholder maps in analysis instructions
 
-5. **Testing** (1 day)
+6. **Testing** (1 day)
    - Compare outputs with/without customer context
    - Verify terminology correctness (100% accuracy expected)
    - Test with/without website scraping (should work either way)
+   - Test customer file upload (if implementing Salesforce Files option)
 
 **Success Criteria**:
-- ✅ Customer context correctly loaded
-- ✅ Terminology 100% accurate in all outputs
+- ✅ Customer context markdown file correctly loaded
+- ✅ Terminology 100% accurate in all outputs ("Member" not "Customer")
 - ✅ Can skip website scraping without quality loss
 - ✅ Industry-specific patterns correctly applied
+- ✅ **Customer can edit markdown file** and see changes without redeployment (if using Salesforce Files)
 
 ---
 
