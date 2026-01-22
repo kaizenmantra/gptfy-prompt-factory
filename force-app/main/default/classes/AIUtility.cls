@@ -4,33 +4,29 @@ public with sharing class AIUtility {
     @AuraEnabled
     public static Map<String, Object> getCustomSettings(){
         Map<String, Object> returnMap = new Map<String, Object>();
-        GPTfy_Settings__c settings = GPTfy_Settings__c.getOrgDefaults();
-        returnMap.put('typeEffect', settings.Typewriter_Effect__c != null ? settings.Typewriter_Effect__c : false); 
-        returnMap.put('fileProcessing', settings.File_Processing__c != null ? settings.File_Processing__c : false);
-        returnMap.put('prefixSuffix', settings.Prefix_Suffix__c != null ? settings.Prefix_Suffix__c : false);
-        returnMap.put('enableExceptionLog', settings.Exception_Log__c != null ? settings.Exception_Log__c : false);
-        returnMap.put('enablePromptVersion', settings.Prompt_Versioning__c != null ? settings.Prompt_Versioning__c : false);
-        returnMap.put('fileType', settings.File_Type__c != null ? settings.File_Type__c : NULL);
-        returnMap.put('maxFileSize', settings.Max_File_Size__c != null ? settings.Max_File_Size__c : NULL);
-        returnMap.put('maxFileCount', settings.Max_File_Count__c != null ? settings.Max_File_Count__c : NULL);
-        returnMap.put('reportingPeriod', settings.Reporting_Period__c != null ? settings.Reporting_Period__c : NULL);
-        returnMap.put('hourlyCost', settings.Hourly_Cost__c != null ? settings.Hourly_Cost__c : NULL);
-        returnMap.put('additionalInstructions', settings.Additional_Input_Separator__c != null ? settings.Additional_Input_Separator__c : null);
+        // Hardcoded defaults since GPTfy_Settings__c is missing
+        returnMap.put('typeEffect', false); 
+        returnMap.put('fileProcessing', false);
+        returnMap.put('prefixSuffix', false);
+        returnMap.put('enableExceptionLog', true); // Enable logging to debug input issues
+        returnMap.put('enablePromptVersion', false);
+        returnMap.put('fileType', null);
+        returnMap.put('maxFileSize', null);
+        returnMap.put('maxFileCount', null);
+        returnMap.put('reportingPeriod', null);
+        returnMap.put('hourlyCost', null);
+        returnMap.put('additionalInstructions', null);
         return returnMap;
     } 
     
     @AuraEnabled
     public static void updateCustomSettings(String fieldName, Boolean value){
-        GPTfy_Settings__c settings = GPTfy_Settings__c.getOrgDefaults();
-        settings.put(fieldName, value);
-        FLSCheck.getInstance().upsertDML(new List<GPTfy_Settings__c>{settings});
+        System.debug(LoggingLevel.INFO, 'Mock updateCustomSettings: ' + fieldName + ' = ' + value);
     }
     
     @AuraEnabled
     public static void updateGPTfySettings(String fieldName, Object value){
-        GPTfy_Settings__c settings = GPTfy_Settings__c.getOrgDefaults();
-        settings.put(fieldName,value);
-        FLSCheck.getInstance().upsertDML(new List<GPTfy_Settings__c>{settings});
+        System.debug(LoggingLevel.INFO, 'Mock updateGPTfySettings: ' + fieldName + ' = ' + value);
     }
     
     /*

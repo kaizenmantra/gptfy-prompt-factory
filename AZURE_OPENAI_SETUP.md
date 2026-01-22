@@ -53,7 +53,7 @@ Click **New** and enter:
 | Field | Value |
 |-------|-------|
 | **API Endpoint** | `https://saura-m51w47qu-eastus2.cognitiveservices.azure.com/openai/deployments/gpt-4o-for-coding/chat/completions?api-version=2024-12-01-preview` |
-| **API Key** | `9FzRxq2nMHNzlduqmGEozrwJ5o9Ittb57A0SGOPTzwVvS7Otjb6NJQQJ99ALACHYHv6XJ3w3AAAAACOGIjot` |
+| **API Key** | `<YOUR_AZURE_OPENAI_API_KEY>` |
 | **Deployment Name** | `gpt-4o-for-coding` |
 | **Max Tokens** | `4096` |
 | **Temperature** | `0.7` |
@@ -103,7 +103,7 @@ AIServiceClient.callAIJSON(systemPrompt, userPrompt, maxTokens);
 # Test Azure OpenAI connection
 curl -X POST "https://saura-m51w47qu-eastus2.cognitiveservices.azure.com/openai/deployments/gpt-4o-for-coding/chat/completions?api-version=2024-12-01-preview" \\
   -H "Content-Type: application/json" \\
-  -H "api-key: 9FzRxq2nMHNzlduqmGEozrwJ5o9Ittb57A0SGOPTzwVvS7Otjb6NJQQJ99ALACHYHv6XJ3w3AAAAACOGIjot" \\
+  -H "api-key: <YOUR_AZURE_OPENAI_API_KEY>" \\
   -d '{
     "messages": [
       {"role": "system", "content": "You are a helpful assistant."},

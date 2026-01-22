@@ -106,7 +106,8 @@ export default class PromptFactoryWizard extends LightningElement {
                 sampleRecordId: this.inputData.sampleRecordId || null,
                 businessContext: this.inputData.businessContext,
                 outputFormat: this.inputData.outputFormat,
-                aiModelId: this.inputData.aiModelId || null
+                aiModelId: this.inputData.aiModelId || null,
+                companyUrl: this.inputData.companyUrl || null
             });
 
             this.runId = runId;

@@ -61,6 +61,12 @@ public with sharing class Stage01_IntelligenceRetrieval implements IStage {
             result.outputs.put('businessContext', businessContext);
             result.outputs.put('outputFormat', run.Output_Format__c);
             result.outputs.put('promptName', run.Prompt_Name__c);
+            result.outputs.put('companyWebsite', run.Company_Website__c);
+            
+            // Log company website for observability
+            if (String.isNotBlank(run.Company_Website__c)) {
+                result.queueInfo(runId, STAGE_NUMBER, 'Company Website: ' + run.Company_Website__c);
+            }
 
             result.markCompleted();
             result.queueInfo(runId, STAGE_NUMBER, 'Intelligence retrieval completed successfully');
@@ -82,7 +88,7 @@ public with sharing class Stage01_IntelligenceRetrieval implements IStage {
     private PF_Run__c queryRunRecord(Id runId) {
         List<PF_Run__c> runs = [
             SELECT Id, Prompt_Name__c, Root_Object__c, Sample_Record_Id__c, 
-                   Business_Context__c, Output_Format__c
+                   Business_Context__c, Output_Format__c, Company_Website__c
             FROM PF_Run__c
             WHERE Id = :runId
             LIMIT 1

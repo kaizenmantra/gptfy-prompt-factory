@@ -126,27 +126,33 @@ public with sharing class Stage12_QualityAudit implements IStage {
                'TARGET PERSONA: ' + (targetPersona != null ? targetPersona : 'Not specified') + '\n' +
                'BUSINESS OBJECTIVES: ' + objectivesStr + '\n' +
                'SALESFORCE OBJECT: ' + rootObject + '\n\n' +
-               'GENERATED OUTPUT:\n' + truncateForPrompt(outputHtml, 3000) + '\n\n' +
-               'Audit this AI-generated output and score it on 5 dimensions (scale 1-10):\n\n' +
-               '1. VISUAL QUALITY (1-10): Is the formatting clean, readable, and professional?\n' +
-               '2. DATA ACCURACY (1-10): Does it show relevant and correct data for the goal?\n' +
-               '3. PERSONA FIT (1-10): Is it appropriate for the target user persona?\n' +
-               '4. ACTIONABILITY (1-10): Does it provide useful, actionable insights?\n' +
-               '5. BUSINESS VALUE (1-10): Does it support the stated business objectives?\n\n' +
+               'GENERATED OUTPUT:\n' + truncateForPrompt(outputHtml, 4000) + '\n\n' +
+               'Audit this AI-generated output and score it on 8 dimensions (scale 1-10):\n\n' +
+               '1. EVIDENCE BINDING: Are field citations present, correctly formatted, and accurate?\n' +
+               '2. DIAGNOSTIC DEPTH: Does it use diagnostic/prescriptive language vs descriptive reports?\n' +
+               '3. VISUAL QUALITY: Is the formatting clean, using SLDS patterns and good hierarchy?\n' +
+               '4. UI COMPONENT EFFECTIVENESS: Are stat cards, alerts, and tables used correctly?\n' +
+               '5. DATA ACCURACY: Are totals, dates, and related record data handled correctly?\n' +
+               '6. PERSONA FIT: Is the density and tone appropriate for the target archetype?\n' +
+               '7. ACTIONABILITY: Are there specific, time-bound, and actionable next steps?\n' +
+               '8. BUSINESS VALUE: Does it provide strategic "so what" value to the business?\n\n' +
                'Also provide:\n' +
                '- REASONING: Brief explanation of scores (2-3 sentences)\n' +
                '- STRENGTHS: 2-3 key strengths\n' +
                '- IMPROVEMENTS: 2-3 suggested improvements\n\n' +
                'Return ONLY valid JSON in this exact format:\n' +
                '{\n' +
+               '  "evidenceBinding": 8,\n' +
+               '  "diagnosticDepth": 9,\n' +
                '  "visualQuality": 8,\n' +
+               '  "uiEffectiveness": 7,\n' +
                '  "dataAccuracy": 9,\n' +
                '  "personaFit": 7,\n' +
                '  "actionability": 8,\n' +
                '  "businessValue": 9,\n' +
                '  "reasoning": "string",\n' +
-               '  "strengths": ["strength1", "strength2"],\n' +
-               '  "improvements": ["improvement1", "improvement2"]\n' +
+               '  "strengths": ["s1", "s2"],\n' +
+               '  "improvements": ["i1", "i2"]\n' +
                '}';
     }
 
@@ -170,7 +176,8 @@ public with sharing class Stage12_QualityAudit implements IStage {
 
             // Validate required fields
             List<String> requiredFields = new List<String>{
-                'visualQuality', 'dataAccuracy', 'personaFit',
+                'evidenceBinding', 'diagnosticDepth', 'visualQuality',
+                'uiEffectiveness', 'dataAccuracy', 'personaFit',
                 'actionability', 'businessValue'
             };
 
@@ -193,16 +200,21 @@ public with sharing class Stage12_QualityAudit implements IStage {
      * @return Overall score (average)
      */
     private Decimal calculateOverallScore(Map<String, Object> scorecard) {
-        Integer visualQuality = (Integer) scorecard.get('visualQuality');
-        Integer dataAccuracy = (Integer) scorecard.get('dataAccuracy');
-        Integer personaFit = (Integer) scorecard.get('personaFit');
-        Integer actionability = (Integer) scorecard.get('actionability');
-        Integer businessValue = (Integer) scorecard.get('businessValue');
+        // Weighted dimensions as per ARCHITECTURE_STRATEGY / Phase 0C Recommendations
+        Decimal eb = (Integer) scorecard.get('evidenceBinding');      // 20%
+        Decimal dd = (Integer) scorecard.get('diagnosticDepth');      // 15%
+        Decimal vq = (Integer) scorecard.get('visualQuality');         // 15%
+        Decimal ui = (Integer) scorecard.get('uiEffectiveness');       // 10%
+        Decimal da = (Integer) scorecard.get('dataAccuracy');         // 10%
+        Decimal pf = (Integer) scorecard.get('personaFit');           // 10%
+        Decimal ac = (Integer) scorecard.get('actionability');        // 10%
+        Decimal bv = (Integer) scorecard.get('businessValue');        // 10%
 
-        Decimal sum = visualQuality + dataAccuracy + personaFit + actionability + businessValue;
-        Decimal average = sum / 5.0;
+        Decimal weightedScore = 
+            (eb * 0.20) + (dd * 0.15) + (vq * 0.15) + (ui * 0.10) + 
+            (da * 0.10) + (pf * 0.10) + (ac * 0.10) + (bv * 0.10);
 
-        return average.setScale(2);
+        return weightedScore.setScale(2);
     }
 
     /**
@@ -216,22 +228,28 @@ public with sharing class Stage12_QualityAudit implements IStage {
     private Id createQualityScoreRecordDeferred(Id runId, Map<String, Object> scorecard,
                                        String aiReasoningJson, StageResult result) {
         try {
-            // Build AI_Feedback__c JSON containing extra data not in dedicated fields
-            // (reasoning, strengths, improvements, meetsThreshold, aiReasoningJson)
+            // Build AI_Feedback__c JSON containing the full 8-dimension audit
             Map<String, Object> feedbackData = new Map<String, Object>{
-                'meetsThreshold' => scorecard.get('meetsThreshold'),
+                'weightedScore' => scorecard.get('overallScore'),
                 'threshold' => scorecard.get('threshold'),
-                'overallScore' => scorecard.get('overallScore'),
+                'dimensions' => new Map<String, Object>{
+                    'evidenceBinding' => scorecard.get('evidenceBinding'),
+                    'diagnosticDepth' => scorecard.get('diagnosticDepth'),
+                    'visualQuality' => scorecard.get('visualQuality'),
+                    'uiEffectiveness' => scorecard.get('uiEffectiveness'),
+                    'dataAccuracy' => scorecard.get('dataAccuracy'),
+                    'personaFit' => scorecard.get('personaFit'),
+                    'actionability' => scorecard.get('actionability'),
+                    'businessValue' => scorecard.get('businessValue')
+                },
                 'reasoning' => scorecard.get('reasoning'),
                 'strengths' => scorecard.get('strengths'),
                 'improvements' => scorecard.get('improvements'),
+                'schema' => 'v2-8-dimension-weighted',
                 'rawAiResponse' => aiReasoningJson
             };
             String aiFeedbackJson = truncate(JSON.serialize(feedbackData), 131072);
 
-            // Note: Overall_Score__c and Passed__c are formula fields (READ ONLY)
-            // We store the 5 dimension scores which feed into the formula
-            // Pass_Threshold__c stores the threshold value
             PF_Quality_Score__c qualityScore = new PF_Quality_Score__c(
                 Run__c = runId,
                 Visual_Quality__c = (Integer) scorecard.get('visualQuality'),
@@ -246,7 +264,7 @@ public with sharing class Stage12_QualityAudit implements IStage {
             insert qualityScore;
 
             result.queueInfo(runId, STAGE_NUMBER,
-                'Created quality score record: ' + qualityScore.Id);
+                'Created 8-dimension quality score record: ' + qualityScore.Id);
 
             return qualityScore.Id;
 

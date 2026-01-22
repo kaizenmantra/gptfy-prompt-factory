@@ -151,6 +151,12 @@ public with sharing class Stage03_SchemaDiscovery implements IStage {
             result.outputs.put('promptName', inputs.get('promptName'));
             result.outputs.put('sampleRecordId', inputs.get('sampleRecordId'));
             result.outputs.put('outputFormat', inputs.get('outputFormat'));
+            // Pass through enriched context from Stage 2 for downstream stages
+            result.outputs.put('companyIntelligence', inputs.get('companyIntelligence'));
+            result.outputs.put('industryContext', inputs.get('industryContext'));
+            result.outputs.put('companyProfile', inputs.get('companyProfile'));
+            result.outputs.put('strategicInsights', inputs.get('strategicInsights'));
+            result.outputs.put('companyWebsite', inputs.get('companyWebsite'));
             // recordData omitted - causes stack overflow during serialization
 
             result.markCompleted();

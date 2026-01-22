@@ -1,0 +1,327 @@
+[
+  {
+    "variant_num": 15,
+    "phase0b_metrics": {
+      "visual_diversity": {
+        "score": 6,
+        "distinct_types": 4,
+        "components": {
+          "stat_cards": 8,
+          "alert_boxes": 5,
+          "progress_bars": 0,
+          "tables": 0,
+          "gradients": 1,
+          "cards": 8,
+          "badges": 0
+        },
+        "reasoning": "Uses 4 distinct component types. Stat cards: 8, Alert boxes: 5, Tables: 0"
+      },
+      "analytical_depth": {
+        "score": 10,
+        "analytical_sections": 5,
+        "has_risk_analysis": true,
+        "has_recommendations": true,
+        "has_impact": true,
+        "reasoning": "Contains 5/5 analytical elements. Risk analysis: True, Recommendations: True"
+      },
+      "pattern_application": {
+        "score": 8,
+        "patterns_found": 5,
+        "patterns": {
+          "risk_assessment": true,
+          "next_best_action": true,
+          "metrics_calculation": true,
+          "timeline_analysis": true,
+          "stakeholder_analysis": true
+        },
+        "format_compliance": 1,
+        "reasoning": "Detected 5/5 patterns. Format compliance: 1/3"
+      },
+      "evidence_binding": {
+        "score": 1,
+        "citations": 3,
+        "generic_phrases": 0,
+        "reasoning": "Limited evidence citations."
+      },
+      "ui_elegance": {
+        "score": 10,
+        "elegance_indicators": 8,
+        "has_large_numbers": true,
+        "has_semantic_colors": true,
+        "has_shadows": true,
+        "reasoning": "8/8 elegance indicators present. Large numbers: True, Shadows: True, Gradients: True"
+      }
+    },
+    "stage12_metrics": {
+      "visualQuality": 9,
+      "dataAccuracy": 8,
+      "personaFit": 8,
+      "actionability": 7,
+      "businessValue": 8,
+      "overallStage12": 8.0
+    },
+    "phase0b_avg": 7.0,
+    "stage12_avg": 8.0,
+    "overall_composite": 75.0
+  },
+  {
+    "variant_num": 16,
+    "phase0b_metrics": {
+      "visual_diversity": {
+        "score": 6,
+        "distinct_types": 4,
+        "components": {
+          "stat_cards": 0,
+          "alert_boxes": 2,
+          "progress_bars": 0,
+          "tables": 0,
+          "gradients": 1,
+          "cards": 3,
+          "badges": 1
+        },
+        "reasoning": "Uses 4 distinct component types. Stat cards: 0, Alert boxes: 2, Tables: 0"
+      },
+      "analytical_depth": {
+        "score": 10,
+        "analytical_sections": 5,
+        "has_risk_analysis": true,
+        "has_recommendations": true,
+        "has_impact": true,
+        "reasoning": "Contains 5/5 analytical elements. Risk analysis: True, Recommendations: True"
+      },
+      "pattern_application": {
+        "score": 6,
+        "patterns_found": 3,
+        "patterns": {
+          "risk_assessment": true,
+          "next_best_action": true,
+          "metrics_calculation": true,
+          "timeline_analysis": false,
+          "stakeholder_analysis": false
+        },
+        "format_compliance": 2,
+        "reasoning": "Detected 3/5 patterns. Format compliance: 2/3"
+      },
+      "evidence_binding": {
+        "score": 2,
+        "citations": 6,
+        "generic_phrases": 0,
+        "reasoning": "Limited evidence citations."
+      },
+      "ui_elegance": {
+        "score": 7,
+        "elegance_indicators": 6,
+        "has_large_numbers": false,
+        "has_semantic_colors": true,
+        "has_shadows": true,
+        "reasoning": "6/8 elegance indicators present. Large numbers: False, Shadows: True, Gradients: True"
+      }
+    },
+    "stage12_metrics": {
+      "visualQuality": 9,
+      "dataAccuracy": 8,
+      "personaFit": 8,
+      "actionability": 5,
+      "businessValue": 8,
+      "overallStage12": 7.6
+    },
+    "phase0b_avg": 6.2,
+    "stage12_avg": 7.6,
+    "overall_composite": 69.0
+  },
+  {
+    "variant_num": 18,
+    "phase0b_metrics": {
+      "visual_diversity": {
+        "score": 6,
+        "distinct_types": 4,
+        "components": {
+          "stat_cards": 0,
+          "alert_boxes": 1,
+          "progress_bars": 1,
+          "tables": 0,
+          "gradients": 1,
+          "cards": 0,
+          "badges": 1
+        },
+        "reasoning": "Uses 4 distinct component types. Stat cards: 0, Alert boxes: 1, Tables: 0"
+      },
+      "analytical_depth": {
+        "score": 4,
+        "analytical_sections": 2,
+        "has_risk_analysis": false,
+        "has_recommendations": true,
+        "has_impact": false,
+        "reasoning": "Contains 2/5 analytical elements. Risk analysis: False, Recommendations: True"
+      },
+      "pattern_application": {
+        "score": 6,
+        "patterns_found": 3,
+        "patterns": {
+          "risk_assessment": false,
+          "next_best_action": true,
+          "metrics_calculation": true,
+          "timeline_analysis": true,
+          "stakeholder_analysis": false
+        },
+        "format_compliance": 2,
+        "reasoning": "Detected 3/5 patterns. Format compliance: 2/3"
+      },
+      "evidence_binding": {
+        "score": 0,
+        "citations": 2,
+        "generic_phrases": 0,
+        "reasoning": "Limited evidence citations."
+      },
+      "ui_elegance": {
+        "score": 6,
+        "elegance_indicators": 5,
+        "has_large_numbers": false,
+        "has_semantic_colors": true,
+        "has_shadows": false,
+        "reasoning": "5/8 elegance indicators present. Large numbers: False, Shadows: False, Gradients: True"
+      }
+    },
+    "stage12_metrics": {
+      "visualQuality": 9,
+      "dataAccuracy": 8,
+      "personaFit": 8,
+      "actionability": 5,
+      "businessValue": 8,
+      "overallStage12": 7.6
+    },
+    "phase0b_avg": 4.4,
+    "stage12_avg": 7.6,
+    "overall_composite": 60.0
+  },
+  {
+    "variant_num": 19,
+    "phase0b_metrics": {
+      "visual_diversity": {
+        "score": 2,
+        "distinct_types": 1,
+        "components": {
+          "stat_cards": 0,
+          "alert_boxes": 0,
+          "progress_bars": 0,
+          "tables": 0,
+          "gradients": 1,
+          "cards": 0,
+          "badges": 0
+        },
+        "reasoning": "Uses 1 distinct component types. Stat cards: 0, Alert boxes: 0, Tables: 0"
+      },
+      "analytical_depth": {
+        "score": 8,
+        "analytical_sections": 4,
+        "has_risk_analysis": true,
+        "has_recommendations": true,
+        "has_impact": false,
+        "reasoning": "Contains 4/5 analytical elements. Risk analysis: True, Recommendations: True"
+      },
+      "pattern_application": {
+        "score": 7,
+        "patterns_found": 5,
+        "patterns": {
+          "risk_assessment": true,
+          "next_best_action": true,
+          "metrics_calculation": true,
+          "timeline_analysis": true,
+          "stakeholder_analysis": true
+        },
+        "format_compliance": 0,
+        "reasoning": "Detected 5/5 patterns. Format compliance: 0/3"
+      },
+      "evidence_binding": {
+        "score": 4,
+        "citations": 19,
+        "generic_phrases": 1,
+        "reasoning": "19 evidence citations, 1 generic phrases. Strong evidence binding."
+      },
+      "ui_elegance": {
+        "score": 5,
+        "elegance_indicators": 4,
+        "has_large_numbers": false,
+        "has_semantic_colors": false,
+        "has_shadows": false,
+        "reasoning": "4/8 elegance indicators present. Large numbers: False, Shadows: False, Gradients: True"
+      }
+    },
+    "stage12_metrics": {
+      "visualQuality": 6,
+      "dataAccuracy": 8,
+      "personaFit": 8,
+      "actionability": 5,
+      "businessValue": 8,
+      "overallStage12": 7.0
+    },
+    "phase0b_avg": 5.2,
+    "stage12_avg": 7.0,
+    "overall_composite": 61.0
+  },
+  {
+    "variant_num": 20,
+    "phase0b_metrics": {
+      "visual_diversity": {
+        "score": 2,
+        "distinct_types": 1,
+        "components": {
+          "stat_cards": 0,
+          "alert_boxes": 0,
+          "progress_bars": 0,
+          "tables": 0,
+          "gradients": 1,
+          "cards": 0,
+          "badges": 0
+        },
+        "reasoning": "Uses 1 distinct component types. Stat cards: 0, Alert boxes: 0, Tables: 0"
+      },
+      "analytical_depth": {
+        "score": 6,
+        "analytical_sections": 3,
+        "has_risk_analysis": true,
+        "has_recommendations": true,
+        "has_impact": false,
+        "reasoning": "Contains 3/5 analytical elements. Risk analysis: True, Recommendations: True"
+      },
+      "pattern_application": {
+        "score": 7,
+        "patterns_found": 5,
+        "patterns": {
+          "risk_assessment": true,
+          "next_best_action": true,
+          "metrics_calculation": true,
+          "timeline_analysis": true,
+          "stakeholder_analysis": true
+        },
+        "format_compliance": 0,
+        "reasoning": "Detected 5/5 patterns. Format compliance: 0/3"
+      },
+      "evidence_binding": {
+        "score": 6,
+        "citations": 20,
+        "generic_phrases": 0,
+        "reasoning": "20 evidence citations, 0 generic phrases. Strong evidence binding."
+      },
+      "ui_elegance": {
+        "score": 5,
+        "elegance_indicators": 4,
+        "has_large_numbers": true,
+        "has_semantic_colors": false,
+        "has_shadows": false,
+        "reasoning": "4/8 elegance indicators present. Large numbers: True, Shadows: False, Gradients: True"
+      }
+    },
+    "stage12_metrics": {
+      "visualQuality": 6,
+      "dataAccuracy": 8,
+      "personaFit": 8,
+      "actionability": 7,
+      "businessValue": 8,
+      "overallStage12": 7.4
+    },
+    "phase0b_avg": 5.2,
+    "stage12_avg": 7.4,
+    "overall_composite": 63.0
+  }
+]

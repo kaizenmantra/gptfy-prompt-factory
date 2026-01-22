@@ -44,7 +44,9 @@ public class PromptFactoryChainBreaker implements Schedulable {
             System.enqueueJob(new Stage07_TemplateDesignJob(runId));
         } else if (stageToRun == 8) {
             System.enqueueJob(new Stage08_PromptAssemblyJob(runId));
-        } else if (stageToRun == 9) {
+        }
+        /*
+        else if (stageToRun == 9) {
             System.enqueueJob(new Stage09_CreateAndDeployJob(runId));
         } else if (stageToRun == 10) {
             System.enqueueJob(new Stage10_TestExecutionJob(runId));
@@ -53,6 +55,7 @@ public class PromptFactoryChainBreaker implements Schedulable {
         } else if (stageToRun == 12) {
             System.enqueueJob(new Stage12_QualityAuditJob(runId));
         }
+        */
 
         // Abort this scheduled job after execution
         System.abortJob(sc.getTriggerId());

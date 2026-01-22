@@ -1,0 +1,1 @@
+PF_Run_Log__c log = [SELECT Id FROM PF_Run_Log__c ORDER BY CreatedDate DESC LIMIT 1]; Map<String, Object> fields = log.getPopulatedFieldsAsMap(); System.debug('LOG FIELDS: ' + JSON.serialize(fields.keySet()));

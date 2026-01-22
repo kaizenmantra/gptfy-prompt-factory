@@ -1,0 +1,1142 @@
+[
+  {
+    "variant_num": 21,
+    "metrics": {
+      "pattern_effectiveness": {
+        "score": 10,
+        "indicators": {
+          "risk": 12,
+          "metrics": 0,
+          "action": 1,
+          "timeline": 5,
+          "stakeholder": 5,
+          "rootcause": 0
+        },
+        "total_indicators": 23,
+        "reasoning": "Found 23 pattern-specific indicators."
+      },
+      "ui_impact": {
+        "score": 9,
+        "distinct_elements": 3,
+        "elements": {
+          "stat_cards": 0,
+          "alert_boxes": 5,
+          "progress_bars": 0,
+          "action_cards": 1,
+          "gradients": 0,
+          "milestones": 3,
+          "icons_or_badges": 0
+        },
+        "reasoning": "Uses 3 distinct UI component types (verified via robust regex)."
+      },
+      "evidence_binding": {
+        "score": 8,
+        "citations": 5,
+        "reasoning": "Found 5 specific evidence citations."
+      },
+      "output_quality": {
+        "score": 5,
+        "has_placeholders": false,
+        "has_nulls": false,
+        "is_single_line": true,
+        "reasoning": "Quality score 5/10 based on structure and content integrity."
+      },
+      "analytical_value": {
+        "score": 6,
+        "elements_found": 2,
+        "reasoning": "Found 2 analytical value elements."
+      },
+      "information_density": {
+        "score": 10,
+        "size_kb": 5.24,
+        "reasoning": "Output size is 5.24 KB (optimal is 4-7 KB)."
+      },
+      "actionability": {
+        "score": 8,
+        "has_actions": true,
+        "reasoning": "Actionability score 8/10."
+      }
+    },
+    "composite_score": 80.5
+  },
+  {
+    "variant_num": 22,
+    "metrics": {
+      "pattern_effectiveness": {
+        "score": 10,
+        "indicators": {
+          "risk": 1,
+          "metrics": 3,
+          "action": 0,
+          "timeline": 10,
+          "stakeholder": 6,
+          "rootcause": 0
+        },
+        "total_indicators": 20,
+        "reasoning": "Found 20 pattern-specific indicators."
+      },
+      "ui_impact": {
+        "score": 5,
+        "distinct_elements": 1,
+        "elements": {
+          "stat_cards": 0,
+          "alert_boxes": 0,
+          "progress_bars": 0,
+          "action_cards": 1,
+          "gradients": 0,
+          "milestones": 0,
+          "icons_or_badges": 0
+        },
+        "reasoning": "Uses 1 distinct UI component types (verified via robust regex)."
+      },
+      "evidence_binding": {
+        "score": 8,
+        "citations": 5,
+        "reasoning": "Found 5 specific evidence citations."
+      },
+      "output_quality": {
+        "score": 10,
+        "has_placeholders": false,
+        "has_nulls": false,
+        "is_single_line": true,
+        "reasoning": "Quality score 10/10 based on structure and content integrity."
+      },
+      "analytical_value": {
+        "score": 2,
+        "elements_found": 0,
+        "reasoning": "Found 0 analytical value elements."
+      },
+      "information_density": {
+        "score": 8,
+        "size_kb": 3.42,
+        "reasoning": "Output size is 3.42 KB (optimal is 4-7 KB)."
+      },
+      "actionability": {
+        "score": 3,
+        "has_actions": false,
+        "reasoning": "Actionability score 3/10."
+      }
+    },
+    "composite_score": 69.5
+  },
+  {
+    "variant_num": 23,
+    "metrics": {
+      "pattern_effectiveness": {
+        "score": 10,
+        "indicators": {
+          "risk": 4,
+          "metrics": 4,
+          "action": 14,
+          "timeline": 0,
+          "stakeholder": 2,
+          "rootcause": 4
+        },
+        "total_indicators": 28,
+        "reasoning": "Found 28 pattern-specific indicators."
+      },
+      "ui_impact": {
+        "score": 7,
+        "distinct_elements": 2,
+        "elements": {
+          "stat_cards": 0,
+          "alert_boxes": 4,
+          "progress_bars": 0,
+          "action_cards": 1,
+          "gradients": 0,
+          "milestones": 0,
+          "icons_or_badges": 0
+        },
+        "reasoning": "Uses 2 distinct UI component types (verified via robust regex)."
+      },
+      "evidence_binding": {
+        "score": 8,
+        "citations": 5,
+        "reasoning": "Found 5 specific evidence citations."
+      },
+      "output_quality": {
+        "score": 10,
+        "has_placeholders": false,
+        "has_nulls": false,
+        "is_single_line": true,
+        "reasoning": "Quality score 10/10 based on structure and content integrity."
+      },
+      "analytical_value": {
+        "score": 6,
+        "elements_found": 2,
+        "reasoning": "Found 2 analytical value elements."
+      },
+      "information_density": {
+        "score": 10,
+        "size_kb": 6.54,
+        "reasoning": "Output size is 6.54 KB (optimal is 4-7 KB)."
+      },
+      "actionability": {
+        "score": 10,
+        "has_actions": true,
+        "reasoning": "Actionability score 10/10."
+      }
+    },
+    "composite_score": 85.0
+  },
+  {
+    "variant_num": 24,
+    "metrics": {
+      "pattern_effectiveness": {
+        "score": 10,
+        "indicators": {
+          "risk": 6,
+          "metrics": 1,
+          "action": 2,
+          "timeline": 20,
+          "stakeholder": 1,
+          "rootcause": 0
+        },
+        "total_indicators": 30,
+        "reasoning": "Found 30 pattern-specific indicators."
+      },
+      "ui_impact": {
+        "score": 9,
+        "distinct_elements": 3,
+        "elements": {
+          "stat_cards": 0,
+          "alert_boxes": 1,
+          "progress_bars": 0,
+          "action_cards": 1,
+          "gradients": 0,
+          "milestones": 4,
+          "icons_or_badges": 0
+        },
+        "reasoning": "Uses 3 distinct UI component types (verified via robust regex)."
+      },
+      "evidence_binding": {
+        "score": 8,
+        "citations": 6,
+        "reasoning": "Found 6 specific evidence citations."
+      },
+      "output_quality": {
+        "score": 10,
+        "has_placeholders": false,
+        "has_nulls": false,
+        "is_single_line": true,
+        "reasoning": "Quality score 10/10 based on structure and content integrity."
+      },
+      "analytical_value": {
+        "score": 8,
+        "elements_found": 4,
+        "reasoning": "Found 4 analytical value elements."
+      },
+      "information_density": {
+        "score": 10,
+        "size_kb": 4.91,
+        "reasoning": "Output size is 4.91 KB (optimal is 4-7 KB)."
+      },
+      "actionability": {
+        "score": 8,
+        "has_actions": true,
+        "reasoning": "Actionability score 8/10."
+      }
+    },
+    "composite_score": 91.0
+  },
+  {
+    "variant_num": 25,
+    "metrics": {
+      "pattern_effectiveness": {
+        "score": 10,
+        "indicators": {
+          "risk": 3,
+          "metrics": 2,
+          "action": 1,
+          "timeline": 1,
+          "stakeholder": 20,
+          "rootcause": 0
+        },
+        "total_indicators": 27,
+        "reasoning": "Found 27 pattern-specific indicators."
+      },
+      "ui_impact": {
+        "score": 7,
+        "distinct_elements": 2,
+        "elements": {
+          "stat_cards": 0,
+          "alert_boxes": 1,
+          "progress_bars": 0,
+          "action_cards": 1,
+          "gradients": 0,
+          "milestones": 0,
+          "icons_or_badges": 0
+        },
+        "reasoning": "Uses 2 distinct UI component types (verified via robust regex)."
+      },
+      "evidence_binding": {
+        "score": 6,
+        "citations": 3,
+        "reasoning": "Found 3 specific evidence citations."
+      },
+      "output_quality": {
+        "score": 10,
+        "has_placeholders": false,
+        "has_nulls": false,
+        "is_single_line": true,
+        "reasoning": "Quality score 10/10 based on structure and content integrity."
+      },
+      "analytical_value": {
+        "score": 6,
+        "elements_found": 3,
+        "reasoning": "Found 3 analytical value elements."
+      },
+      "information_density": {
+        "score": 10,
+        "size_kb": 5.1,
+        "reasoning": "Output size is 5.10 KB (optimal is 4-7 KB)."
+      },
+      "actionability": {
+        "score": 8,
+        "has_actions": true,
+        "reasoning": "Actionability score 8/10."
+      }
+    },
+    "composite_score": 81.0
+  },
+  {
+    "variant_num": 26,
+    "metrics": {
+      "pattern_effectiveness": {
+        "score": 8,
+        "indicators": {
+          "risk": 4,
+          "metrics": 1,
+          "action": 0,
+          "timeline": 2,
+          "stakeholder": 3,
+          "rootcause": 0
+        },
+        "total_indicators": 10,
+        "reasoning": "Found 10 pattern-specific indicators."
+      },
+      "ui_impact": {
+        "score": 5,
+        "distinct_elements": 1,
+        "elements": {
+          "stat_cards": 0,
+          "alert_boxes": 0,
+          "progress_bars": 0,
+          "action_cards": 1,
+          "gradients": 0,
+          "milestones": 0,
+          "icons_or_badges": 0
+        },
+        "reasoning": "Uses 1 distinct UI component types (verified via robust regex)."
+      },
+      "evidence_binding": {
+        "score": 8,
+        "citations": 7,
+        "reasoning": "Found 7 specific evidence citations."
+      },
+      "output_quality": {
+        "score": 10,
+        "has_placeholders": false,
+        "has_nulls": false,
+        "is_single_line": true,
+        "reasoning": "Quality score 10/10 based on structure and content integrity."
+      },
+      "analytical_value": {
+        "score": 2,
+        "elements_found": 0,
+        "reasoning": "Found 0 analytical value elements."
+      },
+      "information_density": {
+        "score": 8,
+        "size_kb": 3.5,
+        "reasoning": "Output size is 3.50 KB (optimal is 4-7 KB)."
+      },
+      "actionability": {
+        "score": 8,
+        "has_actions": true,
+        "reasoning": "Actionability score 8/10."
+      }
+    },
+    "composite_score": 68.0
+  },
+  {
+    "variant_num": 27,
+    "metrics": {
+      "pattern_effectiveness": {
+        "score": 10,
+        "indicators": {
+          "risk": 3,
+          "metrics": 1,
+          "action": 1,
+          "timeline": 5,
+          "stakeholder": 0,
+          "rootcause": 11
+        },
+        "total_indicators": 21,
+        "reasoning": "Found 21 pattern-specific indicators."
+      },
+      "ui_impact": {
+        "score": 9,
+        "distinct_elements": 3,
+        "elements": {
+          "stat_cards": 0,
+          "alert_boxes": 3,
+          "progress_bars": 0,
+          "action_cards": 1,
+          "gradients": 0,
+          "milestones": 1,
+          "icons_or_badges": 0
+        },
+        "reasoning": "Uses 3 distinct UI component types (verified via robust regex)."
+      },
+      "evidence_binding": {
+        "score": 8,
+        "citations": 7,
+        "reasoning": "Found 7 specific evidence citations."
+      },
+      "output_quality": {
+        "score": 10,
+        "has_placeholders": false,
+        "has_nulls": false,
+        "is_single_line": true,
+        "reasoning": "Quality score 10/10 based on structure and content integrity."
+      },
+      "analytical_value": {
+        "score": 4,
+        "elements_found": 1,
+        "reasoning": "Found 1 analytical value elements."
+      },
+      "information_density": {
+        "score": 10,
+        "size_kb": 5.17,
+        "reasoning": "Output size is 5.17 KB (optimal is 4-7 KB)."
+      },
+      "actionability": {
+        "score": 10,
+        "has_actions": true,
+        "reasoning": "Actionability score 10/10."
+      }
+    },
+    "composite_score": 86.0
+  },
+  {
+    "variant_num": 28,
+    "metrics": {
+      "pattern_effectiveness": {
+        "score": 10,
+        "indicators": {
+          "risk": 2,
+          "metrics": 3,
+          "action": 0,
+          "timeline": 9,
+          "stakeholder": 4,
+          "rootcause": 0
+        },
+        "total_indicators": 18,
+        "reasoning": "Found 18 pattern-specific indicators."
+      },
+      "ui_impact": {
+        "score": 9,
+        "distinct_elements": 3,
+        "elements": {
+          "stat_cards": 2,
+          "alert_boxes": 0,
+          "progress_bars": 0,
+          "action_cards": 1,
+          "gradients": 0,
+          "milestones": 0,
+          "icons_or_badges": 1
+        },
+        "reasoning": "Uses 3 distinct UI component types (verified via robust regex)."
+      },
+      "evidence_binding": {
+        "score": 10,
+        "citations": 12,
+        "reasoning": "Found 12 specific evidence citations."
+      },
+      "output_quality": {
+        "score": 10,
+        "has_placeholders": false,
+        "has_nulls": false,
+        "is_single_line": true,
+        "reasoning": "Quality score 10/10 based on structure and content integrity."
+      },
+      "analytical_value": {
+        "score": 2,
+        "elements_found": 0,
+        "reasoning": "Found 0 analytical value elements."
+      },
+      "information_density": {
+        "score": 10,
+        "size_kb": 5.38,
+        "reasoning": "Output size is 5.38 KB (optimal is 4-7 KB)."
+      },
+      "actionability": {
+        "score": 3,
+        "has_actions": false,
+        "reasoning": "Actionability score 3/10."
+      }
+    },
+    "composite_score": 82.5
+  },
+  {
+    "variant_num": 29,
+    "metrics": {
+      "pattern_effectiveness": {
+        "score": 10,
+        "indicators": {
+          "risk": 3,
+          "metrics": 3,
+          "action": 0,
+          "timeline": 5,
+          "stakeholder": 2,
+          "rootcause": 0
+        },
+        "total_indicators": 13,
+        "reasoning": "Found 13 pattern-specific indicators."
+      },
+      "ui_impact": {
+        "score": 9,
+        "distinct_elements": 3,
+        "elements": {
+          "stat_cards": 2,
+          "alert_boxes": 0,
+          "progress_bars": 0,
+          "action_cards": 1,
+          "gradients": 0,
+          "milestones": 0,
+          "icons_or_badges": 1
+        },
+        "reasoning": "Uses 3 distinct UI component types (verified via robust regex)."
+      },
+      "evidence_binding": {
+        "score": 10,
+        "citations": 9,
+        "reasoning": "Found 9 specific evidence citations."
+      },
+      "output_quality": {
+        "score": 10,
+        "has_placeholders": false,
+        "has_nulls": false,
+        "is_single_line": true,
+        "reasoning": "Quality score 10/10 based on structure and content integrity."
+      },
+      "analytical_value": {
+        "score": 2,
+        "elements_found": 0,
+        "reasoning": "Found 0 analytical value elements."
+      },
+      "information_density": {
+        "score": 10,
+        "size_kb": 5.78,
+        "reasoning": "Output size is 5.78 KB (optimal is 4-7 KB)."
+      },
+      "actionability": {
+        "score": 3,
+        "has_actions": false,
+        "reasoning": "Actionability score 3/10."
+      }
+    },
+    "composite_score": 82.5
+  },
+  {
+    "variant_num": 30,
+    "metrics": {
+      "pattern_effectiveness": {
+        "score": 10,
+        "indicators": {
+          "risk": 1,
+          "metrics": 7,
+          "action": 1,
+          "timeline": 5,
+          "stakeholder": 2,
+          "rootcause": 0
+        },
+        "total_indicators": 16,
+        "reasoning": "Found 16 pattern-specific indicators."
+      },
+      "ui_impact": {
+        "score": 7,
+        "distinct_elements": 2,
+        "elements": {
+          "stat_cards": 0,
+          "alert_boxes": 0,
+          "progress_bars": 0,
+          "action_cards": 1,
+          "gradients": 0,
+          "milestones": 0,
+          "icons_or_badges": 1
+        },
+        "reasoning": "Uses 2 distinct UI component types (verified via robust regex)."
+      },
+      "evidence_binding": {
+        "score": 0,
+        "citations": 0,
+        "reasoning": "Found 0 specific evidence citations."
+      },
+      "output_quality": {
+        "score": 10,
+        "has_placeholders": false,
+        "has_nulls": false,
+        "is_single_line": true,
+        "reasoning": "Quality score 10/10 based on structure and content integrity."
+      },
+      "analytical_value": {
+        "score": 2,
+        "elements_found": 0,
+        "reasoning": "Found 0 analytical value elements."
+      },
+      "information_density": {
+        "score": 10,
+        "size_kb": 4.42,
+        "reasoning": "Output size is 4.42 KB (optimal is 4-7 KB)."
+      },
+      "actionability": {
+        "score": 8,
+        "has_actions": true,
+        "reasoning": "Actionability score 8/10."
+      }
+    },
+    "composite_score": 66.0
+  },
+  {
+    "variant_num": 31,
+    "metrics": {
+      "pattern_effectiveness": {
+        "score": 8,
+        "indicators": {
+          "risk": 4,
+          "metrics": 0,
+          "action": 1,
+          "timeline": 6,
+          "stakeholder": 0,
+          "rootcause": 0
+        },
+        "total_indicators": 11,
+        "reasoning": "Found 11 pattern-specific indicators."
+      },
+      "ui_impact": {
+        "score": 7,
+        "distinct_elements": 2,
+        "elements": {
+          "stat_cards": 0,
+          "alert_boxes": 4,
+          "progress_bars": 0,
+          "action_cards": 1,
+          "gradients": 0,
+          "milestones": 0,
+          "icons_or_badges": 0
+        },
+        "reasoning": "Uses 2 distinct UI component types (verified via robust regex)."
+      },
+      "evidence_binding": {
+        "score": 0,
+        "citations": 0,
+        "reasoning": "Found 0 specific evidence citations."
+      },
+      "output_quality": {
+        "score": 10,
+        "has_placeholders": false,
+        "has_nulls": false,
+        "is_single_line": true,
+        "reasoning": "Quality score 10/10 based on structure and content integrity."
+      },
+      "analytical_value": {
+        "score": 4,
+        "elements_found": 1,
+        "reasoning": "Found 1 analytical value elements."
+      },
+      "information_density": {
+        "score": 8,
+        "size_kb": 3.46,
+        "reasoning": "Output size is 3.46 KB (optimal is 4-7 KB)."
+      },
+      "actionability": {
+        "score": 8,
+        "has_actions": true,
+        "reasoning": "Actionability score 8/10."
+      }
+    },
+    "composite_score": 63.0
+  },
+  {
+    "variant_num": 32,
+    "metrics": {
+      "pattern_effectiveness": {
+        "score": 6,
+        "indicators": {
+          "risk": 0,
+          "metrics": 0,
+          "action": 0,
+          "timeline": 5,
+          "stakeholder": 0,
+          "rootcause": 1
+        },
+        "total_indicators": 6,
+        "reasoning": "Found 6 pattern-specific indicators."
+      },
+      "ui_impact": {
+        "score": 7,
+        "distinct_elements": 2,
+        "elements": {
+          "stat_cards": 0,
+          "alert_boxes": 0,
+          "progress_bars": 1,
+          "action_cards": 1,
+          "gradients": 0,
+          "milestones": 0,
+          "icons_or_badges": 0
+        },
+        "reasoning": "Uses 2 distinct UI component types (verified via robust regex)."
+      },
+      "evidence_binding": {
+        "score": 10,
+        "citations": 8,
+        "reasoning": "Found 8 specific evidence citations."
+      },
+      "output_quality": {
+        "score": 10,
+        "has_placeholders": false,
+        "has_nulls": false,
+        "is_single_line": true,
+        "reasoning": "Quality score 10/10 based on structure and content integrity."
+      },
+      "analytical_value": {
+        "score": 2,
+        "elements_found": 0,
+        "reasoning": "Found 0 analytical value elements."
+      },
+      "information_density": {
+        "score": 10,
+        "size_kb": 5.15,
+        "reasoning": "Output size is 5.15 KB (optimal is 4-7 KB)."
+      },
+      "actionability": {
+        "score": 8,
+        "has_actions": true,
+        "reasoning": "Actionability score 8/10."
+      }
+    },
+    "composite_score": 73.0
+  },
+  {
+    "variant_num": 33,
+    "metrics": {
+      "pattern_effectiveness": {
+        "score": 10,
+        "indicators": {
+          "risk": 2,
+          "metrics": 2,
+          "action": 0,
+          "timeline": 0,
+          "stakeholder": 18,
+          "rootcause": 0
+        },
+        "total_indicators": 22,
+        "reasoning": "Found 22 pattern-specific indicators."
+      },
+      "ui_impact": {
+        "score": 10,
+        "distinct_elements": 5,
+        "elements": {
+          "stat_cards": 8,
+          "alert_boxes": 0,
+          "progress_bars": 4,
+          "action_cards": 1,
+          "gradients": 4,
+          "milestones": 0,
+          "icons_or_badges": 1
+        },
+        "reasoning": "Uses 5 distinct UI component types (verified via robust regex)."
+      },
+      "evidence_binding": {
+        "score": 4,
+        "citations": 1,
+        "reasoning": "Found 1 specific evidence citations."
+      },
+      "output_quality": {
+        "score": 10,
+        "has_placeholders": false,
+        "has_nulls": false,
+        "is_single_line": true,
+        "reasoning": "Quality score 10/10 based on structure and content integrity."
+      },
+      "analytical_value": {
+        "score": 2,
+        "elements_found": 0,
+        "reasoning": "Found 0 analytical value elements."
+      },
+      "information_density": {
+        "score": 10,
+        "size_kb": 6.51,
+        "reasoning": "Output size is 6.51 KB (optimal is 4-7 KB)."
+      },
+      "actionability": {
+        "score": 3,
+        "has_actions": false,
+        "reasoning": "Actionability score 3/10."
+      }
+    },
+    "composite_score": 75.5
+  },
+  {
+    "variant_num": 34,
+    "metrics": {
+      "pattern_effectiveness": {
+        "score": 10,
+        "indicators": {
+          "risk": 2,
+          "metrics": 0,
+          "action": 9,
+          "timeline": 0,
+          "stakeholder": 0,
+          "rootcause": 3
+        },
+        "total_indicators": 14,
+        "reasoning": "Found 14 pattern-specific indicators."
+      },
+      "ui_impact": {
+        "score": 10,
+        "distinct_elements": 4,
+        "elements": {
+          "stat_cards": 3,
+          "alert_boxes": 3,
+          "progress_bars": 0,
+          "action_cards": 1,
+          "gradients": 0,
+          "milestones": 0,
+          "icons_or_badges": 1
+        },
+        "reasoning": "Uses 4 distinct UI component types (verified via robust regex)."
+      },
+      "evidence_binding": {
+        "score": 0,
+        "citations": 0,
+        "reasoning": "Found 0 specific evidence citations."
+      },
+      "output_quality": {
+        "score": 10,
+        "has_placeholders": false,
+        "has_nulls": false,
+        "is_single_line": true,
+        "reasoning": "Quality score 10/10 based on structure and content integrity."
+      },
+      "analytical_value": {
+        "score": 6,
+        "elements_found": 2,
+        "reasoning": "Found 2 analytical value elements."
+      },
+      "information_density": {
+        "score": 10,
+        "size_kb": 5.27,
+        "reasoning": "Output size is 5.27 KB (optimal is 4-7 KB)."
+      },
+      "actionability": {
+        "score": 10,
+        "has_actions": true,
+        "reasoning": "Actionability score 10/10."
+      }
+    },
+    "composite_score": 79.0
+  },
+  {
+    "variant_num": 35,
+    "metrics": {
+      "pattern_effectiveness": {
+        "score": 10,
+        "indicators": {
+          "risk": 6,
+          "metrics": 1,
+          "action": 1,
+          "timeline": 5,
+          "stakeholder": 4,
+          "rootcause": 0
+        },
+        "total_indicators": 17,
+        "reasoning": "Found 17 pattern-specific indicators."
+      },
+      "ui_impact": {
+        "score": 5,
+        "distinct_elements": 1,
+        "elements": {
+          "stat_cards": 0,
+          "alert_boxes": 0,
+          "progress_bars": 0,
+          "action_cards": 1,
+          "gradients": 0,
+          "milestones": 0,
+          "icons_or_badges": 0
+        },
+        "reasoning": "Uses 1 distinct UI component types (verified via robust regex)."
+      },
+      "evidence_binding": {
+        "score": 0,
+        "citations": 0,
+        "reasoning": "Found 0 specific evidence citations."
+      },
+      "output_quality": {
+        "score": 10,
+        "has_placeholders": false,
+        "has_nulls": false,
+        "is_single_line": true,
+        "reasoning": "Quality score 10/10 based on structure and content integrity."
+      },
+      "analytical_value": {
+        "score": 4,
+        "elements_found": 1,
+        "reasoning": "Found 1 analytical value elements."
+      },
+      "information_density": {
+        "score": 10,
+        "size_kb": 6.08,
+        "reasoning": "Output size is 6.08 KB (optimal is 4-7 KB)."
+      },
+      "actionability": {
+        "score": 10,
+        "has_actions": true,
+        "reasoning": "Actionability score 10/10."
+      }
+    },
+    "composite_score": 66.0
+  },
+  {
+    "variant_num": 36,
+    "metrics": {
+      "pattern_effectiveness": {
+        "score": 10,
+        "indicators": {
+          "risk": 5,
+          "metrics": 0,
+          "action": 1,
+          "timeline": 5,
+          "stakeholder": 2,
+          "rootcause": 0
+        },
+        "total_indicators": 13,
+        "reasoning": "Found 13 pattern-specific indicators."
+      },
+      "ui_impact": {
+        "score": 10,
+        "distinct_elements": 4,
+        "elements": {
+          "stat_cards": 2,
+          "alert_boxes": 3,
+          "progress_bars": 0,
+          "action_cards": 1,
+          "gradients": 0,
+          "milestones": 0,
+          "icons_or_badges": 1
+        },
+        "reasoning": "Uses 4 distinct UI component types (verified via robust regex)."
+      },
+      "evidence_binding": {
+        "score": 10,
+        "citations": 9,
+        "reasoning": "Found 9 specific evidence citations."
+      },
+      "output_quality": {
+        "score": 5,
+        "has_placeholders": false,
+        "has_nulls": false,
+        "is_single_line": true,
+        "reasoning": "Quality score 5/10 based on structure and content integrity."
+      },
+      "analytical_value": {
+        "score": 6,
+        "elements_found": 2,
+        "reasoning": "Found 2 analytical value elements."
+      },
+      "information_density": {
+        "score": 10,
+        "size_kb": 5.79,
+        "reasoning": "Output size is 5.79 KB (optimal is 4-7 KB)."
+      },
+      "actionability": {
+        "score": 8,
+        "has_actions": true,
+        "reasoning": "Actionability score 8/10."
+      }
+    },
+    "composite_score": 85.5
+  },
+  {
+    "variant_num": 37,
+    "metrics": {
+      "pattern_effectiveness": {
+        "score": 10,
+        "indicators": {
+          "risk": 5,
+          "metrics": 0,
+          "action": 1,
+          "timeline": 9,
+          "stakeholder": 1,
+          "rootcause": 0
+        },
+        "total_indicators": 16,
+        "reasoning": "Found 16 pattern-specific indicators."
+      },
+      "ui_impact": {
+        "score": 7,
+        "distinct_elements": 2,
+        "elements": {
+          "stat_cards": 0,
+          "alert_boxes": 0,
+          "progress_bars": 0,
+          "action_cards": 1,
+          "gradients": 0,
+          "milestones": 4,
+          "icons_or_badges": 0
+        },
+        "reasoning": "Uses 2 distinct UI component types (verified via robust regex)."
+      },
+      "evidence_binding": {
+        "score": 8,
+        "citations": 7,
+        "reasoning": "Found 7 specific evidence citations."
+      },
+      "output_quality": {
+        "score": 10,
+        "has_placeholders": false,
+        "has_nulls": false,
+        "is_single_line": true,
+        "reasoning": "Quality score 10/10 based on structure and content integrity."
+      },
+      "analytical_value": {
+        "score": 6,
+        "elements_found": 2,
+        "reasoning": "Found 2 analytical value elements."
+      },
+      "information_density": {
+        "score": 8,
+        "size_kb": 3.26,
+        "reasoning": "Output size is 3.26 KB (optimal is 4-7 KB)."
+      },
+      "actionability": {
+        "score": 8,
+        "has_actions": true,
+        "reasoning": "Actionability score 8/10."
+      }
+    },
+    "composite_score": 82.0
+  },
+  {
+    "variant_num": 38,
+    "metrics": {
+      "pattern_effectiveness": {
+        "score": 10,
+        "indicators": {
+          "risk": 4,
+          "metrics": 1,
+          "action": 11,
+          "timeline": 3,
+          "stakeholder": 0,
+          "rootcause": 3
+        },
+        "total_indicators": 22,
+        "reasoning": "Found 22 pattern-specific indicators."
+      },
+      "ui_impact": {
+        "score": 5,
+        "distinct_elements": 1,
+        "elements": {
+          "stat_cards": 0,
+          "alert_boxes": 0,
+          "progress_bars": 0,
+          "action_cards": 1,
+          "gradients": 0,
+          "milestones": 0,
+          "icons_or_badges": 0
+        },
+        "reasoning": "Uses 1 distinct UI component types (verified via robust regex)."
+      },
+      "evidence_binding": {
+        "score": 0,
+        "citations": 0,
+        "reasoning": "Found 0 specific evidence citations."
+      },
+      "output_quality": {
+        "score": 10,
+        "has_placeholders": false,
+        "has_nulls": false,
+        "is_single_line": true,
+        "reasoning": "Quality score 10/10 based on structure and content integrity."
+      },
+      "analytical_value": {
+        "score": 6,
+        "elements_found": 3,
+        "reasoning": "Found 3 analytical value elements."
+      },
+      "information_density": {
+        "score": 10,
+        "size_kb": 5.19,
+        "reasoning": "Output size is 5.19 KB (optimal is 4-7 KB)."
+      },
+      "actionability": {
+        "score": 10,
+        "has_actions": true,
+        "reasoning": "Actionability score 10/10."
+      }
+    },
+    "composite_score": 69.0
+  },
+  {
+    "variant_num": 39,
+    "metrics": {
+      "pattern_effectiveness": {
+        "score": 10,
+        "indicators": {
+          "risk": 10,
+          "metrics": 1,
+          "action": 3,
+          "timeline": 5,
+          "stakeholder": 1,
+          "rootcause": 0
+        },
+        "total_indicators": 20,
+        "reasoning": "Found 20 pattern-specific indicators."
+      },
+      "ui_impact": {
+        "score": 5,
+        "distinct_elements": 1,
+        "elements": {
+          "stat_cards": 0,
+          "alert_boxes": 0,
+          "progress_bars": 0,
+          "action_cards": 1,
+          "gradients": 0,
+          "milestones": 0,
+          "icons_or_badges": 0
+        },
+        "reasoning": "Uses 1 distinct UI component types (verified via robust regex)."
+      },
+      "evidence_binding": {
+        "score": 0,
+        "citations": 0,
+        "reasoning": "Found 0 specific evidence citations."
+      },
+      "output_quality": {
+        "score": 10,
+        "has_placeholders": false,
+        "has_nulls": false,
+        "is_single_line": true,
+        "reasoning": "Quality score 10/10 based on structure and content integrity."
+      },
+      "analytical_value": {
+        "score": 6,
+        "elements_found": 2,
+        "reasoning": "Found 2 analytical value elements."
+      },
+      "information_density": {
+        "score": 10,
+        "size_kb": 4.6,
+        "reasoning": "Output size is 4.60 KB (optimal is 4-7 KB)."
+      },
+      "actionability": {
+        "score": 8,
+        "has_actions": true,
+        "reasoning": "Actionability score 8/10."
+      }
+    },
+    "composite_score": 68.0
+  }
+]

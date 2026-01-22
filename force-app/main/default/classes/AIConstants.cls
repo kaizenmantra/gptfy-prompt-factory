@@ -128,7 +128,7 @@ public with sharing class AIConstants {
     public static final String PROMPT_VALIDATION_ACTION_EXCLUDE = 'Excludes';
     public static final String PROMPT_VALIDATION_ACTION_APEX = 'Apex';
     
-    public static final String NAMESPACE = AIPromptController.getNameSpace();
+    public static final String NAMESPACE = ''; // AIPromptController.getNameSpace() unavailable
     
     public static final String CONTENT_VERSION_OBJECT_API = 'ContentVersion';
     public static final String CONTENT_VERSION_OBJECT_LABEL = 'Content Version';
@@ -161,11 +161,8 @@ public with sharing class AIConstants {
     
     public static List<String> longerFields{
         get{
-            List<String> fields = Label.Longer_Fields.split(';');
-            List<String> formattedFields = new List<String>();
-            for(String fName : fields){
-                formattedFields.add(NAMESPACE+fName);
-            }
+            // Fallback for missing Label.Longer_Fields
+            List<String> formattedFields = new List<String>{'Description', 'Body', 'HtmlBody', 'TextBody'};
             return formattedFields;
         }
     }

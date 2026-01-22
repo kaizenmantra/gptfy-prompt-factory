@@ -1,0 +1,1 @@
+PF_Run_Stage__c stage = [SELECT Id, ccai__Output_Data__c FROM PF_Run_Stage__c WHERE Run__c = 'a0gQH000005GEVZYA4' AND Stage_Number__c = 8 LIMIT 1]; System.debug('Length: ' + (stage.ccai__Output_Data__c != null ? stage.ccai__Output_Data__c.length() : 0));

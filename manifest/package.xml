@@ -85,7 +85,6 @@
         <members>StageResult</members>
         <members>StageResult_Test</members>
         <members>TestAddCardController</members>
-        <members>TestUtility</members>
         <name>ApexClass</name>
     </types>
     <types>

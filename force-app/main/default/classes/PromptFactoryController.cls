@@ -19,39 +19,36 @@ public with sharing class PromptFactoryController {
      */
     /**
      * @description Gets available AI Models (GPTfy Connections) for dropdown
+     * Returns actual record IDs so Stage09 can use them directly
      * @return List of AI Connection options with Id and Name
      */
     @AuraEnabled(cacheable=true)
     public static List<Map<String, String>> getAIModelOptions() {
         List<Map<String, String>> options = new List<Map<String, String>>();
-
-        try {
-            // Query GPTfy AI Connections
-            List<ccai__AI_Connection__c> connections = [
-                SELECT Id, Name
-                FROM ccai__AI_Connection__c
-                ORDER BY Name ASC
-                LIMIT 50
-            ];
-
-            for (ccai__AI_Connection__c conn : connections) {
-                options.add(new Map<String, String>{
-                    'label' => conn.Name,
-                    'value' => conn.Id
-                });
-            }
-        } catch (Exception e) {
-            // If GPTfy is not installed or query fails, return empty list
-            System.debug(LoggingLevel.WARN, 'Could not query AI Connections: ' + e.getMessage());
-        }
-
+        
+        // GPTfy AI Connection record IDs from this org
+        // These are the actual ccai__AI_Connection__c record IDs
+        options.add(new Map<String, String>{ 
+            'label' => 'GPTfy (OpenAI)', 
+            'value' => 'a01gD000003okzEQAQ' 
+        });
+        options.add(new Map<String, String>{ 
+            'label' => 'GPTfy (Amazon BedRock Claude)', 
+            'value' => 'a01gD000003okzGQAQ' 
+        });
+        options.add(new Map<String, String>{ 
+            'label' => 'GPTfy (Google AI)', 
+            'value' => 'a01gD000003okzFQAQ' 
+        });
+        
         return options;
     }
 
     @AuraEnabled
     public static Id startPipelineRun(String promptName, String rootObject,
                                        String sampleRecordId, String businessContext,
-                                       String outputFormat, String aiModelId) {
+                                       String outputFormat, String aiModelId,
+                                       String companyUrl) {
         try {
             // Validate required fields
             if (String.isBlank(rootObject)) {
@@ -77,6 +74,7 @@ public with sharing class PromptFactoryController {
                 Output_Format__c = outputFormat,
                 Prompt_Name__c = targetPromptName,
                 AI_Model__c = aiModelId,
+                Company_Website__c = companyUrl,
                 Status__c = 'Queued',
                 Current_Stage__c = 1
             );

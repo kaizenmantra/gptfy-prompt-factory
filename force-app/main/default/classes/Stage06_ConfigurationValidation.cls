@@ -104,7 +104,16 @@ public with sharing class Stage06_ConfigurationValidation implements IStage {
             // Pass through selectedGrandchildren for DCM creation in Stage 8/9
             result.outputs.put('selectedGrandchildren', inputs.get('selectedGrandchildren'));
             // Pass through selectedObjects - needed for DCM creation even if objects have no data
+            // Pass through enriched context from Stage 2 for downstream stages
+            result.outputs.put('companyIntelligence', inputs.get('companyIntelligence'));
+            result.outputs.put('industryContext', inputs.get('industryContext'));
+            result.outputs.put('companyProfile', inputs.get('companyProfile'));
+            result.outputs.put('strategicInsights', inputs.get('strategicInsights'));
+            result.outputs.put('companyWebsite', inputs.get('companyWebsite'));
             result.outputs.put('selectedObjects', inputs.get('selectedObjects'));
+            
+            // CRITICAL: Pass through data summary for template design
+            result.outputs.put('dataSummary', inputs.get('dataSummary'));
 
             // Mark as completed (with warning if there are failures)
             if (failedChecks > 0) {

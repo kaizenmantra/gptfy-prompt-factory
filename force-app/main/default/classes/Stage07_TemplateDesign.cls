@@ -45,6 +45,34 @@ public with sharing class Stage07_TemplateDesign implements IStage {
             String businessContext = (String) inputs.get('businessContext');
             String targetPersona = (String) inputs.get('targetPersona');
             String outputFormat = (String) inputs.get('outputFormat');
+            
+            // NEW: Extract enriched context from Stage 2 for higher quality output
+            String companyIntelligence = (String) inputs.get('companyIntelligence');
+            String industryContext = (String) inputs.get('industryContext');
+            String companyProfile = (String) inputs.get('companyProfile');
+            
+            // Handle strategicInsights - Stage 2 passes it as a String (pre-formatted)
+            String strategicInsightsStr = '';
+            Object insightsObj = inputs.get('strategicInsights');
+            if (insightsObj instanceof String) {
+                strategicInsightsStr = (String) insightsObj;
+            } else if (insightsObj instanceof List<Object>) {
+                // Fallback for list format
+                List<String> insightsList = new List<String>();
+                for (Object insight : (List<Object>) insightsObj) {
+                    insightsList.add('- ' + String.valueOf(insight));
+                }
+                strategicInsightsStr = String.join(insightsList, '\n');
+            }
+            
+            // CRITICAL: Extract sample data summary for template design
+            // This helps the AI understand what the actual data looks like
+            String dataSummary = (String) inputs.get('dataSummary');
+            if (String.isNotBlank(dataSummary)) {
+                result.queueInfo(runId, STAGE_NUMBER, 'Sample data available for template design');
+            } else {
+                result.queueInfo(runId, STAGE_NUMBER, 'No sample data summary available');
+            }
 
             // CRITICAL: Build field whitelist BEFORE calling Claude
             // This mirrors the shell script approach: Stage 7.1 builds whitelist first
@@ -55,9 +83,10 @@ public with sharing class Stage07_TemplateDesign implements IStage {
 
             result.queueInfo(runId, STAGE_NUMBER, 'Generating HTML template for ' + rootObject);
 
-            // Call Claude AI to generate template
+            // Call Claude AI to generate template with enriched context AND sample data
             String htmlTemplate = generateTemplateWithAIDeferred(
-                selectedFieldsRaw, rootObject, businessContext, targetPersona, outputFormat, runId, result);
+                selectedFieldsRaw, rootObject, businessContext, targetPersona, outputFormat,
+                companyIntelligence, industryContext, strategicInsightsStr, dataSummary, runId, result);
 
             // Validate HTML safety
             List<String> safetyIssues = validateHTMLSafety(htmlTemplate);
@@ -149,6 +178,13 @@ public with sharing class Stage07_TemplateDesign implements IStage {
             result.outputs.put('selectedGrandchildren', inputs.get('selectedGrandchildren'));
             // Pass through selectedObjects - needed for DCM creation even if objects have no data
             result.outputs.put('selectedObjects', inputs.get('selectedObjects'));
+            
+            // CRITICAL FIX: Pass through enriched context from Stage 2 for Stage 8
+            result.outputs.put('companyIntelligence', inputs.get('companyIntelligence'));
+            result.outputs.put('industryContext', inputs.get('industryContext'));
+            result.outputs.put('companyProfile', inputs.get('companyProfile'));
+            result.outputs.put('strategicInsights', inputs.get('strategicInsights'));
+            result.outputs.put('companyWebsite', inputs.get('companyWebsite'));
 
             result.markCompleted();
             result.queueInfo(runId, STAGE_NUMBER, 'Template design completed successfully');
@@ -164,11 +200,15 @@ public with sharing class Stage07_TemplateDesign implements IStage {
 
     /**
      * @description Calls Claude AI to generate HTML template with merge fields (deferred logging)
+     * Enhanced to include company intelligence and strategic insights for higher quality output
      * @param selectedFieldsRaw Map of object to field list
      * @param rootObject The root Salesforce object
      * @param businessContext User-provided business requirements
      * @param targetPersona Target user persona
      * @param outputFormat Desired output format
+     * @param companyIntelligence AI-researched company information
+     * @param industryContext Industry-specific context and terminology
+     * @param strategicInsights List of strategic insights from profiling
      * @param runId Run ID for logging
      * @param result StageResult for deferred logging
      * @return Generated HTML template string
@@ -179,12 +219,17 @@ public with sharing class Stage07_TemplateDesign implements IStage {
             String businessContext,
             String targetPersona,
             String outputFormat,
+            String companyIntelligence,
+            String industryContext,
+            String strategicInsights,
+            String dataSummary,
             Id runId,
             StageResult result) {
 
-        // Build prompt for template generation
+        // Build prompt for template generation with enriched context AND sample data
         String prompt = buildTemplatePrompt(selectedFieldsRaw, rootObject,
-                                           businessContext, targetPersona, outputFormat);
+                                           businessContext, targetPersona, outputFormat,
+                                           companyIntelligence, industryContext, strategicInsights, dataSummary);
 
         result.queueDebug(runId, STAGE_NUMBER, 'Calling AI for template generation');
 
@@ -290,11 +335,16 @@ public with sharing class Stage07_TemplateDesign implements IStage {
 
     /**
      * @description Builds the prompt for Claude AI to generate HTML template
+     * ENHANCED: Now includes content quality requirements for AI-powered insights
      * @param selectedFieldsRaw Map of object to field list
      * @param rootObject The root Salesforce object
      * @param businessContext User-provided business requirements
      * @param targetPersona Target user persona
      * @param outputFormat Desired output format
+     * @param companyIntelligence AI-researched company information
+     * @param industryContext Industry-specific context and terminology
+     * @param strategicInsights Strategic insights from profiling (pre-formatted string)
+     * @param dataSummary Sample data summary showing what actual records look like
      * @return Formatted prompt string
      */
     private String buildTemplatePrompt(
@@ -302,13 +352,104 @@ public with sharing class Stage07_TemplateDesign implements IStage {
             String rootObject,
             String businessContext,
             String targetPersona,
-            String outputFormat) {
+            String outputFormat,
+            String companyIntelligence,
+            String industryContext,
+            String strategicInsights,
+            String dataSummary) {
 
-        String prompt = 'You are an expert HTML designer for GPTfy Salesforce integration.\n\n';
+        String prompt = 'You are an expert AI content designer creating INTELLIGENT, ANALYTICAL output for GPTfy Salesforce integration.\n\n';
+        
+        prompt += '=== CRITICAL: THIS IS NOT A DATA REPORT ===\n';
+        prompt += 'You are NOT just displaying Salesforce data. You are creating AI-POWERED INSIGHTS.\n';
+        prompt += 'The AI model running this prompt will ANALYZE the data and provide INTELLIGENT INTERPRETATION.\n';
+        prompt += 'Your template must INSTRUCT the AI on HOW to analyze, not just WHAT to display.\n\n';
+        
         prompt += 'BUSINESS CONTEXT:\n' + businessContext + '\n\n';
         prompt += 'TARGET PERSONA: ' + targetPersona + '\n';
         prompt += 'ROOT OBJECT: ' + rootObject + '\n';
         prompt += 'OUTPUT FORMAT: ' + (outputFormat != null ? outputFormat : 'HTML') + '\n\n';
+        
+        // CRITICAL: Show the AI what the sample data looks like
+        // This helps generate templates that work well with actual data patterns
+        if (String.isNotBlank(dataSummary)) {
+            prompt += '=== SAMPLE DATA (Use this to understand what the actual data looks like) ===\n';
+            prompt += 'Below is a summary of REAL data from a sample record. Use this to:\n';
+            prompt += '1. Understand what data values look like (date formats, amounts, statuses)\n';
+            prompt += '2. Identify patterns worth analyzing (old dates, high priorities, stages)\n';
+            prompt += '3. Create a template that provides INSIGHTS about this type of data\n\n';
+            prompt += dataSummary + '\n\n';
+            
+            prompt += '=== ANALYSIS BASED ON SAMPLE DATA ===\n';
+            prompt += 'Looking at the sample data above, your template should:\n';
+            prompt += '- Identify opportunities with close dates in the past (OVERDUE)\n';
+            prompt += '- Flag high-priority open cases that need immediate attention\n';
+            prompt += '- Calculate days since last activity and flag engagement gaps\n';
+            prompt += '- Provide an executive summary with account health assessment\n';
+            prompt += '- Include recommended next actions based on data patterns\n\n';
+        }
+        
+        // Add company intelligence if available
+        if (String.isNotBlank(companyIntelligence)) {
+            prompt += '=== COMPANY INTELLIGENCE (Incorporate this context) ===\n';
+            prompt += companyIntelligence + '\n\n';
+        }
+        
+        // Add industry context if available
+        if (String.isNotBlank(industryContext)) {
+            prompt += '=== INDUSTRY CONTEXT ===\n';
+            prompt += industryContext + '\n\n';
+        }
+        
+        // Add strategic insights if available
+        if (String.isNotBlank(strategicInsights)) {
+            prompt += '=== STRATEGIC INSIGHTS TO INCORPORATE ===\n';
+            prompt += strategicInsights + '\n\n';
+        }
+        
+        prompt += '=== CONTENT QUALITY REQUIREMENTS (CRITICAL) ===\n\n';
+        
+        prompt += '1. ACTIONABLE INSIGHTS - Not just data display:\n';
+        prompt += '   - Tell the user what to DO, not just what IS\n';
+        prompt += '   - Include recommendations like "Consider following up..." or "This pattern suggests..."\n';
+        prompt += '   - Highlight what needs attention and why\n';
+        prompt += '   - Provide next best actions based on the data\n\n';
+        
+        prompt += '2. CONTEXTUAL ANALYSIS - Interpret the data:\n';
+        prompt += '   - For dates: Calculate and show relative time (e.g., "Open for 45 days - getting stale")\n';
+        prompt += '   - For amounts: Show trends and comparisons (e.g., "Above average deal size")\n';
+        prompt += '   - For status fields: Indicate health (e.g., "3 open cases - elevated support activity")\n';
+        prompt += '   - For activities: Analyze patterns (e.g., "Last contact 30 days ago - re-engage needed")\n\n';
+        
+        prompt += '3. BUSINESS VALUE - Answer "so what?":\n';
+        prompt += '   - Connect data points to business outcomes\n';
+        prompt += '   - Highlight risks and opportunities\n';
+        prompt += '   - Provide scoring or health indicators where appropriate\n';
+        prompt += '   - Make the output actionable for ' + targetPersona + '\n\n';
+        
+        prompt += '4. INDUSTRY/COMPANY CONTEXT:\n';
+        prompt += '   - Use terminology relevant to the company/industry\n';
+        prompt += '   - Reference the company\'s products, services, or business model if known\n';
+        prompt += '   - Tailor recommendations to the specific business context\n\n';
+        
+        prompt += '5. ANALYTICAL DEPTH:\n';
+        prompt += '   - Go beyond surface-level data display\n';
+        prompt += '   - Include trend analysis where data supports it\n';
+        prompt += '   - Identify patterns across related records\n';
+        prompt += '   - Provide risk assessments and priority indicators\n\n';
+        
+        prompt += '=== EXAMPLE OF GOOD vs BAD CONTENT ===\n\n';
+        prompt += 'BAD (just data display):\n';
+        prompt += '  "Cases: 5 open, 12 closed"\n\n';
+        prompt += 'GOOD (intelligent analysis):\n';
+        prompt += '  "Support Activity: 5 open cases (2 high priority, oldest open 45 days - escalation risk). ';
+        prompt += 'Consider prioritizing the aging tickets to maintain customer satisfaction."\n\n';
+        
+        prompt += 'BAD (just data display):\n';
+        prompt += '  "Last Activity: 2024-01-15"\n\n';
+        prompt += 'GOOD (contextual insight):\n';
+        prompt += '  "Engagement Status: No contact in 30 days. This account may be going cold - ';
+        prompt += 'schedule a check-in call to maintain relationship."\n\n';
 
         prompt += '=== STRICT FIELD WHITELIST ===\n';
         prompt += 'You MUST ONLY use fields from this whitelist. Any other fields will cause a validation failure.\n\n';
@@ -339,6 +480,30 @@ public with sharing class Stage07_TemplateDesign implements IStage {
 
         prompt += 'TASK:\n';
         prompt += 'Generate a professional HTML template using ONLY the fields from the whitelist above.\n\n';
+        
+        prompt += '=== TEMPLATE STRUCTURE REQUIREMENTS ===\n';
+        prompt += 'Your template MUST include these sections (not just data tables):\n\n';
+        
+        prompt += '1. EXECUTIVE SUMMARY SECTION:\n';
+        prompt += '   Include a section at the top with AI-generated analysis placeholders like:\n';
+        prompt += '   "Based on the data, this account shows [ANALYSIS]. Key priorities: [PRIORITIES]"\n';
+        prompt += '   The runtime AI will fill this with actual insights.\n\n';
+        
+        prompt += '2. KEY INSIGHTS SECTION:\n';
+        prompt += '   Add cards or sections for:\n';
+        prompt += '   - Account Health Score (based on opportunities, cases, engagement)\n';
+        prompt += '   - Top Risks (stale deals, open cases, lack of engagement)\n';
+        prompt += '   - Top Opportunities (upsell potential, expansion)\n';
+        prompt += '   - Recommended Next Actions\n\n';
+        
+        prompt += '3. DATA SECTIONS WITH CONTEXT:\n';
+        prompt += '   Before each data table, include introductory analysis text.\n';
+        prompt += '   Example: Instead of just showing Opportunities table, add:\n';
+        prompt += '   "Pipeline Overview: [X opportunities totaling $Y]. [Analysis of deal stages and health]"\n\n';
+        
+        prompt += '4. ACTION CARDS:\n';
+        prompt += '   Include a "Recommended Actions" section with specific next steps.\n';
+        prompt += '   Example: "Schedule follow-up", "Escalate case #X", "Review stale opportunity"\n\n';
 
         prompt += 'CRITICAL REQUIREMENTS (GPTfy Compatibility):\n';
         prompt += '1. The ENTIRE template MUST be on a SINGLE LINE - no line breaks or newlines\n';

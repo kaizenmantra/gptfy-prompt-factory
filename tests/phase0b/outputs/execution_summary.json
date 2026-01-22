@@ -1,0 +1,37 @@
+[
+  {
+    "variant_num": 15,
+    "variant_name": "risk_visual",
+    "response_id": "a0IQH000001pR412AE",
+    "status": "Processed",
+    "html_size": 8646
+  },
+  {
+    "variant_num": 16,
+    "variant_name": "action_cards",
+    "response_id": "a0IQH000001pR5d2AE",
+    "status": "Processed",
+    "html_size": 5280
+  },
+  {
+    "variant_num": 18,
+    "variant_name": "timeline_visual",
+    "response_id": "a0IQH000001pR7F2AU",
+    "status": "Processed",
+    "html_size": 3333
+  },
+  {
+    "variant_num": 19,
+    "variant_name": "multi_pattern_architecture",
+    "response_id": "a0IQH000001pR8r2AE",
+    "status": "Processed",
+    "html_size": 3325
+  },
+  {
+    "variant_num": 20,
+    "variant_name": "account360_enhanced",
+    "response_id": "a0IQH000001pRAT2A2",
+    "status": "Processed",
+    "html_size": 4299
+  }
+]

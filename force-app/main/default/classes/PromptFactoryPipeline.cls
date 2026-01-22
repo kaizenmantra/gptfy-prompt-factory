@@ -104,10 +104,12 @@ public class PromptFactoryPipeline implements Queueable, Database.AllowsCallouts
         else if (currentStage == 6) System.enqueueJob(new Stage06_ConfigurationValidationJob(runId));
         else if (currentStage == 7) System.enqueueJob(new Stage07_TemplateDesignJob(runId));
         else if (currentStage == 8) System.enqueueJob(new Stage08_PromptAssemblyJob(runId));
+        /*
         else if (currentStage == 9) System.enqueueJob(new Stage09_CreateAndDeployJob(runId));
         else if (currentStage == 10) System.enqueueJob(new Stage10_TestExecutionJob(runId));
         else if (currentStage == 11) System.enqueueJob(new Stage11_SafetyValidationJob(runId));
         else if (currentStage == 12) System.enqueueJob(new Stage12_QualityAuditJob(runId));
+        */
     }
 
     /**
@@ -129,6 +131,7 @@ public class PromptFactoryPipeline implements Queueable, Database.AllowsCallouts
             when 8 {
                 System.enqueueJob(new Stage08_PromptAssemblyJob(runId));
             }
+            /*
             when 9 {
                 System.enqueueJob(new Stage09_CreateAndDeployJob(runId));
             }
@@ -141,6 +144,7 @@ public class PromptFactoryPipeline implements Queueable, Database.AllowsCallouts
             when 12 {
                 System.enqueueJob(new Stage12_QualityAuditJob(runId));
             }
+            */
         }
     }
 

@@ -246,7 +246,7 @@ public with sharing class P_PromptBuilderController {
      * Builds the system prompt for AI to generate prompt details
      */
     private static String buildSystemPrompt() {
-        return 'You are an expert Salesforce AI Prompt Engineer. Your task is to generate comprehensive, ' +
+        String basePrompt = 'You are an expert Salesforce AI Prompt Engineer. Your task is to generate comprehensive, ' +
                'well-structured prompts for Salesforce data analysis based on user requirements.\n\n' +
                'CRITICAL INSTRUCTIONS:\n' +
                '1. Respond ONLY with valid JSON in this exact structure:\n' +
@@ -303,6 +303,56 @@ public with sharing class P_PromptBuilderController {
                '5. Always set Type to "Text"\n' +
                '6. Do NOT include any explanations, markdown formatting, or additional text outside the JSON.\n' +
                '7. Ensure all field names are valid Salesforce API names.';
+        
+        // NEW: Inject Builder Prompts for quality guidance
+        String builderContent = loadBuilderGuidance();
+        if (String.isNotBlank(builderContent)) {
+            basePrompt += '\n\n' + builderContent;
+        }
+        
+        return basePrompt;
+    }
+    
+    /**
+     * @description Load builder prompts to guide AI prompt generation quality
+     * @return Combined builder content for quality guidance
+     */
+    private static String loadBuilderGuidance() {
+        try {
+            List<ccai__AI_Prompt__c> builders = [
+                SELECT Id, Name, Category__c, ccai__Prompt_Command__c
+                FROM ccai__AI_Prompt__c
+                WHERE RecordType.DeveloperName = 'Builder'
+                  AND ccai__Status__c = 'Active'
+                  AND Category__c IN ('Quality Rule', 'Pattern')
+                ORDER BY Category__c, Name
+            ];
+            
+            if (builders.isEmpty()) {
+                System.debug('No builder guidance found for wizard');
+                return '';
+            }
+            
+            String guidance = '\n\n=== QUALITY GUIDANCE (Apply to Generated Prompts) ===\n\n';
+            guidance += 'When generating promptCommand, follow these quality standards:\n\n';
+            
+            for (ccai__AI_Prompt__c builder : builders) {
+                guidance += '--- ' + builder.Name + ' ---\n';
+                // Add first 500 chars as guidance snippet (full content too large for wizard system prompt)
+                String snippet = builder.ccai__Prompt_Command__c;
+                if (snippet.length() > 1000) {
+                    snippet = snippet.substring(0, 1000) + '...\n[See full guidance in builder: ' + builder.Name + ']';
+                }
+                guidance += snippet + '\n\n';
+            }
+            
+            System.debug('Loaded ' + builders.size() + ' builder prompts for wizard guidance');
+            return guidance;
+            
+        } catch (Exception e) {
+            System.debug(LoggingLevel.WARN, 'Could not load builder guidance: ' + e.getMessage());
+            return '';
+        }
     }
     
     /**

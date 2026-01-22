@@ -208,13 +208,22 @@ public with sharing class MergeFieldValidator {
         // we derive the root object from the DCM field records
         // Note: Using ccai__Field__c and ccai__Object__c instead of ccai__API_Name__c
         // which may not exist on this object
-        List<ccai__AI_Data_Extraction_Field__c> dcmFields = [
-            SELECT Id, ccai__Type__c, ccai__Field__c, ccai__Object__c
-            FROM ccai__AI_Data_Extraction_Field__c
-            WHERE ccai__AI_Data_Extraction_Mapping__c = :dcmId
-            AND ccai__Type__c IN ('OBJECT', 'FIELD')
-            ORDER BY ccai__Type__c DESC
-        ];
+        
+        // DYNAMIC SOQL to avoid compile-time dependency on managed package
+        String query = 'SELECT Id, ccai__Type__c, ccai__Field__c, ccai__Object__c ' +
+                       'FROM ccai__AI_Data_Extraction_Field__c ' +
+                       'WHERE ccai__AI_Data_Extraction_Mapping__c = :dcmId ' +
+                       'AND ccai__Type__c IN (\'OBJECT\', \'FIELD\') ' +
+                       'ORDER BY ccai__Type__c DESC';
+        
+        List<SObject> dcmFields;
+        try {
+             dcmFields = Database.query(query);
+        } catch (Exception e) {
+             // Managed package object might be missing
+             System.debug('Error querying DCM fields: ' + e.getMessage());
+             return null;
+        }
 
         if (dcmFields.isEmpty()) {
             return null;
@@ -226,10 +235,11 @@ public with sharing class MergeFieldValidator {
         Map<String, List<String>> fieldsByObject = new Map<String, List<String>>();
 
         // First pass: identify all objects
-        for (ccai__AI_Data_Extraction_Field__c field : dcmFields) {
-            if (field.ccai__Type__c == 'OBJECT') {
+        for (SObject field : dcmFields) {
+            String type = (String) field.get('ccai__Type__c');
+            if (type == 'OBJECT') {
                 // For OBJECT type, ccai__Object__c contains the object API name
-                String objName = field.ccai__Object__c;
+                String objName = (String) field.get('ccai__Object__c');
                 if (rootObject == null) {
                     // First OBJECT entry is typically the root
                     rootObject = objName;
@@ -243,9 +253,12 @@ public with sharing class MergeFieldValidator {
 
         // If no OBJECT type found, try to derive from FIELD records
         if (rootObject == null) {
-            for (ccai__AI_Data_Extraction_Field__c field : dcmFields) {
-                if (field.ccai__Type__c == 'FIELD' && field.ccai__Object__c != null) {
-                    rootObject = field.ccai__Object__c;
+            for (SObject field : dcmFields) {
+                String type = (String) field.get('ccai__Type__c');
+                String objName = (String) field.get('ccai__Object__c');
+                
+                if (type == 'FIELD' && objName != null) {
+                    rootObject = objName;
                     fieldsByObject.put(rootObject, new List<String>());
                     break;
                 }
@@ -258,16 +271,19 @@ public with sharing class MergeFieldValidator {
         }
 
         // Second pass: add fields to their objects
-        for (ccai__AI_Data_Extraction_Field__c field : dcmFields) {
-            if (field.ccai__Type__c == 'FIELD') {
-                String objectName = field.ccai__Object__c != null ?
-                                   field.ccai__Object__c : rootObject;
+        for (SObject field : dcmFields) {
+            String type = (String) field.get('ccai__Type__c');
+            if (type == 'FIELD') {
+                String objName = (String) field.get('ccai__Object__c');
+                String objectName = objName != null ? objName : rootObject;
+                
                 if (!fieldsByObject.containsKey(objectName)) {
                     fieldsByObject.put(objectName, new List<String>());
                 }
                 // Use ccai__Field__c for the field API name
-                if (field.ccai__Field__c != null) {
-                    fieldsByObject.get(objectName).add(field.ccai__Field__c);
+                String fieldApiName = (String) field.get('ccai__Field__c');
+                if (fieldApiName != null) {
+                    fieldsByObject.get(objectName).add(fieldApiName);
                 }
             }
         }

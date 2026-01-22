@@ -1,0 +1,1 @@
+PF_Run_Stage__c stage = [SELECT FIELDS(ALL) FROM PF_Run_Stage__c WHERE Run__c = 'a0gQH000005GEVZYA4' AND Stage_Number__c = 8 LIMIT 1]; Map<String, Object> populated = stage.getPopulatedFieldsAsMap(); for (String key : populated.keySet()) { System.debug('Populated Field: ' + key + ' = ' + populated.get(key)); }

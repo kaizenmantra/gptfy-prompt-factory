@@ -99,6 +99,12 @@ public with sharing class Stage04_DataProfiling implements IStage {
             result.outputs.put('promptName', inputs.get('promptName'));
             result.outputs.put('sampleRecordId', sampleRecordId);
             result.outputs.put('outputFormat', inputs.get('outputFormat'));
+            // Pass through enriched context from Stage 2 for downstream stages
+            result.outputs.put('companyIntelligence', inputs.get('companyIntelligence'));
+            result.outputs.put('industryContext', inputs.get('industryContext'));
+            result.outputs.put('companyProfile', inputs.get('companyProfile'));
+            result.outputs.put('strategicInsights', inputs.get('strategicInsights'));
+            result.outputs.put('companyWebsite', inputs.get('companyWebsite'));
 
             result.markCompleted();
             result.queueInfo(runId, STAGE_NUMBER,
