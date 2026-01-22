@@ -431,21 +431,15 @@ public with sharing class Stage08_PromptAssembly implements IStage {
      */
     private String loadQualityRules(Id runId) {
         try {
-            PromptFactoryLogger.info(runId, 8, '🔍 loadQualityRules() called - querying builders');
+            PromptFactoryLogger.info(runId, 8, '🔍 loadQualityRules() called - using HARDCODED IDs as test');
             
-            // Use RecordTypeId directly (relationship queries may fail in Queueable context)
-            Id builderRTId = Schema.SObjectType.ccai__AI_Prompt__c
-                .getRecordTypeInfosByDeveloperName()
-                .get('Builder')
-                .getRecordTypeId();
-            
-            PromptFactoryLogger.info(runId, 8, 'Using RecordType ID: ' + builderRTId);
+            // TEMPORARY: Hardcode builder IDs to test if query is the issue
+            List<Id> qualityRuleIds = new List<Id>{'a0DQH00000KYZxW2AX'}; // Evidence Binding Rules v2
             
             List<ccai__AI_Prompt__c> rules = [
                 SELECT Id, Name, ccai__Prompt_Command__c
                 FROM ccai__AI_Prompt__c
-                WHERE RecordTypeId = :builderRTId
-                  AND Category__c = 'Quality Rule'
+                WHERE Id IN :qualityRuleIds
                   AND ccai__Status__c = 'Active'
                 ORDER BY Name
             ];
@@ -481,19 +475,15 @@ public with sharing class Stage08_PromptAssembly implements IStage {
      */
     private String loadPatterns(String rootObject, Id runId) {
         try {
-            PromptFactoryLogger.info(runId, 8, '🔍 loadPatterns() called for ' + rootObject);
+            PromptFactoryLogger.info(runId, 8, '🔍 loadPatterns() called - using HARDCODED IDs as test');
             
-            // Use RecordTypeId directly (relationship queries may fail in Queueable context)
-            Id builderRTId = Schema.SObjectType.ccai__AI_Prompt__c
-                .getRecordTypeInfosByDeveloperName()
-                .get('Builder')
-                .getRecordTypeId();
+            // TEMPORARY: Hardcode builder IDs to test if query is the issue
+            List<Id> patternIds = new List<Id>{'a0DQH00000KYaC12AL', 'a0DQH00000KYdD72AL'}; // Risk + Next Best Action
             
             List<ccai__AI_Prompt__c> patterns = [
                 SELECT Id, Name, ccai__Prompt_Command__c
                 FROM ccai__AI_Prompt__c
-                WHERE RecordTypeId = :builderRTId
-                  AND Category__c = 'Pattern'
+                WHERE Id IN :patternIds
                   AND ccai__Status__c = 'Active'
                 ORDER BY Name
             ];
@@ -528,19 +518,15 @@ public with sharing class Stage08_PromptAssembly implements IStage {
      */
     private String loadUIComponents(Id runId) {
         try {
-            PromptFactoryLogger.info(runId, 8, '🔍 loadUIComponents() called');
+            PromptFactoryLogger.info(runId, 8, '🔍 loadUIComponents() called - using HARDCODED IDs as test');
             
-            // Use RecordTypeId directly (relationship queries may fail in Queueable context)
-            Id builderRTId = Schema.SObjectType.ccai__AI_Prompt__c
-                .getRecordTypeInfosByDeveloperName()
-                .get('Builder')
-                .getRecordTypeId();
+            // TEMPORARY: Hardcode builder IDs to test if query is the issue
+            List<Id> componentIds = new List<Id>{'a0DQH00000KYaFF2A1', 'a0DQH00000KYaLh2AL'}; // Stat Card + Alert Box
             
             List<ccai__AI_Prompt__c> components = [
                 SELECT Id, Name, ccai__Prompt_Command__c
                 FROM ccai__AI_Prompt__c
-                WHERE RecordTypeId = :builderRTId
-                  AND Category__c = 'UI Component'
+                WHERE Id IN :componentIds
                   AND ccai__Status__c = 'Active'
                 ORDER BY Name
             ];
@@ -575,19 +561,15 @@ public with sharing class Stage08_PromptAssembly implements IStage {
      */
     private String loadContextTemplates(Id runId) {
         try {
-            PromptFactoryLogger.info(runId, 8, '🔍 loadContextTemplates() called');
+            PromptFactoryLogger.info(runId, 8, '🔍 loadContextTemplates() called - using HARDCODED IDs as test');
             
-            // Use RecordTypeId directly (relationship queries may fail in Queueable context)
-            Id builderRTId = Schema.SObjectType.ccai__AI_Prompt__c
-                .getRecordTypeInfosByDeveloperName()
-                .get('Builder')
-                .getRecordTypeId();
+            // TEMPORARY: Hardcode builder IDs to test if query is the issue
+            List<Id> templateIds = new List<Id>{'a0DQH00000KYaQX2A1'}; // Healthcare Payer Context
             
             List<ccai__AI_Prompt__c> templates = [
                 SELECT Id, Name, ccai__Prompt_Command__c
                 FROM ccai__AI_Prompt__c
-                WHERE RecordTypeId = :builderRTId
-                  AND Category__c = 'Context Template'
+                WHERE Id IN :templateIds
                   AND ccai__Status__c = 'Active'
                 ORDER BY Name
             ];
