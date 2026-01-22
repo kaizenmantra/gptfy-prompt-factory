@@ -15,14 +15,17 @@ Map<String, Object> inputs = new Map<String, Object>{
         'companyProfile' => 'Test Company',
         'industryContext' => 'Healthcare',
         'strategicInsights' => 'Test insights'
-    }
+    },
+    'recordTypeId' => '012QH0000045bz7YAA' // Builder RecordTypeId
 };
 
 // Create a test run
 PF_Run__c testRun = new PF_Run__c(
-    Object__c = 'Opportunity',
-    Status__c = 'Running',
-    Current_Stage__c = 8
+    Root_Object__c = 'Opportunity',
+    Status__c = 'In Progress',
+    Current_Stage__c = 8,
+    Prompt_Name__c = 'Stage08 Test Output',
+    Sample_Record_Id__c = '006QH00000Hjl5qYAB'
 );
 insert testRun;
 

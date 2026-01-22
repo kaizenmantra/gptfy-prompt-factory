@@ -1,0 +1,1 @@
+for (ccai__AI_Prompt__c p : [SELECT Name, Category__c, RecordType.DeveloperName FROM ccai__AI_Prompt__c WHERE RecordType.DeveloperName = 'Builder']) { System.debug('BUILDER: ' + p.Name + ' | Category: [' + p.Category__c + '] | RecordType: ' + p.RecordType.DeveloperName); }

@@ -1,0 +1,1 @@
+for (PF_Run_Log__c log : [SELECT Log_Message__c FROM PF_Run_Log__c WHERE Run__c = 'a0gQH000005GEVZYA4' AND Stage_Number__c = 8 ORDER BY CreatedDate ASC]) { System.debug('STG8 LOG: ' + log.Log_Message__c); }

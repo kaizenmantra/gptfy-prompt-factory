@@ -433,14 +433,13 @@ public without sharing class Stage08_PromptAssembly implements IStage {
         try {
             PromptFactoryLogger.info(runId, 8, '🔍 loadQualityRules() called - using HARDCODED IDs as test');
             
-            // FIXED: Use RecordTypeId directly to avoid visibility issues in some org contexts
-            Id builderRtId = Schema.SObjectType.ccai__AI_Prompt__c.getRecordTypeInfosByDeveloperName().get('Builder').getRecordTypeId();
+            // TEMPORARY: Hardcode builder IDs to test if query is the issue
+            List<Id> qualityRuleIds = new List<Id>{'a0DQH00000KYZxW2AX'}; // Evidence Binding Rules v2
             
             List<ccai__AI_Prompt__c> rules = [
                 SELECT Id, Name, ccai__Prompt_Command__c
                 FROM ccai__AI_Prompt__c
-                WHERE RecordTypeId = :builderRtId
-                  AND Category__c = 'Quality Rule'
+                WHERE Id IN :qualityRuleIds
                   AND ccai__Status__c = 'Active'
                 ORDER BY Name
             ];
@@ -478,16 +477,14 @@ public without sharing class Stage08_PromptAssembly implements IStage {
         try {
             PromptFactoryLogger.info(runId, 8, '🔍 loadPatterns() called - using HARDCODED IDs as test');
             
-            // FIXED: Use RecordTypeId directly
-            Id builderRtId = Schema.SObjectType.ccai__AI_Prompt__c.getRecordTypeInfosByDeveloperName().get('Builder').getRecordTypeId();
+            // TEMPORARY: Hardcode builder IDs to test if query is the issue
+            List<Id> patternIds = new List<Id>{'a0DQH00000KYaC12AL', 'a0DQH00000KYdD72AL'}; // Risk + Next Best Action
             
             List<ccai__AI_Prompt__c> patterns = [
                 SELECT Id, Name, ccai__Prompt_Command__c
                 FROM ccai__AI_Prompt__c
-                WHERE RecordTypeId = :builderRtId
-                  AND Category__c = 'Pattern'
+                WHERE Id IN :patternIds
                   AND ccai__Status__c = 'Active'
-                  AND (ccai__Object__c = :rootObject OR ccai__Object__c = null)
                 ORDER BY Name
             ];
             
@@ -523,14 +520,13 @@ public without sharing class Stage08_PromptAssembly implements IStage {
         try {
             PromptFactoryLogger.info(runId, 8, '🔍 loadUIComponents() called - using HARDCODED IDs as test');
             
-            // FIXED: Use RecordTypeId directly
-            Id builderRtId = Schema.SObjectType.ccai__AI_Prompt__c.getRecordTypeInfosByDeveloperName().get('Builder').getRecordTypeId();
+            // TEMPORARY: Hardcode builder IDs to test if query is the issue
+            List<Id> componentIds = new List<Id>{'a0DQH00000KYaFF2A1', 'a0DQH00000KYaLh2AL'}; // Stat Card + Alert Box
             
             List<ccai__AI_Prompt__c> components = [
                 SELECT Id, Name, ccai__Prompt_Command__c
                 FROM ccai__AI_Prompt__c
-                WHERE RecordTypeId = :builderRtId
-                  AND Category__c = 'UI Component'
+                WHERE Id IN :componentIds
                   AND ccai__Status__c = 'Active'
                 ORDER BY Name
             ];
@@ -567,14 +563,13 @@ public without sharing class Stage08_PromptAssembly implements IStage {
         try {
             PromptFactoryLogger.info(runId, 8, '🔍 loadContextTemplates() called - using HARDCODED IDs as test');
             
-            // FIXED: Use RecordTypeId directly
-            Id builderRtId = Schema.SObjectType.ccai__AI_Prompt__c.getRecordTypeInfosByDeveloperName().get('Builder').getRecordTypeId();
+            // TEMPORARY: Hardcode builder IDs to test if query is the issue
+            List<Id> templateIds = new List<Id>{'a0DQH00000KYaQX2A1'}; // Healthcare Payer Context
             
             List<ccai__AI_Prompt__c> templates = [
                 SELECT Id, Name, ccai__Prompt_Command__c
                 FROM ccai__AI_Prompt__c
-                WHERE RecordTypeId = :builderRtId
-                  AND Category__c = 'Context Template'
+                WHERE Id IN :templateIds
                   AND ccai__Status__c = 'Active'
                 ORDER BY Name
             ];
