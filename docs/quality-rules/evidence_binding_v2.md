@@ -15,6 +15,124 @@
 
 ---
 
+## CRITICAL: Use Actual Names, Dates, and Specific Details
+
+> **Generic language kills quality. Specificity creates trust and actionability.**
+
+### People Specificity
+
+**ALWAYS use actual names from Salesforce data:**
+
+```
+✅ "Schedule follow-up call with Sarah Johnson (CFO) by Friday"
+❌ "Schedule follow-up call with the CFO soon"
+
+✅ "Lisa Martinez (Champion) has not engaged in 14 days"
+❌ "Your champion hasn't engaged recently"
+
+✅ "Robert Taylor (VP Operations) requested technical validation"
+❌ "The decision maker needs more information"
+
+✅ "Contact James Wilson and Maria Garcia before next week"
+❌ "Reach out to key stakeholders"
+```
+
+**FORBIDDEN - Never use these generic terms:**
+- ❌ "the CFO" → ✅ "Sarah Johnson (CFO)"
+- ❌ "your champion" → ✅ "Lisa Martinez (Champion)"
+- ❌ "the decision maker" → ✅ "Robert Taylor (VP Operations)"
+- ❌ "key stakeholders" → ✅ "Sarah Johnson and Lisa Martinez"
+- ❌ "the buyer" → ✅ "James Wilson (Procurement Director)"
+- ❌ "the team" → ✅ "Sarah Johnson, Lisa Martinez, and Robert Taylor"
+
+**How to extract names:**
+```
+Contact Role: [ContactName] ([ContactRole]) 
+Account Team: [TeamMemberName]
+Owner: [OwnerName]
+
+Use merge field syntax: {{{ }}} when implementing
+```
+
+---
+
+### Date & Timeline Specificity
+
+**ALWAYS use specific dates and bounded timeframes:**
+
+```
+✅ "by Friday, January 24, 2026"
+❌ "soon"
+
+✅ "within 48 hours (before CFO meeting on Jan 26)"
+❌ "as soon as possible"
+
+✅ "Task 'Send ROI Analysis' is 7 days overdue (due Jan 15, today is Jan 22)"
+❌ "ROI task is overdue"
+
+✅ "No activity in 14 days (last contact: Jan 8)"
+❌ "Deal has been quiet recently"
+
+✅ "Meeting scheduled for Tuesday, Jan 28 at 2pm"
+❌ "Meeting coming up next week"
+```
+
+**FORBIDDEN - Never use these vague terms:**
+- ❌ "soon" → ✅ "by Friday, January 24"
+- ❌ "when possible" → ✅ "within 48 hours"
+- ❌ "recently" → ✅ "in the last 14 days"
+- ❌ "coming up" → ✅ "scheduled for January 28"
+- ❌ "overdue" → ✅ "7 days overdue (due Jan 15)"
+
+---
+
+### Action Specificity
+
+**ALWAYS provide clear, bounded actions with who/what/when:**
+
+```
+✅ "Schedule discovery call with Sarah Johnson (CFO) by Friday to discuss ROI requirements"
+❌ "Follow up with stakeholders about next steps"
+
+✅ "Prepare technical validation deck and send to Robert Taylor by January 24"
+❌ "Share technical information when ready"
+
+✅ "Complete MEDDIC scorecard with Lisa Martinez before executive review on Jan 28"
+❌ "Update your MEDDIC assessment"
+
+✅ "Confirm budget approval process with James Wilson (Procurement) within 48 hours"
+❌ "Check on budget status"
+```
+
+**FORBIDDEN - Never use these generic actions:**
+- ❌ "follow up with stakeholders" → ✅ "call Sarah Johnson (CFO)"
+- ❌ "consider reaching out" → ✅ "Schedule meeting by Friday"
+- ❌ "address concerns" → ✅ "Resolve pricing objection in proposal v2"
+- ❌ "maintain momentum" → ✅ "Schedule weekly check-ins with Lisa Martinez"
+- ❌ "ensure alignment" → ✅ "Get sign-off from Robert Taylor on technical specs"
+
+---
+
+### System & Tool Specificity
+
+**Reference actual systems and documents when available:**
+
+```
+✅ "Competitor comparison vs. Aetna in ROI calculator (Quip doc)"
+❌ "Competitive analysis document"
+
+✅ "Salesforce Health Cloud implementation timeline"
+❌ "CRM deployment schedule"
+
+✅ "Q4 benefits enrollment data from Workday"
+❌ "Historical enrollment information"
+
+✅ "Send proposal v3 (revised pricing on slide 12)"
+❌ "Share updated proposal"
+```
+
+---
+
 ## The Insight-First Pattern
 
 ### Format Hierarchy
@@ -326,9 +444,23 @@ Add this to the prompt assembly:
 Every analytical claim must be traceable to Salesforce data, but 
 INSIGHT LEADS, EVIDENCE SUPPORTS.
 
+CRITICAL - USE ACTUAL NAMES, NOT GENERIC TERMS:
+- ✅ "Sarah Johnson (CFO)" not "the CFO"
+- ✅ "by Friday, Jan 24" not "soon"
+- ✅ "Schedule call with Lisa Martinez" not "follow up with champion"
+- ✅ "7 days overdue (due Jan 15)" not "overdue task"
+
+Extract names using merge fields from the Data Context Mapping provided.
+
+FORBIDDEN PHRASES - Never use:
+- "the CFO" / "your champion" / "key stakeholders" / "the decision maker"
+- "soon" / "when possible" / "recently" / "coming up"
+- "follow up with stakeholders" / "consider reaching out" / "ensure alignment"
+- "address concerns" / "maintain momentum"
+
 FORMAT REQUIREMENTS:
 1. ABOVE THE FOLD: Embed data naturally into insights
-   - Good: "This $1.5M deal needs CFO engagement"
+   - Good: "This $1.5M deal needs Sarah Johnson (CFO) engagement"
    - Bad: "Evidence: Amount = $1,500,000. This is significant."
 
 2. DETAILED ANALYSIS: Use inline citations sparingly
@@ -345,11 +477,14 @@ NEVER:
 - List field values without an insight
 - Interrupt flow with multiple citations
 - Use API field names in visible text (translate to plain language)
+- Use generic terms when actual names are available
 
 ALWAYS:
 - Lead with the "so what"
+- Use actual names from {{{Contact.Name}}}
+- Use specific dates and bounded timeframes
 - Weave numbers into natural sentences
-- Provide specific recommendations
+- Provide specific, actionable recommendations
 - Make data sources available but not prominent
 ```
 
