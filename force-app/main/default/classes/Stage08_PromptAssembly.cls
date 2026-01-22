@@ -79,7 +79,7 @@ public with sharing class Stage08_PromptAssembly implements IStage {
             // Build AI instructions with REAL company research
             String aiInstructions = buildAIInstructions(
                 businessContext, targetPersona, businessObjectivesRaw, rootObject,
-                effectiveCompanyContext, strategicInsights, industryContext);
+                effectiveCompanyContext, strategicInsights, industryContext, runId);
 
             // Build grounding rules
             String groundingRules = buildGroundingRules(rootObject, targetPersona);
@@ -231,7 +231,8 @@ public with sharing class Stage08_PromptAssembly implements IStage {
             String rootObject,
             String companyProfile,
             String strategicInsights,
-            String industryContext) {
+            String industryContext,
+            Id runId) {
 
         String instructions = 'You are a Salesforce AI assistant generating HTML content for GPTfy.\n\n';
 
@@ -373,63 +374,65 @@ public with sharing class Stage08_PromptAssembly implements IStage {
         instructions += 'Use ONLY the merge field embeddings provided in the template below. Do not add or modify merge fields.\n';
         instructions += 'Merge fields use triple-brace syntax and will be substituted by GPTfy at runtime.\n\n';
 
-        System.debug('🏗️ BUILD AI INSTRUCTIONS: Starting builder injection...');
+        PromptFactoryLogger.info(runId, 8, '🏗️ BUILD AI INSTRUCTIONS: Starting builder injection');
         Integer initialLength = instructions.length();
         
         // NEW: Load and inject Builder Prompts
-        System.debug('📋 Step 1: Loading Quality Rules...');
-        String qualityRules = loadQualityRules();
+        PromptFactoryLogger.info(runId, 8, '📋 Step 1: Loading Quality Rules');
+        String qualityRules = loadQualityRules(runId);
         if (String.isNotBlank(qualityRules)) {
             instructions += qualityRules + '\n\n';
-            System.debug('✅ Injected Quality Rules: +' + qualityRules.length() + ' chars');
+            PromptFactoryLogger.info(runId, 8, '✅ Injected Quality Rules: +' + qualityRules.length() + ' chars');
         } else {
-            System.debug('⚠️ No Quality Rules to inject');
+            PromptFactoryLogger.warning(runId, 8, '⚠️ No Quality Rules to inject');
         }
 
-        System.debug('📋 Step 2: Loading Patterns...');
-        String patterns = loadPatterns(rootObject);
+        PromptFactoryLogger.info(runId, 8, '📋 Step 2: Loading Patterns');
+        String patterns = loadPatterns(rootObject, runId);
         if (String.isNotBlank(patterns)) {
             instructions += patterns + '\n\n';
-            System.debug('✅ Injected Patterns: +' + patterns.length() + ' chars');
+            PromptFactoryLogger.info(runId, 8, '✅ Injected Patterns: +' + patterns.length() + ' chars');
         } else {
-            System.debug('⚠️ No Patterns to inject');
+            PromptFactoryLogger.warning(runId, 8, '⚠️ No Patterns to inject');
         }
 
         // NEW: Load and inject UI Components
-        System.debug('📋 Step 3: Loading UI Components...');
-        String uiComponents = loadUIComponents();
+        PromptFactoryLogger.info(runId, 8, '📋 Step 3: Loading UI Components');
+        String uiComponents = loadUIComponents(runId);
         if (String.isNotBlank(uiComponents)) {
             instructions += uiComponents + '\n\n';
-            System.debug('✅ Injected UI Components: +' + uiComponents.length() + ' chars');
+            PromptFactoryLogger.info(runId, 8, '✅ Injected UI Components: +' + uiComponents.length() + ' chars');
         } else {
-            System.debug('⚠️ No UI Components to inject');
+            PromptFactoryLogger.warning(runId, 8, '⚠️ No UI Components to inject');
         }
 
         // NEW: Load and inject Context Templates
-        System.debug('📋 Step 4: Loading Context Templates...');
-        String contextTemplates = loadContextTemplates();
+        PromptFactoryLogger.info(runId, 8, '📋 Step 4: Loading Context Templates');
+        String contextTemplates = loadContextTemplates(runId);
         if (String.isNotBlank(contextTemplates)) {
             instructions += contextTemplates + '\n\n';
-            System.debug('✅ Injected Context Templates: +' + contextTemplates.length() + ' chars');
+            PromptFactoryLogger.info(runId, 8, '✅ Injected Context Templates: +' + contextTemplates.length() + ' chars');
         } else {
-            System.debug('⚠️ No Context Templates to inject');
+            PromptFactoryLogger.warning(runId, 8, '⚠️ No Context Templates to inject');
         }
         
         Integer finalLength = instructions.length();
         Integer addedContent = finalLength - initialLength;
-        System.debug('📊 BUILDER INJECTION COMPLETE: Added ' + addedContent + ' chars from builders');
-        System.debug('📊 Total instruction length: ' + finalLength + ' chars');
+        PromptFactoryLogger.info(runId, 8, '📊 BUILDER INJECTION COMPLETE: Added ' + addedContent + ' chars from builders');
+        PromptFactoryLogger.info(runId, 8, '📊 Total instruction length: ' + finalLength + ' chars');
 
         return instructions;
     }
 
     /**
      * @description Load active Quality Rules from Builder Prompts
+     * @param runId PF_Run__c ID for logging
      * @return Combined quality rules content
      */
-    private String loadQualityRules() {
+    private String loadQualityRules(Id runId) {
         try {
-            System.debug('🔍 loadQualityRules() called - querying builders...');
+            PromptFactoryLogger.info(runId, 8, '🔍 loadQualityRules() called - querying builders');
+            
             List<ccai__AI_Prompt__c> rules = [
                 SELECT Id, Name, ccai__Prompt_Command__c
                 FROM ccai__AI_Prompt__c
@@ -439,26 +442,25 @@ public with sharing class Stage08_PromptAssembly implements IStage {
                 ORDER BY Name
             ];
             
-            System.debug('📊 Query returned: ' + rules.size() + ' Quality Rules');
+            PromptFactoryLogger.info(runId, 8, '📊 Query returned: ' + rules.size() + ' Quality Rules');
             
             if (rules.isEmpty()) {
-                System.debug('⚠️ No Quality Rules found - returning empty');
+                PromptFactoryLogger.warning(runId, 8, '⚠️ No Quality Rules found - returning empty');
                 return '';
             }
             
             String allRules = '';
             for (ccai__AI_Prompt__c rule : rules) {
-                System.debug('✅ Loading: ' + rule.Name + ' (' + rule.ccai__Prompt_Command__c.length() + ' chars)');
+                PromptFactoryLogger.info(runId, 8, '✅ Loading: ' + rule.Name + ' (' + rule.ccai__Prompt_Command__c.length() + ' chars)');
                 allRules += '\n\n=== ' + rule.Name + ' ===\n\n';
                 allRules += rule.ccai__Prompt_Command__c;
             }
             
-            System.debug('✅ Loaded ' + rules.size() + ' Quality Rules (' + allRules.length() + ' total chars)');
+            PromptFactoryLogger.info(runId, 8, '✅ Loaded ' + rules.size() + ' Quality Rules (' + allRules.length() + ' total chars)');
             return allRules;
             
         } catch (Exception e) {
-            System.debug(LoggingLevel.ERROR, '❌ Error loading Quality Rules: ' + e.getMessage());
-            System.debug(LoggingLevel.ERROR, '❌ Stack trace: ' + e.getStackTraceString());
+            PromptFactoryLogger.error(runId, 8, '❌ Error loading Quality Rules: ' + e.getMessage() + ' | Stack: ' + e.getStackTraceString());
             return '';
         }
     }
@@ -466,10 +468,13 @@ public with sharing class Stage08_PromptAssembly implements IStage {
     /**
      * @description Load active Patterns from Builder Prompts for specific object
      * @param rootObject The Salesforce object (e.g., 'Opportunity')
+     * @param runId PF_Run__c ID for logging
      * @return Combined pattern content
      */
-    private String loadPatterns(String rootObject) {
+    private String loadPatterns(String rootObject, Id runId) {
         try {
+            PromptFactoryLogger.info(runId, 8, '🔍 loadPatterns() called for ' + rootObject);
+            
             List<ccai__AI_Prompt__c> patterns = [
                 SELECT Id, Name, ccai__Prompt_Command__c
                 FROM ccai__AI_Prompt__c
@@ -479,32 +484,38 @@ public with sharing class Stage08_PromptAssembly implements IStage {
                 ORDER BY Name
             ];
             
+            PromptFactoryLogger.info(runId, 8, '📊 Query returned: ' + patterns.size() + ' Patterns');
+            
             if (patterns.isEmpty()) {
-                System.debug('No Patterns found for ' + rootObject);
+                PromptFactoryLogger.warning(runId, 8, '⚠️ No Patterns found for ' + rootObject);
                 return '';
             }
             
             String allPatterns = '';
             for (ccai__AI_Prompt__c pattern : patterns) {
+                PromptFactoryLogger.info(runId, 8, '✅ Loading: ' + pattern.Name + ' (' + pattern.ccai__Prompt_Command__c.length() + ' chars)');
                 allPatterns += '\n\n=== ' + pattern.Name + ' ===\n\n';
                 allPatterns += pattern.ccai__Prompt_Command__c;
             }
             
-            System.debug('Loaded ' + patterns.size() + ' Patterns from Builder Prompts');
+            PromptFactoryLogger.info(runId, 8, '✅ Loaded ' + patterns.size() + ' Patterns (' + allPatterns.length() + ' total chars)');
             return allPatterns;
             
         } catch (Exception e) {
-            System.debug('Error loading Patterns: ' + e.getMessage());
+            PromptFactoryLogger.error(runId, 8, '❌ Error loading Patterns: ' + e.getMessage() + ' | Stack: ' + e.getStackTraceString());
             return '';
         }
     }
 
     /**
      * @description Load active UI Components from Builder Prompts
+     * @param runId PF_Run__c ID for logging
      * @return Combined UI component content
      */
-    private String loadUIComponents() {
+    private String loadUIComponents(Id runId) {
         try {
+            PromptFactoryLogger.info(runId, 8, '🔍 loadUIComponents() called');
+            
             List<ccai__AI_Prompt__c> components = [
                 SELECT Id, Name, ccai__Prompt_Command__c
                 FROM ccai__AI_Prompt__c
@@ -514,32 +525,38 @@ public with sharing class Stage08_PromptAssembly implements IStage {
                 ORDER BY Name
             ];
             
+            PromptFactoryLogger.info(runId, 8, '📊 Query returned: ' + components.size() + ' UI Components');
+            
             if (components.isEmpty()) {
-                System.debug('No UI Components found');
+                PromptFactoryLogger.warning(runId, 8, '⚠️ No UI Components found');
                 return '';
             }
             
             String allComponents = '';
             for (ccai__AI_Prompt__c component : components) {
+                PromptFactoryLogger.info(runId, 8, '✅ Loading: ' + component.Name);
                 allComponents += '\n\n=== ' + component.Name + ' ===\n\n';
                 allComponents += component.ccai__Prompt_Command__c;
             }
             
-            System.debug('Loaded ' + components.size() + ' UI Components from Builder Prompts');
+            PromptFactoryLogger.info(runId, 8, '✅ Loaded ' + components.size() + ' UI Components (' + allComponents.length() + ' total chars)');
             return allComponents;
             
         } catch (Exception e) {
-            System.debug('Error loading UI Components: ' + e.getMessage());
+            PromptFactoryLogger.error(runId, 8, '❌ Error loading UI Components: ' + e.getMessage());
             return '';
         }
     }
 
     /**
      * @description Load active Context Templates from Builder Prompts
+     * @param runId PF_Run__c ID for logging
      * @return Combined context template content
      */
-    private String loadContextTemplates() {
+    private String loadContextTemplates(Id runId) {
         try {
+            PromptFactoryLogger.info(runId, 8, '🔍 loadContextTemplates() called');
+            
             List<ccai__AI_Prompt__c> templates = [
                 SELECT Id, Name, ccai__Prompt_Command__c
                 FROM ccai__AI_Prompt__c
@@ -549,22 +566,25 @@ public with sharing class Stage08_PromptAssembly implements IStage {
                 ORDER BY Name
             ];
             
+            PromptFactoryLogger.info(runId, 8, '📊 Query returned: ' + templates.size() + ' Context Templates');
+            
             if (templates.isEmpty()) {
-                System.debug('No Context Templates found');
+                PromptFactoryLogger.warning(runId, 8, '⚠️ No Context Templates found');
                 return '';
             }
             
             String allTemplates = '';
             for (ccai__AI_Prompt__c template : templates) {
+                PromptFactoryLogger.info(runId, 8, '✅ Loading: ' + template.Name);
                 allTemplates += '\n\n=== ' + template.Name + ' ===\n\n';
                 allTemplates += template.ccai__Prompt_Command__c;
             }
             
-            System.debug('Loaded ' + templates.size() + ' Context Templates from Builder Prompts');
+            PromptFactoryLogger.info(runId, 8, '✅ Loaded ' + templates.size() + ' Context Templates (' + allTemplates.length() + ' total chars)');
             return allTemplates;
             
         } catch (Exception e) {
-            System.debug('Error loading Context Templates: ' + e.getMessage());
+            PromptFactoryLogger.error(runId, 8, '❌ Error loading Context Templates: ' + e.getMessage());
             return '';
         }
     }
