@@ -433,10 +433,18 @@ public with sharing class Stage08_PromptAssembly implements IStage {
         try {
             PromptFactoryLogger.info(runId, 8, '🔍 loadQualityRules() called - querying builders');
             
+            // Use RecordTypeId directly (relationship queries may fail in Queueable context)
+            Id builderRTId = Schema.SObjectType.ccai__AI_Prompt__c
+                .getRecordTypeInfosByDeveloperName()
+                .get('Builder')
+                .getRecordTypeId();
+            
+            PromptFactoryLogger.info(runId, 8, 'Using RecordType ID: ' + builderRTId);
+            
             List<ccai__AI_Prompt__c> rules = [
                 SELECT Id, Name, ccai__Prompt_Command__c
                 FROM ccai__AI_Prompt__c
-                WHERE RecordType.DeveloperName = 'Builder'
+                WHERE RecordTypeId = :builderRTId
                   AND Category__c = 'Quality Rule'
                   AND ccai__Status__c = 'Active'
                 ORDER BY Name
@@ -475,10 +483,16 @@ public with sharing class Stage08_PromptAssembly implements IStage {
         try {
             PromptFactoryLogger.info(runId, 8, '🔍 loadPatterns() called for ' + rootObject);
             
+            // Use RecordTypeId directly (relationship queries may fail in Queueable context)
+            Id builderRTId = Schema.SObjectType.ccai__AI_Prompt__c
+                .getRecordTypeInfosByDeveloperName()
+                .get('Builder')
+                .getRecordTypeId();
+            
             List<ccai__AI_Prompt__c> patterns = [
                 SELECT Id, Name, ccai__Prompt_Command__c
                 FROM ccai__AI_Prompt__c
-                WHERE RecordType.DeveloperName = 'Builder'
+                WHERE RecordTypeId = :builderRTId
                   AND Category__c = 'Pattern'
                   AND ccai__Status__c = 'Active'
                 ORDER BY Name
@@ -516,10 +530,16 @@ public with sharing class Stage08_PromptAssembly implements IStage {
         try {
             PromptFactoryLogger.info(runId, 8, '🔍 loadUIComponents() called');
             
+            // Use RecordTypeId directly (relationship queries may fail in Queueable context)
+            Id builderRTId = Schema.SObjectType.ccai__AI_Prompt__c
+                .getRecordTypeInfosByDeveloperName()
+                .get('Builder')
+                .getRecordTypeId();
+            
             List<ccai__AI_Prompt__c> components = [
                 SELECT Id, Name, ccai__Prompt_Command__c
                 FROM ccai__AI_Prompt__c
-                WHERE RecordType.DeveloperName = 'Builder'
+                WHERE RecordTypeId = :builderRTId
                   AND Category__c = 'UI Component'
                   AND ccai__Status__c = 'Active'
                 ORDER BY Name
@@ -557,10 +577,16 @@ public with sharing class Stage08_PromptAssembly implements IStage {
         try {
             PromptFactoryLogger.info(runId, 8, '🔍 loadContextTemplates() called');
             
+            // Use RecordTypeId directly (relationship queries may fail in Queueable context)
+            Id builderRTId = Schema.SObjectType.ccai__AI_Prompt__c
+                .getRecordTypeInfosByDeveloperName()
+                .get('Builder')
+                .getRecordTypeId();
+            
             List<ccai__AI_Prompt__c> templates = [
                 SELECT Id, Name, ccai__Prompt_Command__c
                 FROM ccai__AI_Prompt__c
-                WHERE RecordType.DeveloperName = 'Builder'
+                WHERE RecordTypeId = :builderRTId
                   AND Category__c = 'Context Template'
                   AND ccai__Status__c = 'Active'
                 ORDER BY Name
