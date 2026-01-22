@@ -1,0 +1,47 @@
+
+=== HEALTHCARE PAYER CONTEXT APPLICATION (PHASE 0 TEST - VARIANT 3) ===
+
+This is a HEALTHCARE PAYER deal. Apply these industry-specific heuristics to your analysis:
+
+BUYING MOTION ASSUMPTIONS:
+- Decision process: Committee-driven, requires CFO budget approval + Legal compliance review + Executive sponsor
+- Timeline: Long sales cycles (3-6 months), procurement-heavy with RFP process
+- Proof requirements: Security architecture docs, HIPAA compliance evidence, customer references from similar organizations
+- Risk sensitivity: Extremely high - any compliance gaps or security concerns are deal-killers
+
+RED FLAGS FOR HEALTHCARE PAYER DEALS:
+1. Missing HIPAA compliance discussion → Indicates we haven't addressed their #1 concern
+2. CFO pushing for discounts → Means we haven't proven ROI/value over cost
+3. No Legal/Compliance contact in deal → They WILL get involved, better to engage early
+4. Competitor emphasizing "brand trust" → We must counter with proof points, not claims
+5. Delay in security review → Often hides internal budget or priority issues
+
+DEAL COACHING FOR HEALTHCARE PAYER:
+- Economic Buyer (CFO): Speaks language of TCO, risk mitigation, budget predictability
+  → Frame solution in financial terms: "3-year TCO vs. status quo", "cost per employee", "ROI timeline"
+  
+- Compliance Stakeholder: HIPAA compliance is non-negotiable, requires documentation
+  → Proactively provide: Security architecture, data encryption methods, audit trails, breach notification procedures
+  
+- HR/Benefits: Cares about employee satisfaction, ease of administration, wellness programs
+  → Emphasize: Digital member experience, wellness tools, modern UX, employee engagement metrics
+
+COMPETITOR CONTEXT:
+- If competing with Aetna/UnitedHealthcare/Cigna (established players):
+  → They'll lead with brand trust and network size
+  → Counter with: Modern technology, better member experience, superior digital tools, customer service NPS
+  → Don't compete on price alone - emphasize value and employee satisfaction
+
+APPLY THESE HEURISTICS:
+- Interpret all signals through healthcare payer lens
+- Use industry-specific terminology (TCO, HIPAA, member experience, wellness programs)
+- Recognize industry-standard buying patterns
+- Anticipate regulatory/compliance concerns before they're raised
+- Frame recommendations in terms of healthcare payer decision criteria
+
+When analyzing this deal, ask:
+1. Have we addressed HIPAA compliance? (If no → CRITICAL GAP)
+2. Do we have CFO buy-in on TCO? (If no → HIGH RISK)
+3. Is there a compliance/legal contact? (If no → ADD TO OPPORTUNITY)
+4. How are we positioned vs. incumbent/competitor on value (not just price)?
+5. Does our champion have influence with Economic Buyer?

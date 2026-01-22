@@ -1,0 +1,30 @@
+
+=== EVIDENCE BINDING RULES (PHASE 0 TEST - VARIANT 1) ===
+
+CRITICAL: Every insight, recommendation, or analysis MUST be grounded in specific data from the Salesforce record.
+
+REQUIRED FORMAT FOR ALL RECOMMENDATIONS:
+"[Recommendation] (Evidence: [Field] = [Value])"
+
+EXAMPLES:
+❌ BAD: "Consider following up with the decision maker."
+✅ GOOD: "CRITICAL: Follow up immediately with CFO Sarah Johnson (Evidence: Contact.Name = 'Sarah Johnson', Contact.Title = 'Chief Financial Officer', OpportunityContactRole.Role = 'Economic Buyer', OpportunityContactRole.IsPrimary = true)"
+
+❌ BAD: "There are overdue tasks that need attention."
+✅ GOOD: "HIGH RISK: Task 'Send ROI Analysis to CFO' is 7 days overdue (Evidence: Task.Subject = 'Send ROI Analysis to CFO', Task.ActivityDate = '2026-01-15', Task.Status = 'Not Started', Task.Priority = 'High', TODAY = '2026-01-22')"
+
+EVIDENCE BINDING CHECKLIST (MANDATORY):
+1. Every claim must cite at least one field name and its actual value
+2. Use actual field values from merge fields - never invent data
+3. For people references, ALWAYS cite: Contact.Name, Contact.Title, and OpportunityContactRole.Role
+4. For date-based insights, cite the date field and calculate days elapsed/remaining
+5. If data is missing, state explicitly: "MISSING DATA: [Field Name] - recommend updating before proceeding"
+
+MANDATORY EVIDENCE FIELDS TO CITE (when relevant):
+- Opportunity: Amount, Probability, StageName, CloseDate, Description, NextStep, HasOverdueTask, HasOpenActivity
+- Tasks: Subject, Status, Priority, ActivityDate (calculate overdue days if past today)
+- Events: Subject, StartDateTime, Description, Contact.Name (who attended)
+- Contacts: Contact.Name, Contact.Title, Contact.Department, OpportunityContactRole.Role, OpportunityContactRole.IsPrimary
+
+NO GENERIC RECOMMENDATIONS. Every sentence analyzing data must include specific evidence citations.
+If you cannot find evidence for a recommendation, do NOT make that recommendation.

@@ -1,0 +1,262 @@
+{
+  "testDate": "2026-01-21T20:39:09.235219",
+  "variants": [
+    {
+      "number": 1,
+      "name": "evidence",
+      "description": "+Evidence Binding",
+      "metrics": {
+        "evidenceCitations": 21,
+        "forbiddenPhrases": 3,
+        "customerReferences": 18,
+        "diagnosticScore": 5.0,
+        "diagnosticCount": 23,
+        "descriptiveCount": 3,
+        "outputLength": 8312,
+        "hasStructuredFormat": false,
+        "evidenceExamples": [
+          "(Evidence: Task.Subject = 'Send ROI Analysis to CFO', Task.ActivityDate = '2026-01-15', Task.Status = 'Not Started')",
+          "(Evidence: Last Event = 'Benefits Review Meeting', Event.StartDateTime = '2026-01-15')",
+          "(Evidence: Opportunity.Probability = 20%, Opportunity.StageName = 'Needs Analysis')",
+          "(Evidence: Opportunity.Description contains 'wellness programs')",
+          "(Evidence: Contact.Name = 'Sarah Johnson', Contact.Title = 'Chief Financial Officer')"
+        ],
+        "forbiddenFound": [
+          [
+            "ensure alignment",
+            1
+          ],
+          [
+            "consider scheduling",
+            1
+          ],
+          [
+            "maintain momentum",
+            1
+          ]
+        ],
+        "customerFound": [
+          [
+            "health insurance",
+            1
+          ],
+          [
+            "CFO",
+            4
+          ],
+          [
+            "Sarah Johnson",
+            2
+          ],
+          [
+            "Aetna",
+            1
+          ],
+          [
+            "wellness",
+            1
+          ]
+        ],
+        "compositeScore": 73.3
+      }
+    },
+    {
+      "number": 4,
+      "name": "all",
+      "description": "+All Three Combined",
+      "metrics": {
+        "evidenceCitations": 24,
+        "forbiddenPhrases": 4,
+        "customerReferences": 39,
+        "diagnosticScore": 5.0,
+        "diagnosticCount": 22,
+        "descriptiveCount": 1,
+        "outputLength": 11168,
+        "hasStructuredFormat": true,
+        "evidenceExamples": [
+          "(Evidence: Task.Subject = 'Send ROI Analysis to CFO', Task.ActivityDate = '01/15/2026', Task.Status = 'Not Started', Task.Priority = 'High', TODAY = '01/22/2026')",
+          "(Evidence: Opportunity.Probability = '20')",
+          "(Evidence: Contact.Name = 'Lisa Martinez', Contact.Role = 'Champion')",
+          "(Evidence: Opportunity.Description = 'KEY OPPORTUNITIES: (1)",
+          "(Evidence: Contact.Name = 'Robert Taylor', Contact.Role = 'Business User')"
+        ],
+        "forbiddenFound": [
+          [
+            "address concerns",
+            1
+          ],
+          [
+            "follow up with",
+            3
+          ]
+        ],
+        "customerFound": [
+          [
+            "health insurance",
+            1
+          ],
+          [
+            "CFO",
+            7
+          ],
+          [
+            "Sarah Johnson",
+            2
+          ],
+          [
+            "Lisa Martinez",
+            3
+          ],
+          [
+            "Robert Taylor",
+            2
+          ]
+        ],
+        "compositeScore": 73.3
+      }
+    },
+    {
+      "number": 2,
+      "name": "diagnostic",
+      "description": "+Diagnostic Language",
+      "metrics": {
+        "evidenceCitations": 0,
+        "forbiddenPhrases": 1,
+        "customerReferences": 32,
+        "diagnosticScore": 5.0,
+        "diagnosticCount": 12,
+        "descriptiveCount": 1,
+        "outputLength": 10008,
+        "hasStructuredFormat": true,
+        "evidenceExamples": [],
+        "forbiddenFound": [
+          [
+            "follow up with",
+            1
+          ]
+        ],
+        "customerFound": [
+          [
+            "health insurance",
+            1
+          ],
+          [
+            "CFO",
+            6
+          ],
+          [
+            "Sarah Johnson",
+            2
+          ],
+          [
+            "Lisa Martinez",
+            1
+          ],
+          [
+            "TCO",
+            1
+          ]
+        ],
+        "compositeScore": 60.0
+      }
+    },
+    {
+      "number": 3,
+      "name": "context",
+      "description": "+Context Application",
+      "metrics": {
+        "evidenceCitations": 0,
+        "forbiddenPhrases": 1,
+        "customerReferences": 23,
+        "diagnosticScore": 5.0,
+        "diagnosticCount": 5,
+        "descriptiveCount": 1,
+        "outputLength": 9383,
+        "hasStructuredFormat": false,
+        "evidenceExamples": [],
+        "forbiddenFound": [
+          [
+            "follow up with",
+            1
+          ]
+        ],
+        "customerFound": [
+          [
+            "health insurance",
+            1
+          ],
+          [
+            "CFO",
+            4
+          ],
+          [
+            "Sarah Johnson",
+            1
+          ],
+          [
+            "Lisa Martinez",
+            2
+          ],
+          [
+            "HIPAA",
+            3
+          ]
+        ],
+        "compositeScore": 53.3
+      }
+    },
+    {
+      "number": 0,
+      "name": "baseline",
+      "description": "Baseline (no enhancements)",
+      "metrics": {
+        "evidenceCitations": 0,
+        "forbiddenPhrases": 4,
+        "customerReferences": 11,
+        "diagnosticScore": 5.0,
+        "diagnosticCount": 6,
+        "descriptiveCount": 1,
+        "outputLength": 9349,
+        "hasStructuredFormat": false,
+        "evidenceExamples": [],
+        "forbiddenFound": [
+          [
+            "ensure alignment",
+            1
+          ],
+          [
+            "consider scheduling",
+            1
+          ],
+          [
+            "maintain momentum",
+            1
+          ]
+        ],
+        "customerFound": [
+          [
+            "health insurance",
+            1
+          ],
+          [
+            "CFO",
+            2
+          ],
+          [
+            "HIPAA",
+            1
+          ],
+          [
+            "compliance",
+            1
+          ],
+          [
+            "benefits",
+            1
+          ]
+        ],
+        "compositeScore": 33.3
+      }
+    }
+  ]
+}
