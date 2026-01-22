@@ -384,6 +384,12 @@ public with sharing class Stage08_PromptAssembly implements IStage {
             instructions += patterns + '\n\n';
         }
 
+        // NEW: Load and inject UI Components
+        String uiComponents = loadUIComponents();
+        if (String.isNotBlank(uiComponents)) {
+            instructions += uiComponents + '\n\n';
+        }
+
         return instructions;
     }
 
@@ -454,6 +460,41 @@ public with sharing class Stage08_PromptAssembly implements IStage {
             
         } catch (Exception e) {
             System.debug('Error loading Patterns: ' + e.getMessage());
+            return '';
+        }
+    }
+
+    /**
+     * @description Load active UI Components from Builder Prompts
+     * @return Combined UI component content
+     */
+    private String loadUIComponents() {
+        try {
+            List<ccai__AI_Prompt__c> components = [
+                SELECT Id, Name, ccai__Prompt_Command__c
+                FROM ccai__AI_Prompt__c
+                WHERE RecordType.DeveloperName = 'Builder'
+                  AND Category__c = 'UI Component'
+                  AND ccai__Status__c = 'Active'
+                ORDER BY Name
+            ];
+            
+            if (components.isEmpty()) {
+                System.debug('No UI Components found');
+                return '';
+            }
+            
+            String allComponents = '';
+            for (ccai__AI_Prompt__c component : components) {
+                allComponents += '\n\n=== ' + component.Name + ' ===\n\n';
+                allComponents += component.ccai__Prompt_Command__c;
+            }
+            
+            System.debug('Loaded ' + components.size() + ' UI Components from Builder Prompts');
+            return allComponents;
+            
+        } catch (Exception e) {
+            System.debug('Error loading UI Components: ' + e.getMessage());
             return '';
         }
     }
