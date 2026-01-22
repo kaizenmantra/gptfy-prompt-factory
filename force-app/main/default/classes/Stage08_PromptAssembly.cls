@@ -371,9 +371,91 @@ public with sharing class Stage08_PromptAssembly implements IStage {
         
         instructions += 'The output should be visually stunning, data-rich, and immediately actionable.\n';
         instructions += 'Use ONLY the merge field embeddings provided in the template below. Do not add or modify merge fields.\n';
-        instructions += 'Merge fields use triple-brace syntax and will be substituted by GPTfy at runtime.\n';
+        instructions += 'Merge fields use triple-brace syntax and will be substituted by GPTfy at runtime.\n\n';
+
+        // NEW: Load and inject Builder Prompts
+        String qualityRules = loadQualityRules();
+        if (String.isNotBlank(qualityRules)) {
+            instructions += qualityRules + '\n\n';
+        }
+
+        String patterns = loadPatterns(rootObject);
+        if (String.isNotBlank(patterns)) {
+            instructions += patterns + '\n\n';
+        }
 
         return instructions;
+    }
+
+    /**
+     * @description Load active Quality Rules from Builder Prompts
+     * @return Combined quality rules content
+     */
+    private String loadQualityRules() {
+        try {
+            List<ccai__AI_Prompt__c> rules = [
+                SELECT Id, Name, ccai__Prompt_Command__c
+                FROM ccai__AI_Prompt__c
+                WHERE RecordType.DeveloperName = 'Builder'
+                  AND Category__c = 'Quality Rule'
+                  AND ccai__Status__c = 'Active'
+                ORDER BY Name
+            ];
+            
+            if (rules.isEmpty()) {
+                System.debug('No Quality Rules found - falling back to hardcoded');
+                return '';
+            }
+            
+            String allRules = '';
+            for (ccai__AI_Prompt__c rule : rules) {
+                allRules += '\n\n=== ' + rule.Name + ' ===\n\n';
+                allRules += rule.ccai__Prompt_Command__c;
+            }
+            
+            System.debug('Loaded ' + rules.size() + ' Quality Rules from Builder Prompts');
+            return allRules;
+            
+        } catch (Exception e) {
+            System.debug('Error loading Quality Rules: ' + e.getMessage());
+            return '';
+        }
+    }
+
+    /**
+     * @description Load active Patterns from Builder Prompts for specific object
+     * @param rootObject The Salesforce object (e.g., 'Opportunity')
+     * @return Combined pattern content
+     */
+    private String loadPatterns(String rootObject) {
+        try {
+            List<ccai__AI_Prompt__c> patterns = [
+                SELECT Id, Name, ccai__Prompt_Command__c
+                FROM ccai__AI_Prompt__c
+                WHERE RecordType.DeveloperName = 'Builder'
+                  AND Category__c = 'Pattern'
+                  AND ccai__Status__c = 'Active'
+                ORDER BY Name
+            ];
+            
+            if (patterns.isEmpty()) {
+                System.debug('No Patterns found for ' + rootObject);
+                return '';
+            }
+            
+            String allPatterns = '';
+            for (ccai__AI_Prompt__c pattern : patterns) {
+                allPatterns += '\n\n=== ' + pattern.Name + ' ===\n\n';
+                allPatterns += pattern.ccai__Prompt_Command__c;
+            }
+            
+            System.debug('Loaded ' + patterns.size() + ' Patterns from Builder Prompts');
+            return allPatterns;
+            
+        } catch (Exception e) {
+            System.debug('Error loading Patterns: ' + e.getMessage());
+            return '';
+        }
     }
 
     /**
