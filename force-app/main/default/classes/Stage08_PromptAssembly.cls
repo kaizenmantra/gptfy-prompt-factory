@@ -373,28 +373,52 @@ public with sharing class Stage08_PromptAssembly implements IStage {
         instructions += 'Use ONLY the merge field embeddings provided in the template below. Do not add or modify merge fields.\n';
         instructions += 'Merge fields use triple-brace syntax and will be substituted by GPTfy at runtime.\n\n';
 
+        System.debug('🏗️ BUILD AI INSTRUCTIONS: Starting builder injection...');
+        Integer initialLength = instructions.length();
+        
         // NEW: Load and inject Builder Prompts
+        System.debug('📋 Step 1: Loading Quality Rules...');
         String qualityRules = loadQualityRules();
         if (String.isNotBlank(qualityRules)) {
             instructions += qualityRules + '\n\n';
+            System.debug('✅ Injected Quality Rules: +' + qualityRules.length() + ' chars');
+        } else {
+            System.debug('⚠️ No Quality Rules to inject');
         }
 
+        System.debug('📋 Step 2: Loading Patterns...');
         String patterns = loadPatterns(rootObject);
         if (String.isNotBlank(patterns)) {
             instructions += patterns + '\n\n';
+            System.debug('✅ Injected Patterns: +' + patterns.length() + ' chars');
+        } else {
+            System.debug('⚠️ No Patterns to inject');
         }
 
         // NEW: Load and inject UI Components
+        System.debug('📋 Step 3: Loading UI Components...');
         String uiComponents = loadUIComponents();
         if (String.isNotBlank(uiComponents)) {
             instructions += uiComponents + '\n\n';
+            System.debug('✅ Injected UI Components: +' + uiComponents.length() + ' chars');
+        } else {
+            System.debug('⚠️ No UI Components to inject');
         }
 
         // NEW: Load and inject Context Templates
+        System.debug('📋 Step 4: Loading Context Templates...');
         String contextTemplates = loadContextTemplates();
         if (String.isNotBlank(contextTemplates)) {
             instructions += contextTemplates + '\n\n';
+            System.debug('✅ Injected Context Templates: +' + contextTemplates.length() + ' chars');
+        } else {
+            System.debug('⚠️ No Context Templates to inject');
         }
+        
+        Integer finalLength = instructions.length();
+        Integer addedContent = finalLength - initialLength;
+        System.debug('📊 BUILDER INJECTION COMPLETE: Added ' + addedContent + ' chars from builders');
+        System.debug('📊 Total instruction length: ' + finalLength + ' chars');
 
         return instructions;
     }
@@ -405,6 +429,7 @@ public with sharing class Stage08_PromptAssembly implements IStage {
      */
     private String loadQualityRules() {
         try {
+            System.debug('🔍 loadQualityRules() called - querying builders...');
             List<ccai__AI_Prompt__c> rules = [
                 SELECT Id, Name, ccai__Prompt_Command__c
                 FROM ccai__AI_Prompt__c
@@ -414,22 +439,26 @@ public with sharing class Stage08_PromptAssembly implements IStage {
                 ORDER BY Name
             ];
             
+            System.debug('📊 Query returned: ' + rules.size() + ' Quality Rules');
+            
             if (rules.isEmpty()) {
-                System.debug('No Quality Rules found - falling back to hardcoded');
+                System.debug('⚠️ No Quality Rules found - returning empty');
                 return '';
             }
             
             String allRules = '';
             for (ccai__AI_Prompt__c rule : rules) {
+                System.debug('✅ Loading: ' + rule.Name + ' (' + rule.ccai__Prompt_Command__c.length() + ' chars)');
                 allRules += '\n\n=== ' + rule.Name + ' ===\n\n';
                 allRules += rule.ccai__Prompt_Command__c;
             }
             
-            System.debug('Loaded ' + rules.size() + ' Quality Rules from Builder Prompts');
+            System.debug('✅ Loaded ' + rules.size() + ' Quality Rules (' + allRules.length() + ' total chars)');
             return allRules;
             
         } catch (Exception e) {
-            System.debug('Error loading Quality Rules: ' + e.getMessage());
+            System.debug(LoggingLevel.ERROR, '❌ Error loading Quality Rules: ' + e.getMessage());
+            System.debug(LoggingLevel.ERROR, '❌ Stack trace: ' + e.getStackTraceString());
             return '';
         }
     }
