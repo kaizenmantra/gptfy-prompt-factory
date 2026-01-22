@@ -463,8 +463,10 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             return allRules;
             
         } catch (Exception e) {
-            PromptFactoryLogger.error(runId, 8, '❌ Error loading Quality Rules: ' + e.getMessage() + ' | Stack: ' + e.getStackTraceString());
-            return '';
+            // DON'T silently return empty - fail loudly so we can see the error!
+            String errorMsg = 'Failed to load Quality Rules: ' + e.getMessage() + ' | Stack: ' + e.getStackTraceString();
+            System.debug(LoggingLevel.ERROR, errorMsg);
+            throw new StageException(errorMsg);
         }
     }
 
@@ -509,8 +511,10 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             return allPatterns;
             
         } catch (Exception e) {
-            PromptFactoryLogger.error(runId, 8, '❌ Error loading Patterns: ' + e.getMessage() + ' | Stack: ' + e.getStackTraceString());
-            return '';
+            // DON'T silently return empty - fail loudly so we can see the error!
+            String errorMsg = 'Failed to load Patterns: ' + e.getMessage() + ' | Stack: ' + e.getStackTraceString();
+            System.debug(LoggingLevel.ERROR, errorMsg);
+            throw new StageException(errorMsg);
         }
     }
 
@@ -553,8 +557,10 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             return allComponents;
             
         } catch (Exception e) {
-            PromptFactoryLogger.error(runId, 8, '❌ Error loading UI Components: ' + e.getMessage());
-            return '';
+            // DON'T silently return empty - fail loudly so we can see the error!
+            String errorMsg = 'Failed to load UI Components: ' + e.getMessage() + ' | Stack: ' + e.getStackTraceString();
+            System.debug(LoggingLevel.ERROR, errorMsg);
+            throw new StageException(errorMsg);
         }
     }
 
@@ -597,8 +603,10 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             return allTemplates;
             
         } catch (Exception e) {
-            PromptFactoryLogger.error(runId, 8, '❌ Error loading Context Templates: ' + e.getMessage());
-            return '';
+            // DON'T silently return empty - fail loudly so we can see the error!
+            String errorMsg = 'Failed to load Context Templates: ' + e.getMessage() + ' | Stack: ' + e.getStackTraceString();
+            System.debug(LoggingLevel.ERROR, errorMsg);
+            throw new StageException(errorMsg);
         }
     }
 
