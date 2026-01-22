@@ -1,7 +1,7 @@
-# GPTfy Prompt Factory: Architecture Strategy
+# GPTfy Prompt Factory: Architecture Strategy & Implementation Plan
 
 **Last Updated**: January 21, 2026  
-**Status**: Strategic Planning  
+**Status**: Ready for Implementation  
 **Branch**: `feature/prompt-quality-improvements`
 
 ---
@@ -11,11 +11,14 @@
 Transform the Prompt Factory from a generic prompt generator into a **Decisive Analysis Assembler**. We stop asking users to "describe what they want" and instead **automatically assemble** a sophisticated "mini-analyst" based on:
 
 - **Verified customer context** (ground truth, not guesses)
-- **Multi-record evidence** (patterns, not single data points)
+- **Evidence-grounded insights** (every claim cites specific data)
+- **Diagnostic language** (judge, diagnose, prescribe - not just describe)
 - **Proven analytical patterns** (extracted from production prompts)
 - **Deterministic triggers** (data signals, not AI vibes)
 
 **Core Philosophy**: Great analysis is not invented from scratch by an LLM each time. It is **assembled** from proven components.
+
+**Implementation Strategy**: **Prove quality improvements first (2-3 days), then build infrastructure around what works.** No building until evidence binding and diagnostic language show 50%+ quality improvement.
 
 ---
 
@@ -29,10 +32,131 @@ Transform the Prompt Factory from a generic prompt generator into a **Decisive A
 - Treats industry context as optional narrative enrichment
 - Produces report-style summaries instead of decision-support analysis
 - LLM guesses at patterns instead of detecting them from data
+- Outputs fail the "so what?" test - they summarize, not analyze
 
-**Impact**: Users won't trust/pay for prompts that sound like generic chatbot output.
+**Impact**: Users won't trust/pay for prompts that sound like generic chatbot output. Technical, compliance-heavy buyers need analysis that would survive scrutiny from a manager or auditor.
 
 **New Way**: "Apply the *Negotiation Pressure* pattern using *Cigna* terminology with evidence from *Record #1/2/3*." → Expert decision support.
+
+---
+
+## The Quality Gap: Before vs. After
+
+### Current State (Descriptive + Generic)
+
+From actual production output:
+
+```
+Top Risks:
+• Negotiation with the CFO is critical; ensure alignment on discount expectations.
+• Engagement with the executive sponsor is essential to maintain momentum.
+• Monitor for any changes in client sentiment that may affect deal closure.
+
+Recommended Next Actions:
+• Schedule a follow-up meeting with the CFO to clarify expectations.
+• Engage the executive sponsor to reinforce the value proposition.
+• Prepare a revised proposal that addresses the CFO's concerns.
+```
+
+**Problems:**
+- No specific evidence cited (which CFO? what meeting?)
+- Generic advice that applies to any deal
+- No connection to customer context (UnitedHealthcare's healthcare payer priorities)
+- Sounds like a chatbot, not an analyst
+- Would not survive scrutiny in a regulated organization
+
+### Target State (Diagnostic + Evidence-Grounded)
+
+What the same section should look like:
+
+```
+Top Risks:
+
+1. NO CHAMPION IDENTIFIED [CRITICAL GAP]
+   Evidence: OpportunityContactRole has Decision Maker, Executive Sponsor, Economic Buyer—
+   but no Champion role mapped.
+   Why it matters: In healthcare payer deals at $150K+, CFOs typically require internal 
+   advocacy before signing. Your Economic Buyer is not your Champion.
+   Action: Before Jan 27 CFO Meeting, identify who will advocate internally.
+
+2. CFO MEETING WITHOUT ROI FRAMEWORK [HIGH RISK]
+   Evidence: Task "CFO Meeting" scheduled 01/27/2026, but no related tasks for 
+   ROI analysis or TCO documentation.
+   Why it matters: Per your customer context, UHC CFOs prioritize "Total cost of 
+   ownership, ROI"—not feature comparisons.
+   Action: Create TCO comparison document this week. Reference HIPAA compliance 
+   cost avoidance (UHC strategic priority).
+
+3. SINGLE OPEN ACTIVITY ON $150K DEAL [WARNING]
+   Evidence: HasOpenActivity = 1, Amount = $150,000, Stage = Proposal/Price Quote
+   Why it matters: Deals at this stage typically require parallel workstreams 
+   (legal, security, procurement). One activity suggests single-threaded execution.
+   Action: Map required approval steps with Executive Sponsor before CFO meeting.
+
+Signal Assessment:
+├── Economic Buyer Identified: ✓ STRONG (Contact Role mapped)
+├── Champion Identified: ✗ MISSING (No Champion role)
+├── Decision Maker Engaged: ✓ STRONG (Primary contact)
+├── Executive Sponsor Engaged: ~ WEAK (Mapped but not primary, no recent activity)
+├── Next Steps Defined: ✓ PRESENT (CFO Meeting scheduled)
+└── Close Date Realistic: ? UNCERTAIN (12/31/2025 is 11 months out for Proposal stage)
+```
+
+**Improvements:**
+- Every insight cites specific field values
+- Gaps are explicitly labeled (CRITICAL GAP, HIGH RISK, WARNING)
+- Customer context is applied (UHC CFO priorities, HIPAA)
+- Industry heuristics are embedded ("healthcare payer deals at $150K+")
+- Signal/Gap normalization at the end
+- Actionable with specific timing ("Before Jan 27", "this week")
+
+**This is the quality level we must achieve.**
+
+---
+
+## Strategic Principles
+
+### Principle 1: Assembly Over Invention
+
+The core philosophy remains correct:
+
+> Great analysis is not invented from scratch by an LLM each time. It is **assembled** from proven components.
+
+However, the assembly should be **invisible to the LLM**. The LLM receives a fully-composed prompt with:
+- Diagnostic language requirements baked in
+- Evidence binding rules non-negotiable
+- Industry heuristics as evaluation criteria
+- Signal/gap structure as output format
+
+The LLM's job is to **apply** these, not create them.
+
+### Principle 2: Prove Quality First, Then Systematize
+
+**Do NOT build infrastructure until quality improvements are proven.**
+
+```
+OLD (Risky): Phase 0 → Build Assembler → Build Patterns → Build Multi-Record → Hope it works
+NEW (Smart): Prove It (2-3 days) → Codify It (Week 1-2) → Scale It (Week 3+)
+```
+
+**Phase 0 is a GATE**: If evidence binding + diagnostic language don't show 50%+ quality improvement, we revisit the entire approach before building anything.
+
+### Principle 3: Diagnostic Over Descriptive
+
+Technical, compliance-heavy buyers don't want reports—they want analysis that would survive scrutiny from a manager or auditor.
+
+The output must:
+- **Judge** (not just observe)
+- **Diagnose** (not just describe)
+- **Prescribe** (not just suggest)
+- **Challenge** (not just validate)
+
+### Principle 4: Heuristics Over Descriptions
+
+Industry context should be **evaluation criteria**, not background narrative.
+
+**Wrong:** "In healthcare insurance, compliance with HIPAA is important..."  
+**Right:** "Deals without documented security review at Proposal stage fail procurement 70% of the time"
 
 ---
 
@@ -1033,104 +1157,846 @@ Optional "live" web context for highly strategic accounts:
 
 ## Implementation Roadmap
 
-**Strategy**: Depth over breadth. Prove each layer before building the next.
+**Strategy**: **Prove quality improvements first, then build infrastructure around what works.**
+
+**Critical Decision Gate**: Phase 0 tests our quality thesis. If evidence binding + diagnostic language don't show 50%+ improvement, we revisit the entire approach before building anything.
 
 ---
 
-### Phase 0: Evidence Binding (Immediate - 1-2 days)
+### Phase 0: Prove the Quality Thesis (2-3 Days) 🚨 **CRITICAL GATE**
 
-**Goal**: Prove that forcing evidence citation improves quality
+**Goal**: Validate that Evidence Binding + Diagnostic Language + Context Application dramatically improves output quality.
 
-**Why First**: This is the fastest, highest-impact change. It's a 2-hour code change that prevents 90% of hallucinations.
+**Why First**: If this doesn't work, the entire architecture needs rethinking. If it works, everything else is implementation detail.
 
-**Tasks**:
-1. **Update Stage08** (2 hours)
-   - Inject evidence binding rule into prompt assembly
-   - Format: "Every insight must cite Record 1/2/3 or state 'Missing data: <field>'"
-   - Deploy to agentictso org
+#### Task 0.1: Evidence Binding Test (Day 1)
 
-2. **Test & Measure** (1 day)
-   - Run 5 test prompts (Deal Coach, Account 360, etc.)
-   - Compare before/after: Count claims without evidence
-   - User feedback: Does output feel more trustworthy?
+Add this instruction block to the existing Opportunity Insights prompt:
 
-**Success Criteria**:
-- ✅ Hallucination rate drops by 50%+
-- ✅ Users report output feels more credible
-- ✅ No performance degradation
+```markdown
+=== EVIDENCE BINDING RULE (MANDATORY) ===
 
-**Decision Point**: If evidence binding works, commit to full architecture. If not, revisit approach.
+Every insight, risk, or recommendation MUST cite specific evidence from this record.
+
+FORMAT: "[Insight] (Evidence: [Field] = [Value])"
+
+EXAMPLES OF COMPLIANT OUTPUT:
+✓ "CFO engagement is your critical path (Evidence: Task.Subject = 'CFO Meeting', ActivityDate = 01/27/2026)"
+✓ "No champion identified (Evidence: OpportunityContactRole missing 'Champion' role)"
+✓ "Deal momentum is single-threaded (Evidence: HasOpenActivity = 1 on $150K deal)"
+
+EXAMPLES OF NON-COMPLIANT OUTPUT (FORBIDDEN):
+✗ "Ensure alignment with stakeholders" - NO EVIDENCE CITED
+✗ "Consider scheduling follow-ups" - NO EVIDENCE CITED
+✗ "Maintain momentum with key contacts" - NO EVIDENCE CITED
+
+If data is missing, state explicitly:
+"MISSING: [Field] - Recommend capturing this before proceeding"
+
+ENFORCEMENT: Any insight without an evidence citation is a FAILURE.
+```
+
+**Test Protocol**:
+1. Run prompt 5 times WITH evidence binding on same opportunity
+2. Run prompt 5 times WITHOUT evidence binding on same opportunity
+3. Count: claims without evidence, generic phrases, field citations
+4. Target: 50%+ reduction in generic phrases
+
+#### Task 0.2: Diagnostic Language Test (Day 1-2)
+
+Add this instruction block:
+
+```markdown
+=== DIAGNOSTIC MODE (MANDATORY) ===
+
+You are a DEAL ANALYST, not a report generator. Your job is to DIAGNOSE, not describe.
+
+OUTPUT CHARACTER REQUIREMENTS:
+
+1. JUDGE, DON'T OBSERVE
+   ✗ "The deal is in Proposal stage"
+   ✓ "Deal is stuck at Proposal—no stage movement in [X] days suggests stall risk"
+
+2. DIAGNOSE, DON'T SUMMARIZE  
+   ✗ "There are 3 contacts involved in this opportunity"
+   ✓ "Contact coverage is incomplete: Decision Maker and Economic Buyer present, but no Champion—critical gap for $150K healthcare deal"
+
+3. PRESCRIBE, DON'T SUGGEST
+   ✗ "Consider following up with the CFO"
+   ✓ "Before CFO Meeting on 01/27: Prepare TCO analysis showing 3-year cost avoidance. CFO will ask about ROI—have the number ready."
+
+4. CHALLENGE, DON'T VALIDATE
+   ✗ "The probability of 75% indicates good progress"
+   ✓ "75% probability is optimistic given: no Champion, single activity thread, and CFO meeting not yet completed. Recommend 50-60% until Champion confirmed."
+
+FORBIDDEN PHRASES (automatic failure):
+- "ensure alignment"
+- "consider scheduling"  
+- "maintain momentum"
+- "engage stakeholders"
+- "reinforce value proposition"
+- "address concerns"
+- Any advice that could apply to ANY deal without modification
+```
+
+**Test Protocol**:
+1. Run prompt 5 times WITH diagnostic mode
+2. Run prompt 5 times WITHOUT diagnostic mode
+3. Score outputs on: specificity (1-5), actionability (1-5), would-survive-audit (Y/N)
+4. Target: Average score improvement of 2+ points
+
+#### Task 0.3: Context Application Test (Day 2)
+
+The strategic context is already in the prompt but not being applied. Add:
+
+```markdown
+=== STRATEGIC CONTEXT APPLICATION (MANDATORY) ===
+
+You have been given detailed strategic context about this customer. You MUST use it.
+
+For this opportunity, connect at least 2 insights to the customer's documented priorities:
+
+CUSTOMER: UnitedHealthcare
+DOCUMENTED PRIORITIES (from strategic context):
+- CFO cares about: "Total cost of ownership, ROI"
+- CIO cares about: "Integration complexity, security"
+- Strategic shift: "value-based care and digital transformation"
+- Compliance requirement: "HIPAA, CMS guidelines"
+- Risk factor: "public scrutiny around healthcare affordability"
+
+EXAMPLE OF CONTEXT APPLICATION:
+✓ "Position CFO meeting around TCO—per customer context, UHC CFOs prioritize total cost of ownership over feature comparison. Prepare 3-year cost model."
+✓ "Security review will be required—customer context indicates CIO focus on 'integration complexity, security'. Proactively schedule security assessment."
+
+✗ "Focus on demonstrating value" - TOO GENERIC, doesn't use customer context
+```
+
+**Test Protocol**:
+1. Run prompt 5 times WITH context application rule
+2. Run prompt 5 times WITHOUT context application rule
+3. Count: references to customer-specific priorities, generic value statements
+4. Target: 3+ customer-specific references per output
+
+#### Task 0.4: Signal/Gap Normalization Test (Day 2-3)
+
+Add structured output format:
+
+```markdown
+=== SIGNAL ASSESSMENT FORMAT (MANDATORY) ===
+
+Every analysis MUST include a Signal Assessment section using this exact format:
+
+```
+Signal Assessment:
+├── [Category 1]: [✓ STRONG | ~ WEAK | ✗ MISSING | ? UNCERTAIN] ([Evidence])
+├── [Category 2]: [✓ STRONG | ~ WEAK | ✗ MISSING | ? UNCERTAIN] ([Evidence])
+└── [Category N]: [✓ STRONG | ~ WEAK | ✗ MISSING | ? UNCERTAIN] ([Evidence])
+```
+
+For Deal/Opportunity analysis, assess these signals:
+
+STAKEHOLDER SIGNALS:
+├── Economic Buyer Identified
+├── Champion Identified  
+├── Decision Maker Engaged
+├── Procurement Contact (if deal >$100K)
+
+PROCESS SIGNALS:
+├── Next Steps Defined
+├── Timeline Validated
+├── Competition Status Known
+├── Security/Legal Requirements Mapped
+
+MOMENTUM SIGNALS:
+├── Recent Activity (within 14 days)
+├── Stage Progression (within 30 days)
+├── Close Date Stable (no pushes)
+
+This format allows technical users to quickly validate AI reasoning.
+```
+
+**Test Protocol**:
+1. Run prompt with signal assessment format
+2. Evaluate: completeness, accuracy, scanability
+3. Get feedback from 2-3 internal users on comprehension speed
+
+#### Phase 0 Success Criteria & Decision Gate
+
+| Test | Metric | Target | Fail Threshold |
+|------|--------|--------|----------------|
+| Evidence Binding | Generic phrases per output | <3 | >7 |
+| Evidence Binding | Field citations per output | >8 | <3 |
+| Diagnostic Language | Specificity score (1-5) | >4.0 | <3.0 |
+| Diagnostic Language | Actionability score (1-5) | >4.0 | <3.0 |
+| Context Application | Customer-specific references | >3 | <1 |
+| Signal Assessment | User comprehension time | <30 sec | >60 sec |
+
+**🚨 DECISION GATE**: 
+- If 3+ tests hit target → Proceed to Phase 1
+- If <3 tests hit target → Revisit approach, do NOT build infrastructure
 
 ---
 
-### Phase 1: The Analysis Assembler Engine (Week 1-2)
+### Phase 1: Codify the Quality Rules (Week 1-2)
 
-**Goal**: Build the "Factory" that assembles prompts from components
+**Goal**: Systematize the proven quality improvements into reusable markdown files
 
-**Why Second**: Once evidence binding proves the value of constraints, build the engine that applies multiple constraints systematically.
+**Prerequisite**: Phase 0 tests show significant quality improvement (3+ tests hit target)
 
-**Tasks**:
-1. **Define the Meta-Prompt Blueprint** (2 days)
-   - Document the structure of the "Factory prompt"
-   - Template variables: {selectedPatterns}, {customerContext}, {archetypeStructure}
-   - Test manually before automating
+**Why Now**: We've proven what works. Now we codify it into files that can be reused across all prompts.
 
-2. **Archetype Definitions** (2 days)
-   - Create metadata structure for archetypes
-   - Define "Deal Coach" archetype completely
-   - Define "Executive Risk Brief" archetype
-   - Store in Custom Metadata: `PF_Persona_Archetype__mdt`
+#### Task 1.1: Create Quality Rules Library (Static Resources)
 
-3. **Pattern Extraction** (3 days)
-   - Analyze top 5 production prompts
-   - Extract common patterns (expect to find 5-8)
-   - Document triggers, questions, forbidden phrases
-   - Create markdown documentation
+Store as markdown files in Static Resources:
 
-4. **Flagship Rewrite** (2 days)
-   - Rewrite "Deal Coach" using new architecture
-   - Manually assemble the meta-prompt (no automation yet)
-   - Test and compare vs. old version
+```
+staticresources/
+├── quality_rules/
+│   ├── evidence_binding.md
+│   ├── diagnostic_language.md
+│   ├── context_application.md
+│   └── signal_assessment.md
+```
 
-**Success Criteria**:
-- ✅ "Deal Coach" output quality 2x better than baseline
-- ✅ Meta-prompt blueprint documented and validated
-- ✅ 5-8 patterns extracted and documented
-- ✅ Users prefer new "Deal Coach" over old version
+Each file contains:
+- The instruction block (copy-paste ready from Phase 0 tests)
+- Examples of compliant/non-compliant output
+- Forbidden phrases list
+- Validation criteria
+
+**Implementation - QualityRulesLoader.cls**:
+
+```apex
+public class QualityRulesLoader {
+    
+    private static Map<String, String> ruleCache = new Map<String, String>();
+    
+    /**
+     * Load a quality rule from Static Resource
+     */
+    public static String loadRule(String ruleName) {
+        if (ruleCache.containsKey(ruleName)) {
+            return ruleCache.get(ruleName);
+        }
+        
+        String resourceName = 'quality_rules_' + ruleName;
+        StaticResource sr = [
+            SELECT Body 
+            FROM StaticResource 
+            WHERE Name = :resourceName 
+            LIMIT 1
+        ];
+        
+        String content = sr.Body.toString();
+        ruleCache.put(ruleName, content);
+        return content;
+    }
+    
+    /**
+     * Load all quality rules for a prompt type
+     */
+    public static String loadRulesForPromptType(String promptType) {
+        List<String> rules = new List<String>();
+        
+        // All prompts get evidence binding
+        rules.add(loadRule('evidence_binding'));
+        
+        // Diagnostic prompts get diagnostic language
+        if (isDiagnosticPrompt(promptType)) {
+            rules.add(loadRule('diagnostic_language'));
+        }
+        
+        // All prompts get signal assessment
+        rules.add(loadRule('signal_assessment'));
+        
+        // All prompts get context application
+        rules.add(loadRule('context_application'));
+        
+        return String.join(rules, '\n\n');
+    }
+    
+    private static Boolean isDiagnosticPrompt(String promptType) {
+        Set<String> diagnosticTypes = new Set<String>{
+            'deal_coach', 'opportunity_insights', 'account_health',
+            'renewal_risk', 'pipeline_review', 'forecast_analysis'
+        };
+        return diagnosticTypes.contains(promptType.toLowerCase());
+    }
+}
+```
+
+#### Task 1.2: Create Industry Heuristics Library (Static Resources)
+
+**Key Insight**: Heuristics are evaluation criteria, not background descriptions.
+
+```
+staticresources/
+├── industry_heuristics/
+│   ├── healthcare_payer.md
+│   ├── financial_services.md
+│   ├── insurance.md
+│   └── default.md
+```
+
+**Example: healthcare_payer.md**:
+
+```markdown
+# Healthcare Payer Deal Heuristics
+
+## Evaluation Criteria for Deal Analysis
+
+Apply these heuristics when analyzing healthcare payer opportunities:
+
+### Stage-Specific Risk Patterns
+
+**Early Stage (Discovery/Qualification):**
+- Risk: Engaging only with IT; clinical and operations stakeholders often hold veto power
+- Risk: Underestimating compliance review timeline (typically 4-8 weeks)
+- Check: Is a compliance/security stakeholder identified?
+
+**Mid Stage (Demo/Evaluation):**
+- Risk: POC scope creep—payers want to test edge cases for regulatory scenarios
+- Risk: Reference requests for similar payer implementations (they will ask)
+- Check: Are success criteria documented and approved by Economic Buyer?
+
+**Late Stage (Proposal/Negotiation):**
+- Risk: Procurement involvement adds 3-6 weeks minimum
+- Risk: Legal review of BAA (Business Associate Agreement) for HIPAA
+- Risk: CFO escalation on any discount >15%
+- Check: Is procurement contact mapped? Is legal timeline accounted for?
+
+### Deal Size Thresholds
+
+| Amount | Typical Requirements |
+|--------|---------------------|
+| <$50K | Department approval sufficient |
+| $50K-$150K | VP-level + procurement review |
+| $150K-$500K | C-level sponsor + security review + BAA |
+| >$500K | Board visibility + enterprise procurement + reference calls |
+
+### Stakeholder Patterns
+
+**CFO Priorities:**
+- Total cost of ownership (3-5 year view)
+- Impact on Medical Loss Ratio (MLR)
+- Compliance cost avoidance
+- NOT: Feature comparisons
+
+**CIO/CISO Priorities:**
+- HIPAA compliance documentation
+- Integration with existing EHR/claims systems
+- Security assessment (SOC 2, HITRUST)
+- Data residency and encryption
+
+**CMO/Clinical Priorities:**
+- Member outcome improvements
+- Provider network impact
+- Quality metrics (HEDIS, Star ratings)
+
+### Red Flags
+
+- Discount request before value demonstration
+- Procurement involved before executive alignment
+- No clinical stakeholder engagement on member-facing solutions
+- Timeline expectation <90 days for enterprise deals
+- "We need to see the contract" before technical validation
+
+### Terminology
+
+Use these terms in recommendations:
+- "Member" (not Customer or Patient)
+- "Plan" (not Product)
+- "Provider Network" (critical to value discussions)
+- "Medical Loss Ratio" (key financial metric)
+- "Value-based care" (industry direction)
+```
+
+**Implementation - IndustryHeuristicsLoader.cls**:
+
+```apex
+public class IndustryHeuristicsLoader {
+    
+    /**
+     * Load heuristics for a customer's industry
+     */
+    public static String loadHeuristics(String industry) {
+        // Normalize industry name
+        String normalized = normalizeIndustry(industry);
+        
+        String resourceName = 'industry_heuristics_' + normalized;
+        
+        try {
+            StaticResource sr = [
+                SELECT Body 
+                FROM StaticResource 
+                WHERE Name = :resourceName 
+                LIMIT 1
+            ];
+            return sr.Body.toString();
+        } catch (Exception e) {
+            // Fall back to default
+            return loadDefaultHeuristics();
+        }
+    }
+    
+    private static String normalizeIndustry(String industry) {
+        if (String.isBlank(industry)) return 'default';
+        
+        String lower = industry.toLowerCase();
+        
+        // Map common variations
+        if (lower.contains('health') && lower.contains('insur')) {
+            return 'healthcare_payer';
+        }
+        if (lower.contains('health') || lower.contains('medical')) {
+            return 'healthcare_payer';
+        }
+        if (lower.contains('financ') || lower.contains('bank')) {
+            return 'financial_services';
+        }
+        if (lower.contains('insur')) {
+            return 'insurance';
+        }
+        
+        return 'default';
+    }
+    
+    private static String loadDefaultHeuristics() {
+        StaticResource sr = [
+            SELECT Body 
+            FROM StaticResource 
+            WHERE Name = 'industry_heuristics_default' 
+            LIMIT 1
+        ];
+        return sr.Body.toString();
+    }
+}
+```
+
+#### Task 1.3: Update Stage08 (Prompt Assembly)
+
+Modify the prompt assembly stage to inject quality rules and heuristics:
+
+```apex
+public class PromptAssembler {
+    
+    /**
+     * Assemble the final prompt with quality rules and heuristics
+     */
+    public static String assemblePrompt(
+        String basePrompt,
+        String promptType,
+        String industry,
+        String customerContext
+    ) {
+        List<String> sections = new List<String>();
+        
+        // Section 1: Base prompt (persona, goal, business context)
+        sections.add(basePrompt);
+        
+        // Section 2: Customer context (if available)
+        if (String.isNotBlank(customerContext)) {
+            sections.add('=== CUSTOMER STRATEGIC CONTEXT ===\n' + customerContext);
+        }
+        
+        // Section 3: Industry heuristics
+        String heuristics = IndustryHeuristicsLoader.loadHeuristics(industry);
+        sections.add('=== INDUSTRY EVALUATION CRITERIA ===\n' + heuristics);
+        
+        // Section 4: Quality rules (always included)
+        String qualityRules = QualityRulesLoader.loadRulesForPromptType(promptType);
+        sections.add(qualityRules);
+        
+        // Section 5: Output format and guardrails (from existing implementation)
+        sections.add(loadOutputGuardrails());
+        
+        return String.join(sections, '\n\n');
+    }
+    
+    private static String loadOutputGuardrails() {
+        // Load from existing Stage08 implementation
+        return '=== OUTPUT REQUIREMENTS ===\n[Existing guardrails]';
+    }
+}
+```
+
+#### Task 1.4: Create Prompt Type Configuration
+
+Define which rules apply to which prompt types (Static Resource):
+
+```markdown
+# prompt_type_config.md
+
+## Diagnostic Prompts
+These prompts analyze and judge. They receive full quality rules.
+
+- deal_coach
+- opportunity_insights
+- account_health
+- pipeline_review
+- forecast_analysis
+- renewal_risk
+- churn_prediction
+- win_loss_analysis
+
+Quality Rules: evidence_binding, diagnostic_language, signal_assessment, context_application
+
+## Summary Prompts  
+These prompts summarize and report. They receive evidence binding only.
+
+- meeting_summary
+- activity_timeline
+- contact_overview
+- account_snapshot
+
+Quality Rules: evidence_binding
+
+## Creative Prompts
+These prompts generate content. They receive minimal rules.
+
+- email_draft
+- proposal_section
+- executive_briefing
+
+Quality Rules: context_application (optional)
+```
+
+#### Phase 1 Deliverables
+
+| Deliverable | Description | Format |
+|-------------|-------------|--------|
+| evidence_binding.md | Evidence citation rule | Static Resource |
+| diagnostic_language.md | Diagnostic output requirements | Static Resource |
+| signal_assessment.md | Signal/gap format template | Static Resource |
+| context_application.md | Customer context usage rule | Static Resource |
+| healthcare_payer.md | Healthcare payer heuristics | Static Resource |
+| financial_services.md | Financial services heuristics | Static Resource |
+| insurance.md | Insurance heuristics | Static Resource |
+| default.md | Default heuristics | Static Resource |
+| prompt_type_config.md | Prompt type → rules mapping | Static Resource |
+| QualityRulesLoader.cls | Apex loader for quality rules | Apex Class |
+| QualityRulesLoader_Test.cls | Test class (>75% coverage) | Apex Test |
+| IndustryHeuristicsLoader.cls | Apex loader for heuristics | Apex Class |
+| IndustryHeuristicsLoader_Test.cls | Test class (>75% coverage) | Apex Test |
+| PromptAssembler.cls | Updated assembly logic | Apex Class |
+| PromptAssembler_Test.cls | Test class (>75% coverage) | Apex Test |
+
+#### Phase 1 Success Criteria
+
+- ✅ Quality rules load correctly from Static Resources
+- ✅ Industry heuristics map correctly from customer industry
+- ✅ Stage08 successfully injects rules into prompt assembly
+- ✅ Generated prompts include all required sections
+- ✅ Output quality matches Phase 0 test results (no regression)
+- ✅ All test classes have >75% coverage
 
 ---
 
-### Phase 2: Pattern Engine (Week 3-4)
+### Phase 2: Pattern Extraction & Matching (Week 3-4)
 
-**Goal**: Automate pattern selection based on data signals
+**Goal**: Extract reusable analytical patterns from production prompts and build pattern matching engine
 
-**Tasks**:
-1. **Pattern Storage** (2 days)
-   - Create Custom Metadata: `PF_Analytical_Pattern__mdt`
-   - Store 5-8 extracted patterns
-   - Include trigger rules (Stage, Keywords, Probability)
+**Prerequisite**: Phase 1 complete and quality rules working
 
-2. **Stage02 Pattern Detection** (3 days)
-   - Implement trigger evaluation logic
-   - Input: 3 records + data signals
-   - Output: 3-5 selected patterns (ranked by relevance)
-   - Test pattern matching accuracy
+**Key Principle**: Start with ONE pattern framework per prompt type. Do not build a pattern explosion. Extract from what's already working.
 
-3. **Stage08 Assembly Integration** (3 days)
-   - Update prompt assembly to query pattern library
-   - Inject pattern-specific analysis questions
-   - Apply forbidden phrase filters
-   - Test with multiple pattern combinations
+#### Task 2.1: Audit Production Prompts (2-3 days)
 
-4. **Full Pipeline Test** (2 days)
-   - End-to-end test: Sample records → Pattern detection → Prompt assembly
-   - Measure pattern hit rate (% of applicable patterns correctly detected)
-   - Measure output quality vs. baseline
+Review 15-20 production prompts and extract:
 
-**Success Criteria**:
-- ✅ Pattern matching logic works reliably (>90% accuracy)
-- ✅ Stage08 successfully composes prompts from patterns
-- ✅ Output quality 2x better than generic prompts
+1. **Trigger conditions**: What data signals activate each analysis?
+2. **Analysis questions**: What does the prompt ask the LLM to evaluate?
+3. **Output sections**: What structure does the output follow?
+4. **Forbidden language**: What generic phrases to avoid?
+
+**Extraction Template (markdown)**:
+
+```markdown
+# Pattern: [Pattern Name]
+
+## Metadata
+- Pattern ID: [snake_case_id]
+- Applies to: [Object types: Opportunity, Account, Case, etc.]
+- Prompt types: [deal_coach, account_health, etc.]
+
+## Trigger Conditions
+When should this pattern be applied?
+- Stage contains: [list]
+- Keywords in fields: [list]
+- Threshold values: [list]
+
+## Analysis Questions
+What must the LLM evaluate?
+1. [Question 1]
+2. [Question 2]
+3. [Question 3]
+
+## Required Evidence
+What fields must be cited?
+- [Field 1]
+- [Field 2]
+
+## Output Section
+What section does this pattern produce?
+- Section title: [title]
+- Format: [bullets/table/narrative]
+
+## Forbidden Phrases
+What generic language to avoid?
+- [phrase 1]
+- [phrase 2]
+```
+
+**Sources for Pattern Extraction**:
+- Existing production prompts (Deal Coach, Account 360, etc.)
+- MEDDIC analyzer docs (docs/meddic-analysis-2.md - 3,039 lines of patterns)
+- Customer feedback on what works
+
+#### Task 2.2: Define Core Patterns (Start with 5-8)
+
+Based on production prompt analysis, likely patterns:
+
+| Pattern ID | Description | Trigger |
+|------------|-------------|---------|
+| stakeholder_gap | Missing key roles | Contact roles incomplete |
+| stalled_deal | No recent progress | Stage unchanged 30+ days |
+| discount_pressure | Pricing negotiation risk | Keywords: discount, pricing, budget |
+| late_stage_risk | Procurement/legal/security | Stage = Proposal+ |
+| expansion_signal | Upsell/cross-sell opportunity | Multiple opps on account |
+| champion_weakness | Champion not confirmed | No Champion role OR low engagement |
+| timeline_risk | Close date concerns | Close date passed OR pushed multiple times |
+| single_threaded | Execution risk | Only 1 contact engaged |
+
+**Store patterns as markdown files** (Static Resources):
+
+```
+staticresources/
+├── patterns/
+│   ├── pattern_stakeholder_gap.md
+│   ├── pattern_stalled_deal.md
+│   ├── pattern_discount_pressure.md
+│   ├── pattern_late_stage_risk.md
+│   ├── pattern_champion_weakness.md
+│   ├── pattern_timeline_risk.md
+│   ├── pattern_single_threaded.md
+│   └── pattern_expansion_signal.md
+```
+
+#### Task 2.3: Implement Pattern Matcher (3-4 days)
+
+**Pattern Data Model (Pattern.cls)**:
+
+```apex
+public class Pattern {
+    public String patternId;
+    public String patternName;
+    public String triggerDescription;
+    public List<TriggerCondition> triggers;
+    public List<String> analysisQuestions;
+    public List<String> requiredEvidence;
+    public List<String> forbiddenPhrases;
+    public String outputSection;
+    public Integer priority; // For ranking
+    
+    public class TriggerCondition {
+        public String fieldName;
+        public String operator; // contains, equals, greater_than, less_than, is_empty, days_since_greater_than, role_missing
+        public String value;
+    }
+}
+```
+
+**PatternMatcher.cls**:
+
+```apex
+public class PatternMatcher {
+    
+    /**
+     * Analyze records and return applicable patterns
+     */
+    public static List<Pattern> matchPatterns(
+        SObject record,
+        List<SObject> relatedRecords,
+        String promptType
+    ) {
+        List<Pattern> matched = new List<Pattern>();
+        
+        // Load all patterns for this prompt type
+        List<Pattern> candidates = loadPatternsForPromptType(promptType);
+        
+        for (Pattern p : candidates) {
+            if (evaluateTrigger(p, record, relatedRecords)) {
+                matched.add(p);
+            }
+        }
+        
+        // Sort by priority and limit to top 3-5
+        matched.sort();
+        return limitPatterns(matched, 5);
+    }
+    
+    private static Boolean evaluateTrigger(
+        Pattern p, 
+        SObject record, 
+        List<SObject> relatedRecords
+    ) {
+        // Evaluate each trigger condition (AND logic)
+        for (Pattern.TriggerCondition tc : p.triggers) {
+            if (!evaluateCondition(tc, record, relatedRecords)) {
+                return false; // All conditions must match
+            }
+        }
+        return true;
+    }
+    
+    private static Boolean evaluateCondition(
+        Pattern.TriggerCondition tc,
+        SObject record,
+        List<SObject> relatedRecords
+    ) {
+        Object fieldValue = record.get(tc.fieldName);
+        
+        switch on tc.operator {
+            when 'contains' {
+                return String.valueOf(fieldValue).containsIgnoreCase(tc.value);
+            }
+            when 'equals' {
+                return fieldValue == tc.value;
+            }
+            when 'greater_than' {
+                return (Decimal)fieldValue > Decimal.valueOf(tc.value);
+            }
+            when 'less_than' {
+                return (Decimal)fieldValue < Decimal.valueOf(tc.value);
+            }
+            when 'is_empty' {
+                return fieldValue == null || String.isBlank(String.valueOf(fieldValue));
+            }
+            when 'days_since_greater_than' {
+                Date fieldDate = (Date)fieldValue;
+                Integer daysSince = fieldDate.daysBetween(Date.today());
+                return daysSince > Integer.valueOf(tc.value);
+            }
+            when 'role_missing' {
+                return !hasContactRole(relatedRecords, tc.value);
+            }
+            when else {
+                return false;
+            }
+        }
+    }
+    
+    private static Boolean hasContactRole(List<SObject> contactRoles, String roleName) {
+        for (SObject cr : contactRoles) {
+            if (String.valueOf(cr.get('Role')).equalsIgnoreCase(roleName)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    private static List<Pattern> loadPatternsForPromptType(String promptType) {
+        // Load pattern markdown files for this prompt type
+        // Parse and return Pattern objects
+        List<Pattern> patterns = new List<Pattern>();
+        // Implementation: Read static resources, parse markdown
+        return patterns;
+    }
+    
+    private static List<Pattern> limitPatterns(List<Pattern> patterns, Integer maxCount) {
+        if (patterns.size() <= maxCount) {
+            return patterns;
+        }
+        List<Pattern> limited = new List<Pattern>();
+        for (Integer i = 0; i < maxCount; i++) {
+            limited.add(patterns[i]);
+        }
+        return limited;
+    }
+}
+```
+
+#### Task 2.4: Integrate Patterns into Assembly (2 days)
+
+Update PromptAssembler to include matched patterns:
+
+```apex
+public static String assemblePrompt(
+    String basePrompt,
+    String promptType,
+    String industry,
+    String customerContext,
+    SObject record,
+    List<SObject> relatedRecords
+) {
+    List<String> sections = new List<String>();
+    
+    // ... existing sections (base, context, heuristics, quality rules) ...
+    
+    // Section 6: Matched patterns
+    List<Pattern> patterns = PatternMatcher.matchPatterns(
+        record, relatedRecords, promptType
+    );
+    
+    if (!patterns.isEmpty()) {
+        sections.add(formatPatternInstructions(patterns));
+    }
+    
+    // ... remaining sections ...
+    
+    return String.join(sections, '\n\n');
+}
+
+private static String formatPatternInstructions(List<Pattern> patterns) {
+    List<String> instructions = new List<String>();
+    
+    instructions.add('=== DETECTED PATTERNS (MUST ANALYZE) ===');
+    instructions.add('Based on record data, the following patterns were detected.');
+    instructions.add('You MUST include analysis for each pattern in your output.\n');
+    
+    Integer i = 1;
+    for (Pattern p : patterns) {
+        instructions.add('PATTERN ' + i + ': ' + p.patternName);
+        instructions.add('Trigger: ' + p.triggerDescription);
+        instructions.add('Required Analysis:');
+        for (String question : p.analysisQuestions) {
+            instructions.add('  - ' + question);
+        }
+        instructions.add('');
+        i++;
+    }
+    
+    return String.join(instructions, '\n');
+}
+```
+
+#### Phase 2 Deliverables
+
+| Deliverable | Description | Format |
+|-------------|-------------|--------|
+| pattern_stakeholder_gap.md | Stakeholder gap pattern | Static Resource |
+| pattern_stalled_deal.md | Stalled deal pattern | Static Resource |
+| pattern_discount_pressure.md | Discount pressure pattern | Static Resource |
+| pattern_late_stage_risk.md | Late stage risk pattern | Static Resource |
+| pattern_champion_weakness.md | Champion weakness pattern | Static Resource |
+| pattern_timeline_risk.md | Timeline risk pattern | Static Resource |
+| pattern_single_threaded.md | Single-threaded execution pattern | Static Resource |
+| pattern_expansion_signal.md | Expansion opportunity pattern | Static Resource |
+| Pattern.cls | Pattern data model | Apex Class |
+| Pattern_Test.cls | Test class (>75% coverage) | Apex Test |
+| PatternMatcher.cls | Pattern matching logic | Apex Class |
+| PatternMatcher_Test.cls | Test class (>75% coverage) | Apex Test |
+| Updated PromptAssembler.cls | Pattern integration | Apex Class |
+
+#### Phase 2 Success Criteria
+
+- ✅ 5-8 patterns extracted from production prompts
+- ✅ Pattern triggers evaluate correctly against test records
+- ✅ Pattern matching is deterministic (same input = same patterns)
+- ✅ Assembled prompts include pattern-specific instructions
+- ✅ Output quality maintains Phase 1 levels with added pattern relevance
+- ✅ Pattern hit rate >90% (correctly detects applicable patterns)
+- ✅ All test classes have >75% coverage
 
 ---
 
@@ -1225,11 +2091,287 @@ Optional "live" web context for highly strategic accounts:
 
 ---
 
-### Phase 5: UI Component Library (Week 7 - Optional)
+### Phase 5: Quality Measurement (Week 7 - Ongoing)
 
-**Goal**: Ensure consistent HTML formatting across all prompt outputs
+**Goal**: Create automated quality scoring to track improvement over time and validate that our changes are working
 
-**Why Optional**: This is a "nice-to-have" polish after core functionality works
+**Why Now**: We need objective measurement to prove the quality improvements are real, not subjective.
+
+#### Task 5.1: Define Quality Metrics & Scoring
+
+**OutputQualityScorer.cls**:
+
+```apex
+public class OutputQualityScorer {
+    
+    public class QualityScore {
+        public Integer evidenceCitations;      // Count of field citations
+        public Integer genericPhrases;         // Count of forbidden phrases
+        public Integer customerReferences;     // Count of customer context usage
+        public Integer signalAssessments;      // Count of signal evaluations
+        public Boolean hasStructuredFormat;    // Signal assessment section present
+        public Decimal overallScore;           // Weighted composite (0-100)
+    }
+    
+    public static QualityScore scoreOutput(String output) {
+        QualityScore score = new QualityScore();
+        
+        // Count evidence citations (pattern: "Evidence: X = Y")
+        score.evidenceCitations = countPattern(output, 'Evidence:');
+        
+        // Count forbidden phrases
+        score.genericPhrases = countForbiddenPhrases(output);
+        
+        // Count customer context references
+        score.customerReferences = countCustomerReferences(output);
+        
+        // Check for signal assessment section
+        score.hasStructuredFormat = output.contains('Signal Assessment:');
+        
+        // Calculate signal assessments
+        score.signalAssessments = countPattern(output, '✓|~|✗|?');
+        
+        // Weighted composite
+        score.overallScore = calculateComposite(score);
+        
+        return score;
+    }
+    
+    private static Integer countForbiddenPhrases(String output) {
+        List<String> forbidden = new List<String>{
+            'ensure alignment',
+            'consider scheduling',
+            'maintain momentum',
+            'engage stakeholders',
+            'reinforce value proposition',
+            'address concerns',
+            'follow up with',
+            'reach out to'
+        };
+        
+        Integer count = 0;
+        String lower = output.toLowerCase();
+        for (String phrase : forbidden) {
+            if (lower.contains(phrase)) {
+                count++;
+            }
+        }
+        return count;
+    }
+    
+    private static Decimal calculateComposite(QualityScore score) {
+        // Weights
+        Decimal evidenceWeight = 0.30;
+        Decimal genericPenalty = 0.25;
+        Decimal contextWeight = 0.20;
+        Decimal structureWeight = 0.15;
+        Decimal signalWeight = 0.10;
+        
+        // Normalize and calculate
+        Decimal evidenceScore = Math.min(score.evidenceCitations / 10.0, 1.0);
+        Decimal genericScore = Math.max(1.0 - (score.genericPhrases / 5.0), 0.0);
+        Decimal contextScore = Math.min(score.customerReferences / 5.0, 1.0);
+        Decimal structureScore = score.hasStructuredFormat ? 1.0 : 0.0;
+        Decimal signalScore = Math.min(score.signalAssessments / 8.0, 1.0);
+        
+        return (
+            evidenceScore * evidenceWeight +
+            genericScore * genericPenalty +
+            contextScore * contextWeight +
+            structureScore * structureWeight +
+            signalScore * signalWeight
+        ) * 100;
+    }
+    
+    private static Integer countPattern(String text, String pattern) {
+        // Count occurrences of pattern in text
+        Integer count = 0;
+        Integer index = 0;
+        while ((index = text.indexOf(pattern, index)) != -1) {
+            count++;
+            index++;
+        }
+        return count;
+    }
+    
+    private static Integer countCustomerReferences(String output) {
+        // Count references to customer-specific terms
+        // This should be enhanced to look for actual customer terminology
+        Integer count = 0;
+        // Implementation needed based on customer context
+        return count;
+    }
+}
+```
+
+#### Task 5.2: Create Quality Log Custom Object
+
+**Prompt_Quality_Log__c** fields:
+- Prompt_Run_Id__c (Lookup to PF_Run__c)
+- Prompt_Type__c (Text)
+- Evidence_Citations__c (Number)
+- Generic_Phrases__c (Number)
+- Customer_References__c (Number)
+- Has_Structured_Format__c (Checkbox)
+- Signal_Assessments__c (Number)
+- Overall_Score__c (Number - 0-100)
+- Output_Length__c (Number - character count)
+- Execution_Date__c (DateTime)
+
+#### Task 5.3: Quality Metrics Tracker
+
+**QualityMetricsTracker.cls**:
+
+```apex
+public class QualityMetricsTracker {
+    
+    /**
+     * Log quality score for a prompt execution
+     */
+    public static void logScore(
+        String promptRunId,
+        String promptType,
+        String output,
+        OutputQualityScorer.QualityScore score
+    ) {
+        Prompt_Quality_Log__c log = new Prompt_Quality_Log__c(
+            Prompt_Run_Id__c = promptRunId,
+            Prompt_Type__c = promptType,
+            Evidence_Citations__c = score.evidenceCitations,
+            Generic_Phrases__c = score.genericPhrases,
+            Customer_References__c = score.customerReferences,
+            Has_Structured_Format__c = score.hasStructuredFormat,
+            Signal_Assessments__c = score.signalAssessments,
+            Overall_Score__c = score.overallScore,
+            Output_Length__c = output.length(),
+            Execution_Date__c = Datetime.now()
+        );
+        
+        insert log;
+    }
+    
+    /**
+     * Get quality trend for a prompt type
+     */
+    public static List<AggregateResult> getQualityTrend(
+        String promptType,
+        Integer days
+    ) {
+        Date startDate = Date.today().addDays(-days);
+        
+        return [
+            SELECT 
+                DAY_ONLY(Execution_Date__c) execDate,
+                AVG(Overall_Score__c) avgScore,
+                AVG(Evidence_Citations__c) avgEvidence,
+                AVG(Generic_Phrases__c) avgGeneric,
+                COUNT(Id) execCount
+            FROM Prompt_Quality_Log__c
+            WHERE Prompt_Type__c = :promptType
+            AND Execution_Date__c >= :startDate
+            GROUP BY DAY_ONLY(Execution_Date__c)
+            ORDER BY DAY_ONLY(Execution_Date__c)
+        ];
+    }
+    
+    /**
+     * Get quality comparison before/after a date
+     */
+    public static Map<String, Decimal> getBeforeAfterComparison(
+        String promptType,
+        Date changeDate
+    ) {
+        Map<String, Decimal> result = new Map<String, Decimal>();
+        
+        // Before
+        AggregateResult before = [
+            SELECT AVG(Overall_Score__c) avgScore
+            FROM Prompt_Quality_Log__c
+            WHERE Prompt_Type__c = :promptType
+            AND Execution_Date__c < :changeDate
+        ][0];
+        result.put('before', (Decimal)before.get('avgScore'));
+        
+        // After
+        AggregateResult after = [
+            SELECT AVG(Overall_Score__c) avgScore
+            FROM Prompt_Quality_Log__c
+            WHERE Prompt_Type__c = :promptType
+            AND Execution_Date__c >= :changeDate
+        ][0];
+        result.put('after', (Decimal)after.get('avgScore'));
+        
+        // Improvement
+        result.put('improvement', result.get('after') - result.get('before'));
+        
+        return result;
+    }
+}
+```
+
+#### Task 5.4: Integrate Scoring into Pipeline
+
+Update Stage08 or Stage09 to automatically score outputs:
+
+```apex
+// In Stage08 or Stage09 after prompt execution
+String generatedOutput = executePrompt(assembledPrompt);
+
+// Score the output
+OutputQualityScorer.QualityScore score = OutputQualityScorer.scoreOutput(generatedOutput);
+
+// Log to quality metrics
+QualityMetricsTracker.logScore(
+    runId,
+    promptType,
+    generatedOutput,
+    score
+);
+
+// Optional: Add score to PF_Run__c record
+updateRunWithQualityScore(runId, score.overallScore);
+```
+
+#### Task 5.5: Quality Dashboard Reports
+
+Create Salesforce reports for:
+1. **Quality Trend Report**: Overall score over time by prompt type
+2. **Evidence Citation Report**: Average citations per prompt type
+3. **Generic Phrase Report**: Identify which forbidden phrases appear most
+4. **Before/After Comparison**: Quality scores before/after each phase deployment
+
+#### Phase 5 Deliverables
+
+| Deliverable | Description | Format |
+|-------------|-------------|--------|
+| Prompt_Quality_Log__c | Quality metrics custom object | Custom Object |
+| OutputQualityScorer.cls | Quality scoring logic | Apex Class |
+| OutputQualityScorer_Test.cls | Test class (>75% coverage) | Apex Test |
+| QualityMetricsTracker.cls | Metrics tracking and reporting | Apex Class |
+| QualityMetricsTracker_Test.cls | Test class (>75% coverage) | Apex Test |
+| Quality Trend Report | Salesforce report | Report |
+| Before/After Comparison Report | Salesforce report | Report |
+
+#### Phase 5 Success Criteria
+
+- ✅ Quality scoring runs automatically for all prompt executions
+- ✅ Quality logs capture all key metrics
+- ✅ Quality trend reports show improvement over time
+- ✅ Before/after comparisons validate each phase's impact
+- ✅ Overall quality score increases from ~40 (baseline) to >75 (target)
+- ✅ All test classes have >75% coverage
+
+---
+
+### Phase 6: UI Component Library & Customer Upload (Week 8+ - Future Enhancements)
+
+**Goal**: Polish and customer empowerment features
+
+**Why Later**: These are "nice-to-have" after core quality is proven
+
+#### Part A: UI Component Library
+
+Ensure consistent HTML formatting across all prompt outputs (from earlier Phase 5)
 
 **Tasks**:
 1. **Component Extraction** (2 days)
@@ -1335,53 +2477,258 @@ Optional "live" web context for highly strategic accounts:
 
 ---
 
+## Appendix A: Forbidden Phrases List
+
+These phrases indicate generic, non-diagnostic output and must be avoided:
+
+```
+ensure alignment
+consider scheduling
+maintain momentum
+engage stakeholders
+reinforce value proposition
+address concerns
+follow up with
+reach out to
+touch base with
+circle back on
+leverage the relationship
+drive value
+optimize the process
+align on expectations
+facilitate discussions
+enhance collaboration
+streamline communication
+foster engagement
+capitalize on opportunities
+mitigate risks (without specifics)
+stay connected
+keep the momentum going
+build rapport
+strengthen the partnership
+explore possibilities
+identify synergies
+stay in touch
+keep them engaged
+work closely with
+establish rapport
+coordinate efforts
+drive success
+maximize value
+demonstrate commitment
+prioritize action items
+```
+
+**Enforcement**: Quality scoring penalizes outputs containing these phrases.
+
+---
+
+## Appendix B: Example Quality Rules File
+
+**File: staticresources/quality_rules_evidence_binding.md**
+
+```markdown
+=== EVIDENCE BINDING RULE (MANDATORY) ===
+
+Every insight, risk, or recommendation MUST cite specific evidence from this record.
+
+## Citation Format
+
+Standard format: "[Insight] (Evidence: [Field] = [Value])"
+
+Alternative formats (all acceptable):
+- "Based on [Field] showing [Value], ..."
+- "[Insight]. This is indicated by [Field] = [Value]."
+- "Record shows [Field] = [Value], which suggests [Insight]."
+
+## Compliant Examples
+
+✓ "CFO engagement is your critical path this week (Evidence: Task.Subject = 'CFO Meeting', ActivityDate = 01/27/2026)"
+
+✓ "No champion identified—critical gap for this deal size (Evidence: OpportunityContactRole missing 'Champion' role)"
+
+✓ "Deal momentum is single-threaded. Based on HasOpenActivity = 1 on a $150K deal, recommend expanding activity coverage."
+
+✓ "Close date may be optimistic. Record shows CloseDate = 12/31/2025 but StageName = 'Proposal/Price Quote'. For deals at this stage in this industry, typical close cycle is 4-6 months."
+
+## Non-Compliant Examples (FORBIDDEN)
+
+✗ "Ensure alignment with stakeholders" 
+   Problem: No evidence cited, no specific stakeholders named
+
+✗ "Consider scheduling follow-ups to re-engage"
+   Problem: No evidence of disengagement cited
+
+✗ "Maintain momentum with key contacts"
+   Problem: Generic advice, no field citations
+
+✗ "The deal shows good progress"
+   Problem: No specific evidence of progress
+
+## Missing Data Handling
+
+If data is missing that would be needed for analysis, state explicitly:
+
+"MISSING: [Field Name] - [Why this matters] - Recommend: [Action to capture]"
+
+Example:
+"MISSING: Champion role not mapped in OpportunityContactRole. Without an internal champion, healthcare payer deals at $150K+ have 40% lower close rates. Recommend: Identify and map champion before CFO meeting."
+
+## Enforcement
+
+Any insight, risk, or recommendation without evidence citation is a FAILURE.
+The output will be evaluated for evidence density. Target: >8 citations per analysis.
+```
+
+---
+
+## Appendix C: Implementation Checklist
+
+### Phase 0: Prove the Quality Thesis (Days 1-3)
+- [ ] Create evidence binding test instruction block
+- [ ] Create diagnostic language test instruction block
+- [ ] Create context application test instruction block
+- [ ] Create signal assessment test format
+- [ ] Run A/B tests (5 iterations WITH, 5 WITHOUT each)
+- [ ] Count: generic phrases, field citations, customer references
+- [ ] Score: specificity (1-5), actionability (1-5), would-survive-audit (Y/N)
+- [ ] Document results in spreadsheet
+- [ ] **DECISION GATE**: If 3+ tests hit target, proceed to Phase 1
+
+### Phase 1: Codify Quality Rules (Week 1-2)
+- [ ] Create quality_rules_evidence_binding.md
+- [ ] Create quality_rules_diagnostic_language.md
+- [ ] Create quality_rules_signal_assessment.md
+- [ ] Create quality_rules_context_application.md
+- [ ] Create industry_heuristics_healthcare_payer.md
+- [ ] Create industry_heuristics_financial_services.md
+- [ ] Create industry_heuristics_insurance.md
+- [ ] Create industry_heuristics_default.md
+- [ ] Create prompt_type_config.md
+- [ ] Implement QualityRulesLoader.cls
+- [ ] Implement QualityRulesLoader_Test.cls (>75% coverage)
+- [ ] Implement IndustryHeuristicsLoader.cls
+- [ ] Implement IndustryHeuristicsLoader_Test.cls (>75% coverage)
+- [ ] Update PromptAssembler.cls
+- [ ] Update PromptAssembler_Test.cls (>75% coverage)
+- [ ] Deploy all static resources
+- [ ] Test end-to-end with Opportunity Insights prompt
+- [ ] Validate no quality regression from Phase 0
+
+### Phase 2: Pattern Extraction (Week 3-4)
+- [ ] Audit 15-20 production prompts
+- [ ] Extract 5-8 reusable patterns using template
+- [ ] Create pattern markdown files (pattern_*.md)
+- [ ] Implement Pattern.cls data model
+- [ ] Implement Pattern_Test.cls (>75% coverage)
+- [ ] Implement PatternMatcher.cls
+- [ ] Implement PatternMatcher_Test.cls (>75% coverage)
+- [ ] Update PromptAssembler.cls for pattern injection
+- [ ] Test pattern matching accuracy (>90% target)
+- [ ] Validate pattern-enhanced outputs
+
+### Phase 3: Multi-Record Foundation (Week 5)
+- [ ] Implement Stage01.getSampleRecords() method
+- [ ] Query 3 records in parallel (async)
+- [ ] Handle edge cases (< 3 records available)
+- [ ] Update Stage02 to analyze all 3 records
+- [ ] Update Stage05 for field variance analysis
+- [ ] Test with Opportunity, Account, Case objects
+- [ ] Measure field selection quality improvement
+- [ ] Check heap size and performance
+
+### Phase 4: Customer Context (Week 6)
+- [ ] Design customer context markdown schema
+- [ ] Create cigna_business_context.md example
+- [ ] Implement/update ConfigurationLoader.cls
+- [ ] Implement ConfigurationLoader_Test.cls (>75% coverage)
+- [ ] Add CustomerContextLoader functionality
+- [ ] Integrate into Stage01 (load at pipeline start)
+- [ ] Integrate into Stage02 (use for classification)
+- [ ] Integrate into Stage08 (inject terminology)
+- [ ] Test with/without website scraping
+- [ ] Verify 100% terminology accuracy
+
+### Phase 5: Quality Measurement (Week 7)
+- [ ] Create Prompt_Quality_Log__c custom object
+- [ ] Implement OutputQualityScorer.cls
+- [ ] Implement OutputQualityScorer_Test.cls (>75% coverage)
+- [ ] Implement QualityMetricsTracker.cls
+- [ ] Implement QualityMetricsTracker_Test.cls (>75% coverage)
+- [ ] Integrate scoring into Stage08/09
+- [ ] Create Quality Trend Report
+- [ ] Create Before/After Comparison Report
+- [ ] Establish baseline metrics
+- [ ] Set up weekly quality review process
+
+### Phase 6: Future Enhancements (Week 8+)
+- [ ] UI component library (optional)
+- [ ] Customer file upload UI
+- [ ] Inline markdown editor
+- [ ] Preview and diff views
+
+---
+
 ## Next Actions
 
-### Phase 0: Immediate (This Week)
-**Focus**: Prove evidence binding works
+### 🚨 Phase 0: Immediate (Days 1-3) - **START HERE**
+**Focus**: Prove the quality thesis before building anything
 
-1. ✅ Document strategy (this file)
-2. 🔲 Implement evidence binding in Stage08 (2 hours)
-3. 🔲 Deploy and test (1 day)
-4. 🔲 **Decision point**: If 50%+ improvement, proceed to Phase 1
+**Critical Tasks**:
+1. ✅ Document strategy (this file - DONE)
+2. 🔲 Create 4 test instruction blocks (evidence binding, diagnostic language, context application, signal assessment)
+3. 🔲 Run A/B tests (5 iterations each WITH/WITHOUT)
+4. 🔲 Measure and score results
+5. 🔲 **DECISION GATE**: If 3+ tests hit target → Proceed to Phase 1. If not → Revisit approach.
 
-### Phase 1: Short Term (Weeks 1-2)
-**Focus**: Build the Analysis Assembler engine
+**Success Criteria**: Evidence citations >8, Generic phrases <3, Specificity score >4.0
 
-1. Define meta-prompt blueprint
-2. Extract 5-8 patterns from production prompts
-3. Create archetype definitions (Deal Coach, Executive Risk Brief)
-4. Rewrite "Deal Coach" using new architecture
-5. **Decision point**: If 2x quality improvement, proceed to Phase 2
+---
 
-### Phase 2: Medium Term (Weeks 3-4)
-**Focus**: Automate pattern selection
+### Phase 1: Week 1-2 (If Phase 0 Succeeds)
+**Focus**: Codify proven quality rules into markdown files
 
-1. Create pattern library metadata
-2. Implement Stage02 pattern detection
-3. Integrate Stage08 prompt assembly
-4. Test end-to-end pipeline
+**Key Deliverables**:
+- 4 quality rules markdown files
+- 4 industry heuristics markdown files
+- QualityRulesLoader & IndustryHeuristicsLoader classes
+- Updated PromptAssembler
 
-### Phase 3-5: Long Term (Weeks 5-7)
-**Focus**: Enhance with multi-record and customer context
+---
 
-1. Multi-record foundation
-2. Customer context file
-3. UI component library (optional)
+### Phase 2: Week 3-4
+**Focus**: Extract and match analytical patterns
+
+**Key Deliverables**:
+- 5-8 pattern markdown files
+- PatternMatcher class
+- Pattern-enhanced prompt assembly
+
+---
+
+### Phase 3-5: Weeks 5-7
+**Focus**: Multi-record, customer context, quality measurement
+
+**Key Deliverables**:
+- Multi-record querying
+- Customer context files and loaders
+- Quality scoring and reporting
 
 ---
 
 ## References & Related Docs
 
-### Strategic Documents
-- [Strategic Evolution (recommendations.md)](../recommendations.md) - Original architectural vision
-- [Unified POV](./UNIFIED_POV.md) - 4-layer architecture philosophy
+### Related Documentation
 - [Current Roadmap](./ROADMAP.md) - Feature development timeline
-
-### Product Requirements
 - [PRD: Automated Prompt Creation](./PRD-Automated-Prompt-Creation.md) - Core product definition
 - [Enhanced Prompt Template](./ENHANCED_PROMPT.md) - Template specifications
 - [GPTfy Configuration Guide](./GPTFY_CONFIG.md) - Integration details
+- [Prompt Quality Improvements PRD](./prompt-quality-improvements-prd.md) - Detailed quality improvement specifications (consolidated into this document)
+
+### Pattern Extraction Sources
+- [MEDDIC Analysis (Part 1)](./meddic-analysis.md) - MEDDIC diagnostic playbook (pattern extraction source)
+- [MEDDIC Analysis (Part 2)](./meddic-analysis-2.md) - MEDDIC implementation guide (3,039 lines - comprehensive pattern source)
+- [MEDDIC PRD](./PRD.md) - MEDDIC Compliance Analyzer PRD (pattern extraction source)
 
 ---
 
@@ -1390,5 +2737,6 @@ Optional "live" web context for highly strategic accounts:
 | Date | Author | Changes |
 |------|--------|---------|
 | 2026-01-21 | AI Assistant | Initial strategy document created |
-| 2026-01-21 | AI Assistant | Major revision: Integrated 4-layer architecture from UNIFIED_POV.md and recommendations.md, reorganized roadmap with decision points, clarified Assembly vs Invention philosophy |
+| 2026-01-21 | AI Assistant | Integrated 4-layer architecture, added file-based configuration philosophy |
+| 2026-01-21 | AI Assistant | **MAJOR CONSOLIDATION**: Merged prompt-quality-improvements-prd.md into this document. Added: Quality Gap examples (before/after), comprehensive Phase 0 test protocols, Quality Measurement (Phase 5), Appendices (Forbidden Phrases, Quality Rules Examples, Implementation Checklist). Reorganized roadmap with "prove-it-first" approach. Status changed to "Ready for Implementation". |
 
