@@ -390,6 +390,12 @@ public with sharing class Stage08_PromptAssembly implements IStage {
             instructions += uiComponents + '\n\n';
         }
 
+        // NEW: Load and inject Context Templates
+        String contextTemplates = loadContextTemplates();
+        if (String.isNotBlank(contextTemplates)) {
+            instructions += contextTemplates + '\n\n';
+        }
+
         return instructions;
     }
 
@@ -495,6 +501,41 @@ public with sharing class Stage08_PromptAssembly implements IStage {
             
         } catch (Exception e) {
             System.debug('Error loading UI Components: ' + e.getMessage());
+            return '';
+        }
+    }
+
+    /**
+     * @description Load active Context Templates from Builder Prompts
+     * @return Combined context template content
+     */
+    private String loadContextTemplates() {
+        try {
+            List<ccai__AI_Prompt__c> templates = [
+                SELECT Id, Name, ccai__Prompt_Command__c
+                FROM ccai__AI_Prompt__c
+                WHERE RecordType.DeveloperName = 'Builder'
+                  AND Category__c = 'Context Template'
+                  AND ccai__Status__c = 'Active'
+                ORDER BY Name
+            ];
+            
+            if (templates.isEmpty()) {
+                System.debug('No Context Templates found');
+                return '';
+            }
+            
+            String allTemplates = '';
+            for (ccai__AI_Prompt__c template : templates) {
+                allTemplates += '\n\n=== ' + template.Name + ' ===\n\n';
+                allTemplates += template.ccai__Prompt_Command__c;
+            }
+            
+            System.debug('Loaded ' + templates.size() + ' Context Templates from Builder Prompts');
+            return allTemplates;
+            
+        } catch (Exception e) {
+            System.debug('Error loading Context Templates: ' + e.getMessage());
             return '';
         }
     }
