@@ -15,40 +15,19 @@
 
 ### Instruction Block
 
-```
-RISK IDENTIFICATION:
+### Diagnostic Layout (Lead-Sourcing)
+Identify high-impact risks and position them at the TOP of the output.
 
-Analyze the provided data and identify risks across three severity levels:
+1. **Diagnosis (THE LEAD)**: [Expert judgment on the risk/signal]
+2. **Business Impact**: [Quantified or strategic consequence]
+3. **Recommendation**: [Specific, time-bound action]
+4. **Data Evidence**: (Subtle citation, e.g., "Field: Value")
 
-CRITICAL RISKS (RED FLAGS) ⛔:
-- [Trigger conditions for critical risks]
-- No Champion AND Stage >= [Threshold]
-- No key stakeholder engagement
-- Single-threaded execution
-- Overdue items with HIGH priority
-- Missing required data for current stage
-
-WARNING RISKS (YELLOW) ⚠️:
-- [Trigger conditions for warning risks]
-- Key stakeholder with neutral disposition
-- Missing recommended but not required elements
-- Timeline concerns (pushed dates, approaching deadline)
-- Moderate gaps in process or documentation
-
-POSITIVE INDICATORS (GREEN) ✅:
-- [Trigger conditions for positive signals]
-- Strong stakeholder engagement
-- All required elements present and validated
-- Active progress with recent momentum
-- Multi-threaded engagement
-
-For each identified risk:
-- Evidence: Cite specific field values
-- Impact: What could happen if not addressed
-- Mitigation: Specific action to take
-- Priority: CRITICAL / HIGH / MEDIUM
-- Timeline: When to address (7/14/30 days)
-```
+Example:
+**Gap: No Champion Identified [CRITICAL]**
+*This deal is at risk of stalling because while you have decision-makers, nobody is advocating for Cigna internally. In healthcare payer deals at this stage, 70% of delays are caused by lack of internal advocacy.*
+- **Action**: Identify and validate a Champion before Jan 27.
+- **Evidence**: OpportunityContactRole (Missing: Champion)
 
 ### Trigger Conditions
 - Any analysis requiring risk evaluation

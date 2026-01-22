@@ -1,0 +1,141 @@
+{
+  "executed_at": "2026-01-21T22:29:30.371158",
+  "total_variants": 19,
+  "successful": 19,
+  "elapsed_seconds": 1071.6146521568298,
+  "results": [
+    {
+      "variant_num": 21,
+      "variant_name": "risk_isolated",
+      "response_id": "a0IQH000001pRVR2A2",
+      "status": "Processed",
+      "html_size": 5361
+    },
+    {
+      "variant_num": 22,
+      "variant_name": "metrics_isolated",
+      "response_id": "a0IQH000001pRX32AM",
+      "status": "Processed",
+      "html_size": 3504
+    },
+    {
+      "variant_num": 23,
+      "variant_name": "action_isolated",
+      "response_id": "a0IQH000001pRYf2AM",
+      "status": "Processed",
+      "html_size": 6699
+    },
+    {
+      "variant_num": 24,
+      "variant_name": "timeline_isolated",
+      "response_id": "a0IQH000001pRaH2AU",
+      "status": "Processed",
+      "html_size": 5032
+    },
+    {
+      "variant_num": 25,
+      "variant_name": "stakeholder_isolated",
+      "response_id": "a0IQH000001pRbt2AE",
+      "status": "Processed",
+      "html_size": 5221
+    },
+    {
+      "variant_num": 26,
+      "variant_name": "executive_isolated",
+      "response_id": "a0IQH000001pRdV2AU",
+      "status": "Processed",
+      "html_size": 3586
+    },
+    {
+      "variant_num": 27,
+      "variant_name": "rootcause_isolated",
+      "response_id": "a0IQH000001pRf72AE",
+      "status": "Processed",
+      "html_size": 5297
+    },
+    {
+      "variant_num": 28,
+      "variant_name": "statcards_4to6",
+      "response_id": "a0IQH000001pRgj2AE",
+      "status": "Processed",
+      "html_size": 5507
+    },
+    {
+      "variant_num": 29,
+      "variant_name": "statcards_8plus",
+      "response_id": "a0IQH000001pRiL2AU",
+      "status": "Processed",
+      "html_size": 5921
+    },
+    {
+      "variant_num": 30,
+      "variant_name": "tables_only",
+      "response_id": "a0IQH000001pRjx2AE",
+      "status": "Processed",
+      "html_size": 4528
+    },
+    {
+      "variant_num": 31,
+      "variant_name": "alertboxes",
+      "response_id": "a0IQH000001pRlZ2AU",
+      "status": "Processed",
+      "html_size": 3541
+    },
+    {
+      "variant_num": 32,
+      "variant_name": "progressbars",
+      "response_id": "a0IQH000001pRnB2AU",
+      "status": "Processed",
+      "html_size": 5274
+    },
+    {
+      "variant_num": 33,
+      "variant_name": "stakeholder_cards",
+      "response_id": "a0IQH000001pRon2AE",
+      "status": "Processed",
+      "html_size": 6669
+    },
+    {
+      "variant_num": 34,
+      "variant_name": "action_cards",
+      "response_id": "a0IQH000001pRqP2AU",
+      "status": "Processed",
+      "html_size": 5390
+    },
+    {
+      "variant_num": 35,
+      "variant_name": "mixed_ui",
+      "response_id": "a0IQH000001pRs12AE",
+      "status": "Processed",
+      "html_size": 6226
+    },
+    {
+      "variant_num": 36,
+      "variant_name": "risk_metrics_visual",
+      "response_id": "a0IQH000001pRtd2AE",
+      "status": "Processed",
+      "html_size": 5925
+    },
+    {
+      "variant_num": 37,
+      "variant_name": "risk_timeline_visual",
+      "response_id": "a0IQH000001pRvF2AU",
+      "status": "Processed",
+      "html_size": 3342
+    },
+    {
+      "variant_num": 38,
+      "variant_name": "metrics_action_visual",
+      "response_id": "a0IQH000001pRwr2AE",
+      "status": "Processed",
+      "html_size": 5315
+    },
+    {
+      "variant_num": 39,
+      "variant_name": "three_pattern_test",
+      "response_id": "a0IQH000001pRyT2AU",
+      "status": "Processed",
+      "html_size": 4710
+    }
+  ]
+}

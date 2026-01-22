@@ -114,49 +114,72 @@ Signal Assessment:
 
 ---
 
+## Quality Rules Library
+
+**Location**: [`docs/quality-rules/`](./quality-rules/README.md)
+
+The Quality Rules Library contains production-validated rules extracted from Phase 0/0B/0C testing and refined based on user feedback.
+
+### Core Rules
+
+**1. [Evidence Binding v2](./quality-rules/evidence_binding_v2.md)**
+- 4-level citation hierarchy (Embedded 80%, Parenthetical 15%, Inline 5%, Collapsible always)
+- Resolves the "Phase 0 paradox": +120% improvement was from forcing specificity, not showing sources
+- Insight-first approach validated through user visual review
+
+**2. [Information Hierarchy](./quality-rules/information_hierarchy.md)**
+- 6-zone priority system (Alerts → Stats → Summary → Headers → Analysis → Evidence)
+- Above-the-fold must answer "What's wrong?" in 10 seconds
+- Addresses "buried lead" problem identified in user feedback
+
+**3. [Picklist Metadata Extraction](./quality-rules/picklist_metadata_extraction.md)** ⭐ NEW
+- Extracts ALL picklist values to provide LLM with relative context
+- Special handling for Opportunity.StageName → OpportunityStage probability mapping
+- Prevents false positives ("20% is low" when it's appropriate for early stage)
+- Data-driven, customer-specific, and future-proof
+
+### Integration Points
+
+```
+Stage05: Field Selection → Extracts picklist metadata using Schema.DescribeFieldResult
+Stage08: Prompt Assembly → Loads and injects quality rules + field context
+Stage12: Quality Audit → Validates compliance with 8-dimension scoring
+```
+
+**See**: [Quality Rules README](./quality-rules/README.md) for implementation details
+
+---
+
 ## Strategic Principles
 
-### Principle 1: Assembly Over Invention
+### 1. Insight-Led, Evidence-Supported
+Shift from "Evidence-First" (technical field citations) to "Insight-Led" (business diagnosis).
+- **Primary Focus**: The *Insight* (Why it matters, what to do).
+- **Secondary Support**: The *Evidence* (Subtle, succinct field citations).
+- **Rule**: Never lead with the data source; always lead with the diagnosis.
+- **Implementation**: See [Evidence Binding v2](./quality-rules/evidence_binding_v2.md)
 
-The core philosophy remains correct:
+### 2. Lead-Sourcing Architecture
+Ensure the most critical information is delivered "above the fold".
+- **Visual Hierarchy**: Executive Summaries and Critical Alerts (Alert Boxes) MUST be at the top.
+- **Density Management**: Basic deal data (Amount, Probability) should be demoted to secondary components (compact Stat Cards).
+- **Priority Sort**: AI must score its own findings and sort the output by "Business Impact" score.
+- **Implementation**: See [Information Hierarchy](./quality-rules/information_hierarchy.md)
 
-> Great analysis is not invented from scratch by an LLM each time. It is **assembled** from proven components.
+### 3. Assembly Over Invention
+Intelligence is found in how we *combine* deterministic heuristics, not in asking the LLM to invent new structures. Use a standardized library of "Winning Recipes".
 
-However, the assembly should be **invisible to the LLM**. The LLM receives a fully-composed prompt with:
-- Diagnostic language requirements baked in
-- Evidence binding rules non-negotiable
-- Industry heuristics as evaluation criteria
-- Signal/gap structure as output format
-
-The LLM's job is to **apply** these, not create them.
-
-### Principle 2: Prove Quality First, Then Systematize
-
-**Do NOT build infrastructure until quality improvements are proven.**
-
-```
-OLD (Risky): Phase 0 → Build Assembler → Build Patterns → Build Multi-Record → Hope it works
-NEW (Smart): Prove It (2-3 days) → Codify It (Week 1-2) → Scale It (Week 3+)
-```
-
-**Phase 0 is a GATE**: If evidence binding + diagnostic language don't show 50%+ quality improvement, we revisit the entire approach before building anything.
-
-### Principle 3: Diagnostic Over Descriptive
-
+### 4. Diagnostic Over Descriptive
 Technical, compliance-heavy buyers don't want reports—they want analysis that would survive scrutiny from a manager or auditor.
-
-The output must:
 - **Judge** (not just observe)
 - **Diagnose** (not just describe)
 - **Prescribe** (not just suggest)
 - **Challenge** (not just validate)
 
-### Principle 4: Heuristics Over Descriptions
-
+### 5. Heuristics Over Descriptions
 Industry context should be **evaluation criteria**, not background narrative.
-
-**Wrong:** "In healthcare insurance, compliance with HIPAA is important..."  
-**Right:** "Deals without documented security review at Proposal stage fail procurement 70% of the time"
+- **Wrong:** "In healthcare insurance, compliance with HIPAA is important..."  
+- **Right:** "Deals without documented security review at Proposal stage fail procurement 70% of the time"
 
 ---
 
@@ -610,8 +633,32 @@ This architecture choice aligns perfectly with:
 ---
 
 ## The 4-Layer Architecture
+## The 4-Layer Architecture for Intelligence Assembly
 
-We implement this via four distinct layers of intelligence:
+```mermaid
+graph TD
+    subgraph "Layer 4: Output Assembler (Lead-Sourcing)"
+        D[Lead-Sourcing Layout Engine] --> D1["Top: Critical Insights (Alerts)"]
+        D --> D2["Middle: Supporting Analysis"]
+        D --> D3["Bottom: Context/Stat Cards"]
+    end
+
+    subgraph "Layer 3: Archetype Engine (Contextual Weighting)"
+        C[Persona Archetypes] --> C1[Sales Leader: Strategic/Risk]
+        C --> C2[Sales Rep: Action/Next Step]
+    end
+
+    subgraph "Layer 2: Pattern Engine (Diagnostic)"
+        B[Analytical Patterns] --> B1[Timeline Velocity]
+        B --> B2[Stakeholder Gaps]
+        B --> B3[Root Cause Analysis]
+    end
+
+    subgraph "Layer 1: Truth & Evidence (Grounding)"
+        A[Data Context Mapping] --> A1[Salesforce Fields]
+        A --> A2[Relationship Mining]
+    end
+```
 
 ### Layer 1: The Foundation (Truth & Evidence)
 
@@ -735,7 +782,7 @@ Map<String, Object> parsed = ConfigurationLoader.parseMarkdown(context);
 
 ---
 
-### Layer 2: The Pattern Engine (Analytical Lenses)
+### Layer 2: The Pattern Engine (Diagnostic)
 
 **Purpose**: We do not ask the LLM to "figure it out." We inject specific **Analytical Patterns** triggered by data signals.
 
@@ -3115,4 +3162,5 @@ The output will be evaluated for evidence density. Target: >8 citations per anal
 | 2026-01-21 | AI Assistant | **MAJOR CONSOLIDATION**: Merged prompt-quality-improvements-prd.md into this document. Added: Quality Gap examples (before/after), comprehensive Phase 0 test protocols, Quality Measurement (Phase 5), Appendices (Forbidden Phrases, Quality Rules Examples, Implementation Checklist). Reorganized roadmap with "prove-it-first" approach. Status changed to "Ready for Implementation". |
 | 2026-01-22 | AI Assistant | **PHASE 0 COMPLETE**: Added comprehensive Phase 0 Results section documenting test execution, findings, and integration plan. Key results: Evidence Binding achieved +120% quality improvement (73.3/100 score), 4 of 5 success criteria met, DECISION: PROCEED TO PHASE 1. Documented winning instruction blocks, automated test framework, and specific integration steps for Phase 1 implementation. |
 | 2026-01-22 | AI Assistant | **PHASE 0B COMPLETE**: Added Pattern Extraction & UI Component Validation results. Extracted 10 analytical patterns + 10 UI components from 10 production prompts. Tested 5 variants. WINNER: Variant 15 (Risk Assessment + Visual Components) scored 75.0/100, beating Phase 0 by 1.7 points. Key findings: Risk Assessment Pattern is exceptionally effective (+41.7 pts), Stat Cards + Alert Boxes create visual diversity, Pattern overload backfires (2-3 patterns optimal), Stage12 scoring methodology validated. Updated Phase 1 priorities to implement Variant 15's winning recipe first. |
+| 2026-01-22 | AI Assistant | **PHASE 0C COMPLETE + USER VALIDATION**: Tested 19 variants (7 patterns, 8 UI, 4 combinations). Visual review with user revealed critical insights: (1) Evidence binding paradox resolved - +120% was from forcing specificity, not showing sources; updated to insight-led approach (2) Visual hierarchy critical - "buried lead" problem identified, Component 11 (Executive Layout) and Component 12 (Horizontal Timeline) added; (3) Stage-normalized intelligence needed - 20% probability not a risk in early stage. **QUALITY RULES LIBRARY CREATED**: docs/quality-rules/ containing evidence_binding_v2.md and information_hierarchy.md. Stage12 updated with 8-dimension weighted scoring. Ready for Phase 1 implementation. |
 

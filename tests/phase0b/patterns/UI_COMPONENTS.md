@@ -30,13 +30,11 @@ Displays a single key metric with label and value, often used in dashboard layou
 - `{{METRIC_VALUE}}`: Value to display (e.g., "5", "$1,450,000", "High")
 - `{{VALUE_COLOR}}`: Color for value (e.g., `#28a745` for green, `#dc3545` for red, `#FF9800` for orange)
 
-### Visual Style
+### Visual Style (Insight-Dense)
 - **Background**: White (#ffffff)
-- **Padding**: 1rem (16px)
-- **Border Radius**: 6px (rounded corners)
-- **Shadow**: Subtle (0 1px 2px)
-- **Text**: Bold label (0.875rem), larger value (1rem, weight 500)
-- **Layout**: Center-aligned, flex-basis 25% (4 cards per row)
+- **Spacing**: Compact (0.75rem padding) to avoid excessive white space.
+- **Hierarchy**: Primary focus is the Metric Label (Executive Scan-ability), Secondary is the Value.
+- **Evidence**: Small font (10px), subtle color (#706E6B), placed at the bottom to avoid clutter.
 
 ### Layout Context
 Typically used in a flex container for responsive grid:
@@ -695,6 +693,78 @@ Small colored badge for displaying status, sentiment, or category inline with te
 **Variation B: Larger Badge (for standalone use)**
 ```html
 <span style="display: inline-block; padding: 6px 16px; border-radius: 6px; font-size: 1rem; font-weight: 600; background-color: {{BADGE_BG_COLOR}}; color: {{BADGE_TEXT_COLOR}};">{{BADGE_TEXT}}</span>
+```
+
+---
+
+## COMPONENT 11: Lead-Sourcing Executive Layout (NEW)
+
+**Component ID**: `executive_top_down`  
+**Category**: Layout/Structure  
+**Purpose**: Surface the "Lead" (Critical Insights) immediately to ensure high-value diagnoses are above the fold.
+
+### HTML Structure
+```html
+<div class="executive-container" style="font-family: 'Salesforce Sans', sans-serif;">
+  <!-- TOP: Critical Alerts (The Lead) -->
+  <div class="critical-alerts" style="margin-bottom: 20px;">
+    {{#risk_indicator}}
+    <div style="background:#FFF1F1; border-left:4px solid #BA0517; padding:12px 16px; margin-bottom:12px; border-radius:4px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+       <div style="font-weight:700; color:#BA0517; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;">{{RISK_TITLE}}</div>
+       <div style="font-size:13px; color:#181818; margin-top: 4px; line-height: 1.4;">{{RISK_INSIGHT}}</div>
+       <div style="font-size:11px; color:#706E6B; margin-top: 8px; border-top: 1px solid #F3F3F3; padding-top: 4px;">Evidence: {{EVIDENCE_CITATION}}</div>
+    </div>
+    {{/risk_indicator}}
+  </div>
+
+  <!-- MIDDLE: Supporting Summary -->
+  <div style="background:white; padding:16px; border:1px solid #DDDBDA; border-radius:8px; margin-bottom:20px;">
+    <div style="font-weight:700; color:#16325c; font-size: 13px; margin-bottom: 8px; text-transform: uppercase;">Executive Summary</div>
+    <div style="font-size:13px; line-height:1.5; color:#181818;">{{EXECUTIVE_SUMMARY}}</div>
+  </div>
+
+  <!-- BOTTOM: Secondary Metrics (Compact) -->
+  <div style="display:flex; gap:12px; flex-wrap: wrap;">
+    {{#stat_card}}
+    <div style="flex: 1; min-width: 120px; background:#F3F3F3; padding:10px; border-radius:4px; text-align:center;">
+       <div style="font-size:10px; color:#706E6B; text-transform:uppercase;">{{LABEL}}</div>
+       <div style="font-size:14px; font-weight:700; color:#16325c;">{{VALUE}}</div>
+    </div>
+    {{/stat_card}}
+  </div>
+</div>
+```
+
+---
+
+## COMPONENT 12: Horizontal Milestone Timeline (NEW)
+
+**Component ID**: `horizontal_timeline`  
+**Category**: Visualization/Metaphor  
+**Purpose**: Replace vertical lists with a spatial metaphor for progression, making it easier to see "where we are" and "what's next".
+
+### HTML Structure
+```html
+<div style="padding: 20px; background: white; border: 1px solid #DDDBDA; border-radius: 8px;">
+  <div style="font-weight:700; color:#16325c; font-size: 13px; margin-bottom: 20px; text-transform: uppercase;">Deal Progression Timeline</div>
+  
+  <div style="display:flex; justify-content:space-between; align-items:flex-start; position:relative; margin: 0 10px;">
+    <!-- Connecting Line -->
+    <div style="position:absolute; top:12px; left:0; right:0; height:2px; background:#DDDBDA; z-index:0;"></div>
+    
+    {{#milestone}}
+    <div style="flex:1; text-align:center; position:relative; z-index:1;">
+      <!-- Node -->
+      <div style="width:24px; height:24px; border-radius:12px; background:{{NODE_COLOR}}; border:4px solid white; margin:0 auto 8px; box-shadow:0 0 0 1px #DDDBDA;"></div>
+      
+      <!-- Labels -->
+      <div style="font-size:11px; font-weight:700; color:#181818; line-height: 1.2; padding: 0 4px;">{{LABEL}}</div>
+      <div style="font-size:10px; color:{{STATUS_COLOR}}; margin-top: 2px;">{{STATUS_TEXT}}</div>
+      <div style="font-size:9px; color:#706E6B; margin-top: 2px;">{{DATE}}</div>
+    </div>
+    {{/milestone}}
+  </div>
+</div>
 ```
 
 ---
