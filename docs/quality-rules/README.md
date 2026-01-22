@@ -13,7 +13,26 @@ This directory contains the **validated quality rules** that drive prompt assemb
 **Phase 0 Validation**: Evidence Binding drove +120% quality improvement  
 **Phase 0B Validation**: Visual components and analytical patterns tested  
 **Phase 0C Validation**: Individual patterns and UI components isolated  
-**User Feedback**: Insight-led approach validated, visual hierarchy refined
+**User Feedback**: Insight-led approach validated, visual hierarchy refined  
+**Architecture**: Implemented via Builder Prompt record type + Topics (see [Builder Prompt Architecture](./BUILDER_PROMPT_ARCHITECTURE.md))
+
+---
+
+## Architecture
+
+### [Builder Prompt Architecture](./BUILDER_PROMPT_ARCHITECTURE.md) 🏗️ FINALIZED
+**Purpose**: Define production schema using ccai__AI_Prompt__c with record types
+
+**Key Decisions**:
+- Use Builder Prompt record type (not new custom object)
+- Use Topics for tagging (not custom Tags__c field)
+- Use Category__c picklist for classification
+- Use Weight__c for priority sorting
+- Use Canvas prompts for composition
+
+**Schema Impact**: 2 new fields, 0 new objects, leverages existing infrastructure
+
+**Read This First**: Understanding the architecture is critical before implementation
 
 ---
 

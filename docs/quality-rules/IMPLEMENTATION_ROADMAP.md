@@ -2,7 +2,8 @@
 
 **Date**: January 22, 2026  
 **Status**: Ready for Phase 1 Implementation  
-**Based On**: Phase 0/0B/0C Results + User Technical Guidance
+**Based On**: Phase 0/0B/0C Results + Builder Prompt Architecture  
+**Architecture**: [Builder Prompt Architecture](./BUILDER_PROMPT_ARCHITECTURE.md)
 
 ---
 
@@ -11,39 +12,478 @@
 **Where We Are**:
 - ✅ Phase 0/0B/0C Complete (19 variants tested, patterns extracted)
 - ✅ Quality Rules Documented (evidence binding, information hierarchy, picklist intelligence)
-- ✅ Architectural Strategy Updated
-- ✅ User feedback incorporated
+- ✅ Builder Prompt Architecture Finalized (record types, Topics, Category field)
+- ✅ User feedback incorporated (leverage existing infrastructure, no new objects)
 
-**What's Next**: Implement quality rules into production pipeline (Stage08/Stage12)
+**What's Next**: Implement Builder Prompt schema and create building blocks
 
-**Estimated Timeline**: 2 sprints (2-3 weeks)
+**Estimated Timeline**: 3 sprints (2-3 weeks)
 
----
-
-## Sprint 1: Core Quality Rules (Week 1)
-
-**Goal**: Integrate evidence binding, information hierarchy, and basic picklist context into Stage08
-
-**Total Effort**: 10-12 hours
+**Key Architectural Decision**: Use ccai__AI_Prompt__c with Builder record type + Topics instead of creating new custom objects. Minimal schema changes (2 new fields), maximum leverage of existing features.
 
 ---
 
-### Task 1.1: Evidence Binding v2 Integration (3 hours)
+## Sprint 0: Schema Setup (Day 1)
 
-**Objective**: Inject evidence binding rules into prompt assembly
+**Goal**: Create Builder Prompt record type and field schema
+
+**Total Effort**: 2-3 hours
+
+---
+
+### Task 0.1: Record Types & Fields (1 hour)
+
+**Objective**: Create record types and new fields on ccai__AI_Prompt__c
 
 **Implementation**:
 
-1. **Create Static Resource** (30 min)
+1. **Create Record Types** (30 min)
+   - Builder_Prompt (for quality rules, patterns, UI components, field services)
+   - Executable_Prompt (for text, canvas, agent prompts)
+
+2. **Create Fields** (30 min)
+   - Category__c (Picklist: Quality Rule, Pattern, UI Component, Context Template, Field Service)
+   - Weight__c (Number 2,1, range 0.0-1.0)
+
+**Success Criteria**:
+- Both record types created
+- Both fields created and visible on Builder Prompt layout
+
+---
+
+### Task 0.2: Page Layouts (30 min)
+
+**Objective**: Configure page layouts for each record type
+
+**Implementation**:
+
+1. **Builder Prompt Layout**:
+   - Section 1: Classification (Category, Topics, Weight)
+   - Section 2: Content (Prompt Command, Apex Class conditional)
+   - Section 3: Metadata (Status, Version, dates)
+   - Hide: Type, Purpose, Connection, Data Extraction Mapping
+
+2. **Executable Prompt Layout**:
+   - Keep existing layout
+   - Hide: Category, Weight
+
+**Success Criteria**:
+- Builder layout shows only relevant fields
+- Executable layout unchanged
+
+---
+
+### Task 0.3: Enable Topics (30 min)
+
+**Objective**: Enable Topics on ccai__AI_Prompt__c
+
+**Implementation**:
+
+1. Setup → Topics for Objects → Enable ccai__AI_Prompt__c
+2. Add Topics component to Builder Prompt Lightning page
+
+**Success Criteria**:
+- Topics enabled
+- Topics component visible on record page
+
+---
+
+### Task 0.4: Seed Topics (30 min)
+
+**Objective**: Create standard topics for classification
+
+**Implementation**:
+
+Create topics via Data Loader or manual:
+- Pattern types: Risk Assessment, Timeline Analysis, Metrics Calculation, etc.
+- UI types: Stat Card, Alert Box, Progress Bar, Timeline Visual
+- Maturity: Production-Ready, Phase-1-Ready, Experimental
+- Priority: P0, P1, P2
+- Objects: Opportunity, Case, Account, Contact, Lead, Multi-Object
+
+**Success Criteria**:
+- 30-40 topics created
+- Topics available in picker
+
+---
+
+## Sprint 1: Create Building Blocks (Week 1)
+
+**Goal**: Create builder prompt records for quality rules, patterns, and UI components
+
+**Total Effort**: 8-10 hours
+
+---
+
+### Task 1.1: Create Quality Rule Builders (2 hours)
+
+**Objective**: Create builder prompt records for Evidence Binding and Information Hierarchy
+
+**Implementation**:
+
+1. **Evidence Binding Builder** (30 min)
    ```
-   File: evidence_binding_rules
-   Content: Condensed version of evidence_binding_v2.md
-   Type: Text
+   Record Type: Builder Prompt
+   Name: Evidence Binding Rules v2
+   Category: Quality Rule
+   Topics: Evidence Binding, Insight-Led Design, P0
+   Weight: 1.0
+   Status: Active
+   Prompt Command: [Paste content from evidence_binding_v2.md]
    ```
 
-2. **Update Stage08_PromptAssembly.cls** (1.5 hrs)
+2. **Information Hierarchy Builder** (30 min)
+   ```
+   Record Type: Builder Prompt
+   Name: Information Hierarchy Rules
+   Category: Quality Rule
+   Topics: Information Hierarchy, Above-the-Fold, P0
+   Weight: 1.0
+   Status: Active
+   Prompt Command: [Paste content from information_hierarchy.md]
+   ```
+
+3. **Validate** (1 hr)
+   - Query builders: `WHERE RecordType.DeveloperName = 'Builder_Prompt' AND Category__c = 'Quality Rule'`
+   - Test topic filtering
+   - Preview content on record page
+
+**Success Criteria**:
+- 2 quality rule builders created
+- Queryable by category and topics
+- Content renders correctly
+
+---
+
+### Task 1.2: Create Pattern Builders (3 hours)
+
+**Objective**: Create builder prompts for 7 analytical patterns
+
+**Implementation**:
+
+Create 7 builder prompts (from phase0b/patterns/ANALYTICAL_PATTERNS.md):
+
+1. **Risk Assessment**
+   - Category: Pattern
+   - Topics: Risk Assessment, Opportunity, P0
+   - Weight: 0.9
+
+2. **Timeline Analysis**
+   - Category: Pattern
+   - Topics: Timeline Analysis, Opportunity, P1
+   - Weight: 0.8
+
+3. **Metrics Calculation**
+   - Category: Pattern
+   - Topics: Metrics Calculation, Opportunity, P0
+   - Weight: 0.9
+
+4. **Stakeholder Mapping**
+   - Category: Pattern
+   - Topics: Stakeholder Mapping, Opportunity, P1
+   - Weight: 0.7
+
+5. **Root Cause Analysis**
+   - Category: Pattern
+   - Topics: Root Cause Analysis, Case, P1
+   - Weight: 0.7
+
+6. **Executive Summary**
+   - Category: Pattern
+   - Topics: Executive Summary, Multi-Object, P0
+   - Weight: 0.9
+
+7. **Next Action Recommendation**
+   - Category: Pattern
+   - Topics: Next Action, Multi-Object, P0
+   - Weight: 0.8
+
+**Success Criteria**:
+- 7 pattern builders created
+- All active and queryable
+- Topics correctly assigned
+
+---
+
+### Task 1.3: Create UI Component Builders (2 hours)
+
+**Objective**: Create builder prompts for 5 UI components
+
+**Implementation**:
+
+Create 5 builder prompts (from phase0b/patterns/UI_COMPONENTS.md):
+
+1. **Stat Card**
+   - Category: UI Component
+   - Topics: Stat Card, Above-the-Fold, P0
+   - Weight: 0.9
+
+2. **Alert Box**
+   - Category: UI Component
+   - Topics: Alert Box, Above-the-Fold, P0
+   - Weight: 0.9
+
+3. **Progress Bar**
+   - Category: UI Component
+   - Topics: Progress Bar, P1
+   - Weight: 0.7
+
+4. **Timeline Visual**
+   - Category: UI Component
+   - Topics: Timeline Visual, P1
+   - Weight: 0.7
+
+5. **Table Layout**
+   - Category: UI Component
+   - Topics: Table, Below-the-Fold, P2
+   - Weight: 0.5
+
+**Success Criteria**:
+- 5 UI component builders created
+- HTML templates stored in Prompt Command
+- Queryable by category and topics
+
+---
+
+### Task 1.4: Create Field Service Builder (1 hour)
+
+**Objective**: Create Apex-based builder for field metadata extraction
+
+**Implementation**:
+
+1. **Create Apex Class: FieldMetadataService** (30 min)
    ```apex
-   private String loadEvidenceBindingRules() {
+   public interface IFieldService {
+       String execute(Map<String, Object> data);
+   }
+   
+   public class FieldMetadataService implements IFieldService {
+       public String execute(Map<String, Object> data) {
+           String objectName = (String) data.get('objectName');
+           String fieldName = (String) data.get('fieldName');
+           String currentValue = (String) data.get('currentValue');
+           
+           return getPicklistContext(objectName, fieldName, currentValue);
+       }
+       
+       private String getPicklistContext(String objectName, String fieldName, String currentValue) {
+           // Extract picklist values from Describe
+           Schema.SObjectType objType = Schema.getGlobalDescribe().get(objectName);
+           Schema.DescribeFieldResult fieldDescribe = 
+               objType.getDescribe().fields.getMap().get(fieldName).getDescribe();
+           
+           List<Schema.PicklistEntry> entries = fieldDescribe.getPicklistValues();
+           
+           // Build context string
+           StringBuilder context = new StringBuilder();
+           context.append('=== FIELD CONTEXT ===\n\n');
+           context.append('FIELD: ' + objectName + '.' + fieldName + '\n');
+           context.append('Current Value: "' + currentValue + '"\n\n');
+           context.append('Available Values (' + entries.size() + ' total):\n');
+           
+           Integer order = 1;
+           Integer currentPosition = null;
+           
+           for (Schema.PicklistEntry entry : entries) {
+               if (entry.isActive()) {
+                   String marker = '';
+                   if (entry.getValue() == currentValue) {
+                       marker = ' ← CURRENT';
+                       currentPosition = order;
+                   }
+                   context.append('  ' + order + '. ' + entry.getLabel() + marker + '\n');
+                   order++;
+               }
+           }
+           
+           // Add analysis
+           if (currentPosition != null) {
+               Integer totalValues = order - 1;
+               context.append('\nAnalysis: ');
+               if (currentPosition <= totalValues / 3) {
+                   context.append('This is an EARLY stage ');
+               } else if (currentPosition <= 2 * totalValues / 3) {
+                   context.append('This is a MID stage ');
+               } else {
+                   context.append('This is a LATE stage ');
+               }
+               context.append('(position ' + currentPosition + ' of ' + totalValues + ').\n');
+           }
+           
+           context.append('\n---\n\n');
+           return context.toString();
+       }
+   }
+   ```
+
+2. **Create Field Service Builder** (30 min)
+   ```
+   Record Type: Builder Prompt
+   Name: Field Metadata Service
+   Category: Field Service
+   Topics: Picklist Metadata, Opportunity, P0
+   Weight: 1.0
+   Status: Active
+   Apex Class: FieldMetadataService
+   Prompt Command: Extracts picklist values and provides stage-relative context
+   ```
+
+**Success Criteria**:
+- FieldMetadataService class created
+- Field service builder created
+- Can be invoked from Stage08
+
+---
+
+## Sprint 2: Apex Assembly Logic (Week 2)
+
+**Goal**: Build Stage08 logic to assemble canvas prompts from builders
+
+**Total Effort**: 6-8 hours
+
+---
+
+### Task 2.1: Create PromptTopicService (2 hours)
+
+**Objective**: Service to query builders by topics
+
+**Implementation**:
+
+```apex
+public class PromptTopicService {
+    
+    public static List<ccai__AI_Prompt__c> getPromptsByTopics(
+        List<String> topicNames, 
+        String logicOperator // 'AND' or 'OR'
+    ) {
+        // Get topic IDs
+        Map<String, Id> topicMap = new Map<String, Id>();
+        for (Topic t : [SELECT Id, Name FROM Topic WHERE Name IN :topicNames]) {
+            topicMap.put(t.Name, t.Id);
+        }
+        
+        if (topicMap.isEmpty()) return new List<ccai__AI_Prompt__c>();
+        
+        // Get prompt IDs with these topics
+        Map<Id, Integer> promptTopicCounts = new Map<Id, Integer>();
+        for (TopicAssignment ta : [
+            SELECT EntityId 
+            FROM TopicAssignment 
+            WHERE TopicId IN :topicMap.values()
+              AND EntityType = 'ccai__AI_Prompt__c'
+        ]) {
+            if (!promptTopicCounts.containsKey(ta.EntityId)) {
+                promptTopicCounts.put(ta.EntityId, 0);
+            }
+            promptTopicCounts.put(ta.EntityId, promptTopicCounts.get(ta.EntityId) + 1);
+        }
+        
+        // Filter by logic operator
+        Set<Id> promptIds = new Set<Id>();
+        for (Id promptId : promptTopicCounts.keySet()) {
+            if (logicOperator == 'AND' && promptTopicCounts.get(promptId) == topicNames.size()) {
+                promptIds.add(promptId);
+            } else if (logicOperator == 'OR') {
+                promptIds.add(promptId);
+            }
+        }
+        
+        // Return prompts
+        return [
+            SELECT Id, Name, ccai__Prompt_Command__c, Category__c, Weight__c
+            FROM ccai__AI_Prompt__c 
+            WHERE Id IN :promptIds
+              AND RecordType.DeveloperName = 'Builder_Prompt'
+            ORDER BY Weight__c DESC NULLS LAST, Name
+        ];
+    }
+}
+```
+
+**Success Criteria**:
+- Service queries builders by topics correctly
+- AND/OR logic works as expected
+- Results ordered by weight
+
+---
+
+### Task 2.2: Update Stage08 for Canvas Assembly (4-6 hours)
+
+**Objective**: Add canvas prompt assembly logic to Stage08
+
+**Implementation**:
+
+```apex
+public class Stage08_PromptAssembly {
+    
+    public String assembleCanvasPrompt(Id canvasPromptId, Map<String, Object> data) {
+        StringBuilder finalPrompt = new StringBuilder();
+        
+        // Get canvas prompt
+        ccai__AI_Prompt__c canvas = [
+            SELECT Name, ccai__Prompt_Command__c
+            FROM ccai__AI_Prompt__c
+            WHERE Id = :canvasPromptId
+        ];
+        
+        // Add canvas header
+        finalPrompt.append(canvas.ccai__Prompt_Command__c + '\n\n');
+        
+        // Get all builders in sequence
+        List<ccai__AI_Prompt_Element__c> elements = [
+            SELECT Child_Prompt__r.Category__c,
+                   Child_Prompt__r.ccai__Prompt_Command__c,
+                   Child_Prompt__r.Apex_Class__c,
+                   Sequence__c
+            FROM ccai__AI_Prompt_Element__c
+            WHERE Parent_Prompt__c = :canvasPromptId
+            ORDER BY Sequence__c
+        ];
+        
+        // Assemble each builder
+        for (ccai__AI_Prompt_Element__c element : elements) {
+            String category = element.Child_Prompt__r.Category__c;
+            
+            if (category == 'Field Service') {
+                // Invoke Apex class
+                String apexClass = element.Child_Prompt__r.Apex_Class__c;
+                String result = invokeFieldService(apexClass, data);
+                finalPrompt.append(result + '\n\n');
+                
+            } else if (category == 'Quality Rule') {
+                finalPrompt.append('=== QUALITY RULE ===\n');
+                finalPrompt.append(element.Child_Prompt__r.ccai__Prompt_Command__c);
+                finalPrompt.append('\n\n');
+                
+            } else if (category == 'Pattern') {
+                finalPrompt.append('=== ANALYTICAL PATTERN ===\n');
+                finalPrompt.append(element.Child_Prompt__r.ccai__Prompt_Command__c);
+                finalPrompt.append('\n\n');
+                
+            } else if (category == 'UI Component') {
+                finalPrompt.append('=== UI COMPONENT ===\n');
+                finalPrompt.append(element.Child_Prompt__r.ccai__Prompt_Command__c);
+                finalPrompt.append('\n\n');
+            }
+        }
+        
+        // Add data payload
+        finalPrompt.append('=== DATA ===\n');
+        finalPrompt.append(JSON.serializePretty(data));
+        
+        return finalPrompt.toString();
+    }
+    
+    private String invokeFieldService(String apexClassName, Map<String, Object> data) {
+        Type serviceType = Type.forName(apexClassName);
+        if (serviceType == null) {
+            return '// Error: Apex class not found';
+        }
+        IFieldService service = (IFieldService) serviceType.newInstance();
+        return service.execute(data);
+    }
+    
+    private String loadEvidenceBindingRules() {
        // Load from static resource or inline
        return 'EVIDENCE BINDING RULES:\n\n' +
               'Every claim must be traceable. No claim should lead with its source.\n\n' +

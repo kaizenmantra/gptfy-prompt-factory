@@ -120,33 +120,83 @@ Signal Assessment:
 
 The Quality Rules Library contains production-validated rules extracted from Phase 0/0B/0C testing and refined based on user feedback.
 
+### Architecture
+
+**[Builder Prompt Architecture](./quality-rules/BUILDER_PROMPT_ARCHITECTURE.md)** - READ THIS FIRST
+
+The prompt factory leverages existing `ccai__AI_Prompt__c` infrastructure instead of creating new custom objects:
+
+**Key Decisions**:
+- **Record Types**: Builder Prompt (infrastructure) vs Executable Prompt (applications)
+- **Topics**: Standard Salesforce Topics for tagging (not custom Tags__c field)
+- **Category Field**: New Category__c picklist for classification (Quality Rule, Pattern, UI Component, Context Template, Field Service)
+- **Weight Field**: New Weight__c number field for priority sorting (0.0-1.0)
+- **Canvas Composition**: Use existing Canvas prompt type to assemble builders
+
+**Schema Impact**: 2 new fields, 0 new objects, maximum leverage of existing features
+
+**Benefits**: 
+- Minimal package complexity (no new objects)
+- Built-in versioning, status, and file attachment (already exists)
+- Standard UI components for Topics (clickable navigation, auto-suggest)
+- Extensible via Canvas composition model
+
+---
+
 ### Core Rules
 
 **1. [Evidence Binding v2](./quality-rules/evidence_binding_v2.md)**
 - 4-level citation hierarchy (Embedded 80%, Parenthetical 15%, Inline 5%, Collapsible always)
 - Resolves the "Phase 0 paradox": +120% improvement was from forcing specificity, not showing sources
 - Insight-first approach validated through user visual review
+- **Implementation**: Builder Prompt with Category = "Quality Rule"
 
 **2. [Information Hierarchy](./quality-rules/information_hierarchy.md)**
 - 6-zone priority system (Alerts → Stats → Summary → Headers → Analysis → Evidence)
 - Above-the-fold must answer "What's wrong?" in 10 seconds
 - Addresses "buried lead" problem identified in user feedback
+- **Implementation**: Builder Prompt with Category = "Quality Rule"
 
-**3. [Picklist Metadata Extraction](./quality-rules/picklist_metadata_extraction.md)** ⭐ NEW
+**3. [Picklist Metadata Extraction](./quality-rules/picklist_metadata_extraction.md)**
 - Extracts ALL picklist values to provide LLM with relative context
 - Special handling for Opportunity.StageName → OpportunityStage probability mapping
 - Prevents false positives ("20% is low" when it's appropriate for early stage)
 - Data-driven, customer-specific, and future-proof
+- **Implementation**: Builder Prompt with Category = "Field Service" (Apex class invocation)
+
+---
 
 ### Integration Points
 
 ```
-Stage05: Field Selection → Extracts picklist metadata using Schema.DescribeFieldResult
-Stage08: Prompt Assembly → Loads and injects quality rules + field context
-Stage12: Quality Audit → Validates compliance with 8-dimension scoring
+Schema Setup:
+├── Record Type: Builder_Prompt (for reusable building blocks)
+├── Record Type: Executable_Prompt (for canvas/text prompts)
+├── Field: Category__c (Quality Rule, Pattern, UI Component, etc.)
+├── Field: Weight__c (0.0-1.0 priority)
+└── Topics: Standard Salesforce (multi-dimensional tagging)
+
+Runtime Flow:
+├── Stage05: Field Selection → Extracts picklist metadata
+├── Stage08: Prompt Assembly → Queries builders by topic/category, invokes field services
+├── Stage12: Quality Audit → Validates compliance with 8-dimension scoring
+└── Canvas Prompts: Compose builders via ccai__AI_Prompt_Element__c junction
+
+Query Example:
+// Get all P0 patterns for Opportunity
+SELECT Id, Name, ccai__Prompt_Command__c, Weight__c
+FROM ccai__AI_Prompt__c
+WHERE RecordType.DeveloperName = 'Builder_Prompt'
+  AND Category__c = 'Pattern'
+  AND Id IN (SELECT EntityId FROM TopicAssignment 
+             WHERE Topic.Name IN ('P0', 'Opportunity'))
+ORDER BY Weight__c DESC
 ```
 
-**See**: [Quality Rules README](./quality-rules/README.md) for implementation details
+**See**: 
+- [Builder Prompt Architecture](./quality-rules/BUILDER_PROMPT_ARCHITECTURE.md) for schema details
+- [Implementation Roadmap](./quality-rules/IMPLEMENTATION_ROADMAP.md) for sprint breakdown
+- [Quality Rules README](./quality-rules/README.md) for usage guidelines
 
 ---
 
@@ -3163,4 +3213,5 @@ The output will be evaluated for evidence density. Target: >8 citations per anal
 | 2026-01-22 | AI Assistant | **PHASE 0 COMPLETE**: Added comprehensive Phase 0 Results section documenting test execution, findings, and integration plan. Key results: Evidence Binding achieved +120% quality improvement (73.3/100 score), 4 of 5 success criteria met, DECISION: PROCEED TO PHASE 1. Documented winning instruction blocks, automated test framework, and specific integration steps for Phase 1 implementation. |
 | 2026-01-22 | AI Assistant | **PHASE 0B COMPLETE**: Added Pattern Extraction & UI Component Validation results. Extracted 10 analytical patterns + 10 UI components from 10 production prompts. Tested 5 variants. WINNER: Variant 15 (Risk Assessment + Visual Components) scored 75.0/100, beating Phase 0 by 1.7 points. Key findings: Risk Assessment Pattern is exceptionally effective (+41.7 pts), Stat Cards + Alert Boxes create visual diversity, Pattern overload backfires (2-3 patterns optimal), Stage12 scoring methodology validated. Updated Phase 1 priorities to implement Variant 15's winning recipe first. |
 | 2026-01-22 | AI Assistant | **PHASE 0C COMPLETE + USER VALIDATION**: Tested 19 variants (7 patterns, 8 UI, 4 combinations). Visual review with user revealed critical insights: (1) Evidence binding paradox resolved - +120% was from forcing specificity, not showing sources; updated to insight-led approach (2) Visual hierarchy critical - "buried lead" problem identified, Component 11 (Executive Layout) and Component 12 (Horizontal Timeline) added; (3) Stage-normalized intelligence needed - 20% probability not a risk in early stage. **QUALITY RULES LIBRARY CREATED**: docs/quality-rules/ containing evidence_binding_v2.md and information_hierarchy.md. Stage12 updated with 8-dimension weighted scoring. Ready for Phase 1 implementation. |
+| 2026-01-22 | AI Assistant | **BUILDER PROMPT ARCHITECTURE FINALIZED**: Completed 3 architectural iterations based on user feedback. **KEY DECISION**: Leverage existing ccai__AI_Prompt__c with Builder record type instead of creating new custom objects (GPTfy_Config__c rejected due to package bloat concerns). **SCHEMA**: Added 2 fields only (Category__c picklist, Weight__c number), 0 new objects. **TOPICS**: Use standard Salesforce Topics for multi-dimensional tagging instead of custom Tags__c field (better UX, indexed queries, clickable navigation). **COMPOSITION**: Use Canvas prompts + ccai__AI_Prompt_Element__c junction to assemble builders. **FIELD SERVICES**: Builder prompts with Category="Field Service" invoke Apex classes (e.g., FieldMetadataService) for live metadata queries. Full architecture documented in docs/quality-rules/BUILDER_PROMPT_ARCHITECTURE.md. Implementation roadmap updated with Sprint 0 (schema setup) and Sprint 1 (create builders). Status: Ready for implementation. |
 
