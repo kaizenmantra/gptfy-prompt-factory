@@ -3,7 +3,7 @@
  * Builds complete prompt command with AI instructions, integrates HTML template,
  * adds grounding rules, and validates all merge fields
  */
-public with sharing class Stage08_PromptAssembly implements IStage {
+public without sharing class Stage08_PromptAssembly implements IStage {
 
     private static final Integer STAGE_NUMBER = 8;
 
@@ -34,6 +34,24 @@ public with sharing class Stage08_PromptAssembly implements IStage {
             Map<String, Object> selectedFieldsRaw = (Map<String, Object>) inputs.get('selectedFields');
             List<Object> businessObjectivesRaw = (List<Object>) inputs.get('businessObjectives');
 
+            // NEW: Extract Strategic Context from Stage 2
+            // CRITICAL: Use companyIntelligence (actual research) over companyProfile (AI summary)
+            String companyIntelligence = (String) inputs.get('companyIntelligence');
+            String companyProfile = (String) inputs.get('companyProfile');
+            String strategicInsights = (String) inputs.get('strategicInsights');
+            String industryContext = (String) inputs.get('industryContext');
+            
+            // Prefer the actual company research over generic AI summary
+            String effectiveCompanyContext = String.isNotBlank(companyIntelligence) ? companyIntelligence : companyProfile;
+            
+            // Log what company context we're using
+            if (String.isNotBlank(companyIntelligence)) {
+                String preview = companyIntelligence.length() > 100 ? companyIntelligence.substring(0, 100) + '...' : companyIntelligence;
+                result.queueInfo(runId, STAGE_NUMBER, 'Using company research: ' + preview);
+            } else if (String.isNotBlank(companyProfile)) {
+                result.queueInfo(runId, STAGE_NUMBER, 'Using company profile (no direct research available)');
+            }
+
             result.queueInfo(runId, STAGE_NUMBER, 'Assembling prompt for ' + rootObject);
 
             // Validate merge fields against selected fields
@@ -58,9 +76,10 @@ public with sharing class Stage08_PromptAssembly implements IStage {
                 }
             }
 
-            // Build AI instructions
+            // Build AI instructions with REAL company research
             String aiInstructions = buildAIInstructions(
-                businessContext, targetPersona, businessObjectivesRaw, rootObject);
+                businessContext, targetPersona, businessObjectivesRaw, rootObject,
+                effectiveCompanyContext, strategicInsights, industryContext, runId);
 
             // Build grounding rules
             String groundingRules = buildGroundingRules(rootObject, targetPersona);
@@ -209,7 +228,11 @@ public with sharing class Stage08_PromptAssembly implements IStage {
             String businessContext,
             String targetPersona,
             List<Object> businessObjectivesRaw,
-            String rootObject) {
+            String rootObject,
+            String companyProfile,
+            String strategicInsights,
+            String industryContext,
+            Id runId) {
 
         String instructions = 'You are a Salesforce AI assistant generating HTML content for GPTfy.\n\n';
 
@@ -280,9 +303,25 @@ public with sharing class Stage08_PromptAssembly implements IStage {
         // === BUSINESS CONTEXT ===
         instructions += 'Generate a premium, executive-style dashboard for: ' + targetPersona + '\n\n';
 
+        // === STRATEGIC CONTEXT (Account 360) ===
+        if (String.isNotBlank(companyProfile) || String.isNotBlank(strategicInsights) || String.isNotBlank(industryContext)) {
+             instructions += '=== STRATEGIC CONTEXT (Account 360) ===\n';
+             instructions += 'Use this intelligence to make the content highly relevant and personalized.\n\n';
+             
+             if (String.isNotBlank(companyProfile)) {
+                 instructions += 'COMPANY PROFILE:\n' + companyProfile + '\n\n';
+             }
+             if (String.isNotBlank(industryContext)) {
+                 instructions += 'INDUSTRY CONTEXT:\n' + industryContext + '\n\n';
+             }
+             if (String.isNotBlank(strategicInsights)) {
+                 instructions += 'STRATEGIC INSIGHTS:\n' + strategicInsights + '\n\n';
+             }
+        }
+
         // Include full business context from user input
         if (String.isNotBlank(businessContext)) {
-            instructions += 'Business Context:\n' + businessContext + '\n\n';
+            instructions += 'SPECIFIC REQUIREMENTS:\n' + businessContext + '\n\n';
         }
 
         if (businessObjectivesRaw != null && !businessObjectivesRaw.isEmpty()) {
@@ -294,11 +333,281 @@ public with sharing class Stage08_PromptAssembly implements IStage {
             instructions += String.join(objectives, ', ') + '\n\n';
         }
 
+        // === CRITICAL: ANALYSIS REQUIREMENTS ===
+        instructions += '=== CRITICAL: ANALYSIS REQUIREMENTS ===\n\n';
+        instructions += 'You are NOT just displaying data - you are providing INTELLIGENT BUSINESS ANALYSIS.\n';
+        instructions += 'The template below contains merge fields that will be replaced with real Salesforce data.\n';
+        instructions += 'Your job is to ANALYZE this data and provide ACTIONABLE INSIGHTS.\n\n';
+        
+        instructions += 'ANALYSIS YOU MUST PERFORM:\n\n';
+        
+        instructions += '1. OPPORTUNITY HEALTH ANALYSIS:\n';
+        instructions += '   - Identify stale opportunities (close dates in the past or soon)\n';
+        instructions += '   - Flag deals stuck in early stages for too long\n';
+        instructions += '   - Calculate total pipeline value and weighted pipeline\n';
+        instructions += '   - Recommend next steps for each opportunity\n\n';
+        
+        instructions += '2. CASE/SUPPORT RISK ANALYSIS:\n';
+        instructions += '   - Flag high-priority open cases that need attention\n';
+        instructions += '   - Identify aging cases (open for extended periods)\n';
+        instructions += '   - Calculate customer satisfaction risk based on case patterns\n';
+        instructions += '   - Recommend resolution priorities\n\n';
+        
+        instructions += '3. ENGAGEMENT PATTERN ANALYSIS:\n';
+        instructions += '   - Identify last contact date and engagement gaps\n';
+        instructions += '   - Flag accounts with no recent activity (going cold)\n';
+        instructions += '   - Analyze contact coverage (do we have the right stakeholders?)\n';
+        instructions += '   - Recommend engagement actions\n\n';
+        
+        instructions += '4. EXECUTIVE SUMMARY:\n';
+        instructions += '   - Provide an overall account health score or assessment\n';
+        instructions += '   - List top 3 priorities for this account\n';
+        instructions += '   - Identify the biggest risk and biggest opportunity\n';
+        instructions += '   - Recommend immediate actions\n\n';
+        
+        instructions += 'OUTPUT STRUCTURE:\n';
+        instructions += 'Your output should include BOTH the templated data AND your analytical sections.\n';
+        instructions += 'Add analysis sections with headers like "Executive Summary", "Key Risks", "Recommended Actions".\n';
+        instructions += 'Do NOT just render tables - add CONTEXT and INTERPRETATION before/after data sections.\n\n';
+        
         instructions += 'The output should be visually stunning, data-rich, and immediately actionable.\n';
         instructions += 'Use ONLY the merge field embeddings provided in the template below. Do not add or modify merge fields.\n';
-        instructions += 'Merge fields use triple-brace syntax and will be substituted by GPTfy at runtime.\n';
+        instructions += 'Merge fields use triple-brace syntax and will be substituted by GPTfy at runtime.\n\n';
+
+        PromptFactoryLogger.info(runId, 8, '🏗️ BUILD AI INSTRUCTIONS: Starting builder injection');
+        Integer initialLength = instructions.length();
+        
+        // NEW: Load and inject Builder Prompts
+        PromptFactoryLogger.info(runId, 8, '📋 Step 1: Loading Quality Rules');
+        String qualityRules = loadQualityRules(runId);
+        if (String.isNotBlank(qualityRules)) {
+            instructions += qualityRules + '\n\n';
+            PromptFactoryLogger.info(runId, 8, '✅ Injected Quality Rules: +' + qualityRules.length() + ' chars');
+        } else {
+            PromptFactoryLogger.warning(runId, 8, '⚠️ No Quality Rules to inject');
+        }
+
+        PromptFactoryLogger.info(runId, 8, '📋 Step 2: Loading Patterns');
+        String patterns = loadPatterns(rootObject, runId);
+        if (String.isNotBlank(patterns)) {
+            instructions += patterns + '\n\n';
+            PromptFactoryLogger.info(runId, 8, '✅ Injected Patterns: +' + patterns.length() + ' chars');
+        } else {
+            PromptFactoryLogger.warning(runId, 8, '⚠️ No Patterns to inject');
+        }
+
+        // NEW: Load and inject UI Components
+        PromptFactoryLogger.info(runId, 8, '📋 Step 3: Loading UI Components');
+        String uiComponents = loadUIComponents(runId);
+        if (String.isNotBlank(uiComponents)) {
+            instructions += uiComponents + '\n\n';
+            PromptFactoryLogger.info(runId, 8, '✅ Injected UI Components: +' + uiComponents.length() + ' chars');
+        } else {
+            PromptFactoryLogger.warning(runId, 8, '⚠️ No UI Components to inject');
+        }
+
+        // NEW: Load and inject Context Templates
+        PromptFactoryLogger.info(runId, 8, '📋 Step 4: Loading Context Templates');
+        String contextTemplates = loadContextTemplates(runId);
+        if (String.isNotBlank(contextTemplates)) {
+            instructions += contextTemplates + '\n\n';
+            PromptFactoryLogger.info(runId, 8, '✅ Injected Context Templates: +' + contextTemplates.length() + ' chars');
+        } else {
+            PromptFactoryLogger.warning(runId, 8, '⚠️ No Context Templates to inject');
+        }
+        
+        Integer finalLength = instructions.length();
+        Integer addedContent = finalLength - initialLength;
+        PromptFactoryLogger.info(runId, 8, '📊 BUILDER INJECTION COMPLETE: Added ' + addedContent + ' chars from builders');
+        PromptFactoryLogger.info(runId, 8, '📊 Total instruction length: ' + finalLength + ' chars');
 
         return instructions;
+    }
+
+    /**
+     * @description Load active Quality Rules from Builder Prompts
+     * @param runId PF_Run__c ID for logging
+     * @return Combined quality rules content
+     */
+    private String loadQualityRules(Id runId) {
+        try {
+            PromptFactoryLogger.info(runId, 8, '🔍 loadQualityRules() called - using HARDCODED IDs as test');
+            
+            // FIXED: Use RecordTypeId directly to avoid visibility issues in some org contexts
+            Id builderRtId = Schema.SObjectType.ccai__AI_Prompt__c.getRecordTypeInfosByDeveloperName().get('Builder').getRecordTypeId();
+            
+            List<ccai__AI_Prompt__c> rules = [
+                SELECT Id, Name, ccai__Prompt_Command__c
+                FROM ccai__AI_Prompt__c
+                WHERE RecordTypeId = :builderRtId
+                  AND Category__c = 'Quality Rule'
+                  AND ccai__Status__c = 'Active'
+                ORDER BY Name
+            ];
+            
+            PromptFactoryLogger.info(runId, 8, '📊 Query returned: ' + rules.size() + ' Quality Rules');
+            
+            if (rules.isEmpty()) {
+                PromptFactoryLogger.warning(runId, 8, '⚠️ No Quality Rules found - returning empty');
+                return '';
+            }
+            
+            String allRules = '';
+            for (ccai__AI_Prompt__c rule : rules) {
+                PromptFactoryLogger.info(runId, 8, '✅ Loading: ' + rule.Name + ' (' + rule.ccai__Prompt_Command__c.length() + ' chars)');
+                allRules += '\n\n=== ' + rule.Name + ' ===\n\n';
+                allRules += rule.ccai__Prompt_Command__c;
+            }
+            
+            PromptFactoryLogger.info(runId, 8, '✅ Loaded ' + rules.size() + ' Quality Rules (' + allRules.length() + ' total chars)');
+            return allRules;
+            
+        } catch (Exception e) {
+            // DON'T silently return empty - fail loudly so we can see the error!
+            String errorMsg = 'Failed to load Quality Rules: ' + e.getMessage() + ' | Stack: ' + e.getStackTraceString();
+            System.debug(LoggingLevel.ERROR, errorMsg);
+            throw new StageException(errorMsg);
+        }
+    }
+
+    /**
+     * @description Load active Patterns from Builder Prompts for specific object
+     * @param rootObject The Salesforce object (e.g., 'Opportunity')
+     * @param runId PF_Run__c ID for logging
+     * @return Combined pattern content
+     */
+    private String loadPatterns(String rootObject, Id runId) {
+        try {
+            PromptFactoryLogger.info(runId, 8, '🔍 loadPatterns() called - using HARDCODED IDs as test');
+            
+            // FIXED: Use RecordTypeId directly
+            Id builderRtId = Schema.SObjectType.ccai__AI_Prompt__c.getRecordTypeInfosByDeveloperName().get('Builder').getRecordTypeId();
+            
+            List<ccai__AI_Prompt__c> patterns = [
+                SELECT Id, Name, ccai__Prompt_Command__c
+                FROM ccai__AI_Prompt__c
+                WHERE RecordTypeId = :builderRtId
+                  AND Category__c = 'Pattern'
+                  AND ccai__Status__c = 'Active'
+                  AND (ccai__Object__c = :rootObject OR ccai__Object__c = null)
+                ORDER BY Name
+            ];
+            
+            PromptFactoryLogger.info(runId, 8, '📊 Query returned: ' + patterns.size() + ' Patterns');
+            
+            if (patterns.isEmpty()) {
+                PromptFactoryLogger.warning(runId, 8, '⚠️ No Patterns found for ' + rootObject);
+                return '';
+            }
+            
+            String allPatterns = '';
+            for (ccai__AI_Prompt__c pattern : patterns) {
+                PromptFactoryLogger.info(runId, 8, '✅ Loading: ' + pattern.Name + ' (' + pattern.ccai__Prompt_Command__c.length() + ' chars)');
+                allPatterns += '\n\n=== ' + pattern.Name + ' ===\n\n';
+                allPatterns += pattern.ccai__Prompt_Command__c;
+            }
+            
+            PromptFactoryLogger.info(runId, 8, '✅ Loaded ' + patterns.size() + ' Patterns (' + allPatterns.length() + ' total chars)');
+            return allPatterns;
+            
+        } catch (Exception e) {
+            // DON'T silently return empty - fail loudly so we can see the error!
+            String errorMsg = 'Failed to load Patterns: ' + e.getMessage() + ' | Stack: ' + e.getStackTraceString();
+            System.debug(LoggingLevel.ERROR, errorMsg);
+            throw new StageException(errorMsg);
+        }
+    }
+
+    /**
+     * @description Load active UI Components from Builder Prompts
+     * @param runId PF_Run__c ID for logging
+     * @return Combined UI component content
+     */
+    private String loadUIComponents(Id runId) {
+        try {
+            PromptFactoryLogger.info(runId, 8, '🔍 loadUIComponents() called - using HARDCODED IDs as test');
+            
+            // FIXED: Use RecordTypeId directly
+            Id builderRtId = Schema.SObjectType.ccai__AI_Prompt__c.getRecordTypeInfosByDeveloperName().get('Builder').getRecordTypeId();
+            
+            List<ccai__AI_Prompt__c> components = [
+                SELECT Id, Name, ccai__Prompt_Command__c
+                FROM ccai__AI_Prompt__c
+                WHERE RecordTypeId = :builderRtId
+                  AND Category__c = 'UI Component'
+                  AND ccai__Status__c = 'Active'
+                ORDER BY Name
+            ];
+            
+            PromptFactoryLogger.info(runId, 8, '📊 Query returned: ' + components.size() + ' UI Components');
+            
+            if (components.isEmpty()) {
+                PromptFactoryLogger.warning(runId, 8, '⚠️ No UI Components found');
+                return '';
+            }
+            
+            String allComponents = '';
+            for (ccai__AI_Prompt__c component : components) {
+                PromptFactoryLogger.info(runId, 8, '✅ Loading: ' + component.Name);
+                allComponents += '\n\n=== ' + component.Name + ' ===\n\n';
+                allComponents += component.ccai__Prompt_Command__c;
+            }
+            
+            PromptFactoryLogger.info(runId, 8, '✅ Loaded ' + components.size() + ' UI Components (' + allComponents.length() + ' total chars)');
+            return allComponents;
+            
+        } catch (Exception e) {
+            // DON'T silently return empty - fail loudly so we can see the error!
+            String errorMsg = 'Failed to load UI Components: ' + e.getMessage() + ' | Stack: ' + e.getStackTraceString();
+            System.debug(LoggingLevel.ERROR, errorMsg);
+            throw new StageException(errorMsg);
+        }
+    }
+
+    /**
+     * @description Load active Context Templates from Builder Prompts
+     * @param runId PF_Run__c ID for logging
+     * @return Combined context template content
+     */
+    private String loadContextTemplates(Id runId) {
+        try {
+            PromptFactoryLogger.info(runId, 8, '🔍 loadContextTemplates() called - using HARDCODED IDs as test');
+            
+            // FIXED: Use RecordTypeId directly
+            Id builderRtId = Schema.SObjectType.ccai__AI_Prompt__c.getRecordTypeInfosByDeveloperName().get('Builder').getRecordTypeId();
+            
+            List<ccai__AI_Prompt__c> templates = [
+                SELECT Id, Name, ccai__Prompt_Command__c
+                FROM ccai__AI_Prompt__c
+                WHERE RecordTypeId = :builderRtId
+                  AND Category__c = 'Context Template'
+                  AND ccai__Status__c = 'Active'
+                ORDER BY Name
+            ];
+            
+            PromptFactoryLogger.info(runId, 8, '📊 Query returned: ' + templates.size() + ' Context Templates');
+            
+            if (templates.isEmpty()) {
+                PromptFactoryLogger.warning(runId, 8, '⚠️ No Context Templates found');
+                return '';
+            }
+            
+            String allTemplates = '';
+            for (ccai__AI_Prompt__c template : templates) {
+                PromptFactoryLogger.info(runId, 8, '✅ Loading: ' + template.Name);
+                allTemplates += '\n\n=== ' + template.Name + ' ===\n\n';
+                allTemplates += template.ccai__Prompt_Command__c;
+            }
+            
+            PromptFactoryLogger.info(runId, 8, '✅ Loaded ' + templates.size() + ' Context Templates (' + allTemplates.length() + ' total chars)');
+            return allTemplates;
+            
+        } catch (Exception e) {
+            // DON'T silently return empty - fail loudly so we can see the error!
+            String errorMsg = 'Failed to load Context Templates: ' + e.getMessage() + ' | Stack: ' + e.getStackTraceString();
+            System.debug(LoggingLevel.ERROR, errorMsg);
+            throw new StageException(errorMsg);
+        }
     }
 
     /**
@@ -315,12 +624,12 @@ public with sharing class Stage08_PromptAssembly implements IStage {
         String rules = '--- GROUNDING RULES ---\n';
         rules += '**Grounding Rules:**\n\n';
 
-        rules += '1. **Accuracy:** Use ONLY data from the provided ' + rootObject + ' record. Never fabricate or assume information.\n';
+        rules += '1. **Accuracy:** Use ONLY data from the provided ' + rootObject + ' record. Never fabricate company names or contact details.\n';
         rules += '2. **Tone:** Maintain a professional, enterprise-appropriate tone for ' + targetPersona + '.\n';
         rules += '3. **Format:** Preserve the HTML structure with inline styles. Do NOT use CSS classes.\n';
         rules += '4. **Consistency:** Use consistent date formats (MM/DD/YYYY), currency formats ($X,XXX), and terminology.\n';
         rules += '5. **Relevance:** Focus on insights that align with the business objectives.\n';
-        rules += '6. **No Speculation:** Base all statements on available data. Do not make predictions.\n';
+        rules += '6. **ANALYZE AND INTERPRET:** Go beyond raw data display. Identify patterns, risks, opportunities, and provide actionable recommendations.\n';
 
         return rules;
     }

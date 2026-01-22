@@ -179,6 +179,16 @@ public with sharing class Stage05_FieldSelection implements IStage {
             // Pass through selectedObjects - needed for DCM creation even if objects have no data
             // This ensures DCM Detail records are created for all child relationships
             result.outputs.put('selectedObjects', inputs.get('selectedObjects'));
+            // Pass through enriched context from Stage 2 for downstream stages
+            result.outputs.put('companyIntelligence', inputs.get('companyIntelligence'));
+            result.outputs.put('industryContext', inputs.get('industryContext'));
+            result.outputs.put('companyProfile', inputs.get('companyProfile'));
+            result.outputs.put('strategicInsights', inputs.get('strategicInsights'));
+            result.outputs.put('companyWebsite', inputs.get('companyWebsite'));
+            
+            // CRITICAL: Pass through data summary for template design
+            result.outputs.put('dataSummary', inputs.get('dataSummary'));
+            result.outputs.put('dataAvailability', inputs.get('dataAvailability'));
             // Don't pass dataAvailability - it can be large and causes stack overflow
             // Downstream stages can re-query if needed
 
@@ -284,11 +294,15 @@ public with sharing class Stage05_FieldSelection implements IStage {
 
     /**
      * @description Gets field metadata for all objects using SchemaHelper (deferred logging)
-     * CRITICAL: Respects queryable field restrictions for objects like ContentDocumentLink
+     * CRITICAL: Only includes ACCESSIBLE and QUERYABLE fields to prevent AI from selecting
+     * fields that will cause runtime errors. This filters out:
+     * - Inaccessible fields (user doesn't have FLS access)
+     * - Non-queryable fields (e.g., some fields on ContentDocumentLink)
+     * - System fields that aren't useful for prompts
      * @param objectNames List of object API names
      * @param runId Run ID for logging
      * @param result StageResult for deferred logging
-     * @return Map of object name to list of field metadata
+     * @return Map of object name to list of field metadata (only accessible fields)
      */
     private Map<String, List<SchemaHelper.FieldMetadata>> getFieldsForObjectsDeferred(
             List<String> objectNames, Id runId, StageResult result) {
@@ -306,28 +320,38 @@ public with sharing class Stage05_FieldSelection implements IStage {
                 Boolean hasRestrictions = !safeFields.isEmpty();
 
                 List<SchemaHelper.FieldMetadata> allFields = SchemaHelper.getFields(objectName);
-                List<SchemaHelper.FieldMetadata> fields = new List<SchemaHelper.FieldMetadata>();
+                List<SchemaHelper.FieldMetadata> accessibleFields = new List<SchemaHelper.FieldMetadata>();
+                Integer skippedInaccessible = 0;
 
                 for (SchemaHelper.FieldMetadata field : allFields) {
-                    if (fields.size() >= maxFieldsPerObject) {
+                    if (accessibleFields.size() >= maxFieldsPerObject) {
                         break;
                     }
 
-                    // If object has restrictions, only include safe fields
+                    // CRITICAL FIX: Filter out inaccessible fields BEFORE sending to AI
+                    // This prevents the AI from selecting fields that will fail at runtime
+                    if (!field.isAccessible) {
+                        skippedInaccessible++;
+                        continue; // Skip inaccessible fields entirely
+                    }
+
+                    // If object has restrictions (e.g., ContentDocumentLink), only include safe fields
                     if (hasRestrictions) {
                         if (safeFields.contains(field.name)) {
-                            fields.add(field);
+                            accessibleFields.add(field);
                         }
                     } else {
-                        fields.add(field);
+                        accessibleFields.add(field);
                     }
                 }
 
-                fieldsByObject.put(objectName, fields);
+                fieldsByObject.put(objectName, accessibleFields);
 
+                // Log what was filtered
                 String restrictionNote = hasRestrictions ? ' (RESTRICTED - only ' + safeFields.size() + ' queryable)' : '';
+                String accessNote = skippedInaccessible > 0 ? ', skipped ' + skippedInaccessible + ' inaccessible' : '';
                 result.queueDebug(runId, STAGE_NUMBER,
-                    objectName + ': ' + fields.size() + ' of ' + allFields.size() + ' fields' + restrictionNote);
+                    objectName + ': ' + accessibleFields.size() + ' accessible of ' + allFields.size() + ' total fields' + restrictionNote + accessNote);
 
             } catch (Exception e) {
                 result.queueError(runId, STAGE_NUMBER,
