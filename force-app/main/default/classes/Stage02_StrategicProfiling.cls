@@ -25,6 +25,13 @@ public with sharing class Stage02_StrategicProfiling implements IStage {
             String rootObject = (String) inputs.get('rootObject');
             String outputFormat = (String) inputs.get('outputFormat');
             String companyWebsite = (String) inputs.get('companyWebsite');
+            
+            // DEBUG: Log all inputs received to trace data flow issue
+            result.queueInfo(runId, STAGE_NUMBER, 'DEBUG - Inputs received from Stage 1:');
+            result.queueInfo(runId, STAGE_NUMBER, '  rootObject: ' + rootObject);
+            result.queueInfo(runId, STAGE_NUMBER, '  outputFormat: ' + outputFormat);
+            result.queueInfo(runId, STAGE_NUMBER, '  companyWebsite: [' + (String.isBlank(companyWebsite) ? 'BLANK/NULL' : companyWebsite) + ']');
+            result.queueInfo(runId, STAGE_NUMBER, '  businessContext length: ' + (String.isBlank(businessContext) ? '0' : String.valueOf(businessContext.length())));
 
             if (String.isBlank(businessContext)) {
                 throw new StageException('Business context is required for profiling');
@@ -33,10 +40,19 @@ public with sharing class Stage02_StrategicProfiling implements IStage {
             // Step 1: If company website provided, perform company research
             String companyIntelligence = '';
             if (String.isNotBlank(companyWebsite)) {
-                result.queueInfo(runId, STAGE_NUMBER, 'Researching company: ' + companyWebsite);
+                result.queueInfo(runId, STAGE_NUMBER, '>>> COMPANY RESEARCH: Starting research for website: ' + companyWebsite);
                 companyIntelligence = performCompanyResearch(companyWebsite, rootObject, runId, result);
+                // DEBUG: Log whether research returned anything
+                if (String.isNotBlank(companyIntelligence)) {
+                    result.queueInfo(runId, STAGE_NUMBER, '>>> COMPANY RESEARCH: Received ' + companyIntelligence.length() + ' chars of intelligence');
+                    // Log first 300 chars to see what was returned
+                    String preview = companyIntelligence.length() > 300 ? companyIntelligence.substring(0, 300) : companyIntelligence;
+                    result.queueInfo(runId, STAGE_NUMBER, '>>> COMPANY RESEARCH PREVIEW: ' + preview);
+                } else {
+                    result.queueWarning(runId, STAGE_NUMBER, '>>> COMPANY RESEARCH: Returned EMPTY - this is the bug!');
+                }
             } else {
-                result.queueInfo(runId, STAGE_NUMBER, 'No company website provided, skipping company research');
+                result.queueWarning(runId, STAGE_NUMBER, '>>> COMPANY WEBSITE IS BLANK - skipping company research. This explains generic output!');
             }
 
             // Step 2: Build enhanced profiling prompt with company context
