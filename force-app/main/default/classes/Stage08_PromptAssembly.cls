@@ -3,7 +3,7 @@
  * Builds complete prompt command with AI instructions, integrates HTML template,
  * adds grounding rules, and validates all merge fields
  */
-public with sharing class Stage08_PromptAssembly implements IStage {
+public without sharing class Stage08_PromptAssembly implements IStage {
 
     private static final Integer STAGE_NUMBER = 8;
 
