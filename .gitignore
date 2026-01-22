@@ -58,3 +58,8 @@ $RECYCLE.BIN/
 # Temporary files
 *.tmp
 *.temp
+
+# LLM Configuration Files (contain endpoint URLs)
+AZURE_CONFIG_VALUES.txt
+AZURE_OPENAI_SETUP.md
+DEEPSEEK_CONFIG_VALUES.txt
