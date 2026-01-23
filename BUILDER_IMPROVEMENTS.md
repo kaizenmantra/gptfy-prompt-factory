@@ -471,6 +471,7 @@ Stage 5: Field Selection (Enhanced)
 | 2026-01-23 | Tasks 2.14-2.17: Stage 5 Prompt Enhancements | Opus | Fields grouped by category, helpText shown in quotes, usagePercent shown when available, getCategoryRelevanceHint() with HIGH/MEDIUM/LOW VALUE hints |
 | 2026-01-23 | Tasks 2.6, 2.8: Review Sonnet's Work | Opus | Reviewed calculateFieldDensity() implementation, verified Stage 5 integration. Tested: Opportunity 31 fields, Amount 92%, Description 84% |
 | 2026-01-23 | Sync Verification | Opus | Verified all Apex classes deployed to Salesforce org match codebase. Field density and enriched metadata working correctly |
+| 2026-01-23 | V2.2 Debug: Parent Traversal | Opus | Found root cause: Stage 5 LLM not returning selectedParentFields. Fixed by making parent field selection REQUIRED in prompt with explicit instructions |
 
 ---
 
