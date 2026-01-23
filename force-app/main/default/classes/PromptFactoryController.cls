@@ -66,10 +66,16 @@ public with sharing class PromptFactoryController {
 
             String targetPromptName = promptName;
 
+            // Parse and validate sample IDs (supports multi-sample V2.0 feature)
+            List<String> sampleIds = parseSampleIds(sampleRecordId);
+            String primarySampleId = !sampleIds.isEmpty() ? sampleIds[0] : null;
+            String allSampleIds = String.isNotBlank(sampleRecordId) ? sampleRecordId.trim() : null;
+
             // Create run record (Current_Stage__c = 1 to pass validation rule)
             PF_Run__c run = new PF_Run__c(
                 Root_Object__c = rootObject,
-                Sample_Record_Id__c = sampleRecordId,
+                Sample_Record_Id__c = primarySampleId,     // First ID for backward compatibility
+                Sample_Record_Ids__c = allSampleIds,       // All IDs for multi-sample (V2.0)
                 Business_Context__c = businessContext,
                 Output_Format__c = outputFormat,
                 Prompt_Name__c = targetPromptName,
@@ -411,6 +417,40 @@ public with sharing class PromptFactoryController {
      * @param jsonString JSON string to parse
      * @return Map of parsed data, or empty map if null/invalid
      */
+    /**
+     * @description Parses comma-separated sample record IDs for multi-sample support (V2.0)
+     * @param sampleRecordIdRaw Comma-separated IDs or single ID
+     * @return List of validated sample IDs (max 5, each at least 15 chars)
+     */
+    private static List<String> parseSampleIds(String sampleRecordIdRaw) {
+        List<String> sampleIds = new List<String>();
+
+        if (String.isBlank(sampleRecordIdRaw)) {
+            return sampleIds;
+        }
+
+        // Split by comma and trim each ID
+        for (String id : sampleRecordIdRaw.split(',')) {
+            String trimmedId = id.trim();
+
+            // Validate: minimum 15 characters (Salesforce ID length)
+            if (trimmedId.length() >= 15) {
+                sampleIds.add(trimmedId);
+            }
+        }
+
+        // Limit to 5 samples max (MVP design decision)
+        if (sampleIds.size() > 5) {
+            List<String> limitedIds = new List<String>();
+            for (Integer i = 0; i < 5; i++) {
+                limitedIds.add(sampleIds[i]);
+            }
+            sampleIds = limitedIds;
+        }
+
+        return sampleIds;
+    }
+
     private static Map<String, Object> parseJSON(String jsonString) {
         if (String.isBlank(jsonString)) {
             return new Map<String, Object>();

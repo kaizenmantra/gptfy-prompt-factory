@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Sample_Record_Ids__c</fullName>
+    <description>Comma-separated list of sample record IDs for multi-sample analysis (V2.0 feature). Supports 1-5 record IDs to enable richer data pattern detection across multiple records.</description>
+    <externalId>false</externalId>
+    <inlineHelpText>Optional: Provide 1-5 record IDs (comma-separated) for multi-sample analysis. Example: 006ABC123,006DEF456,006GHI789</inlineHelpText>
+    <label>Sample Record IDs</label>
+    <length>1000</length>
+    <required>false</required>
+    <trackTrending>false</trackTrending>
+    <type>LongTextArea</type>
+    <visibleLines>2</visibleLines>
+</CustomField>
