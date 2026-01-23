@@ -12,10 +12,12 @@ public with sharing class DCMBuilder {
         @AuraEnabled public String rootObject;
         @AuraEnabled public List<ObjectConfig> childObjects;
         @AuraEnabled public Map<String, List<String>> fieldsByObject;
+        @AuraEnabled public Map<String, List<String>> selectedParentFields;  // V2.2: Parent field paths like {"Opportunity": ["OwnerId.Name"]}
 
         public DCMConfig() {
             this.childObjects = new List<ObjectConfig>();
             this.fieldsByObject = new Map<String, List<String>>();
+            this.selectedParentFields = new Map<String, List<String>>();  // V2.2
         }
     }
 
@@ -385,6 +387,26 @@ public with sharing class DCMBuilder {
                 }
             }
 
+            // V2.2 Task 2.11: Add parent fields for root object
+            if (config.selectedParentFields != null && config.selectedParentFields.containsKey(config.rootObject)) {
+                Integer parentSeq = 1;
+                for (String parentFieldPath : config.selectedParentFields.get(config.rootObject)) {
+                    // Parse "OwnerId.Name" -> lookupField="OwnerId", parentField="Name"
+                    List<String> parts = parentFieldPath.split('\\.');
+                    if (parts.size() == 2) {
+                        String lookupField = parts[0];
+                        String parentField = parts[1];
+                        String parentObject = getParentObjectFromLookup(config.rootObject, lookupField);
+
+                        if (parentObject != null) {
+                            fieldsToInsert.add(createParentFieldRecord(
+                                dcm.Id, lookupField, parentObject, parentField, config.rootObject, parentSeq++
+                            ));
+                        }
+                    }
+                }
+            }
+
             // PHASE 1: Process direct children
             Integer objectSequence = 2;
             Map<String, Id> childDetailIds = new Map<String, Id>(); // ObjectName -> DetailId
@@ -416,6 +438,25 @@ public with sharing class DCMBuilder {
                     Integer fieldSequence = 1;
                     for (String fieldName : config.fieldsByObject.get(childObj.objectName)) {
                         fieldsToInsert.add(createFieldRecord(dcm.Id, fieldName, childObj.objectName, fieldSequence++));
+                    }
+                }
+
+                // V2.2 Task 2.11: Add parent fields for child object
+                if (config.selectedParentFields != null && config.selectedParentFields.containsKey(childObj.objectName)) {
+                    Integer parentSeq = 1;
+                    for (String parentFieldPath : config.selectedParentFields.get(childObj.objectName)) {
+                        List<String> parts = parentFieldPath.split('\\.');
+                        if (parts.size() == 2) {
+                            String lookupField = parts[0];
+                            String parentField = parts[1];
+                            String parentObject = getParentObjectFromLookup(childObj.objectName, lookupField);
+
+                            if (parentObject != null) {
+                                fieldsToInsert.add(createParentFieldRecord(
+                                    dcm.Id, lookupField, parentObject, parentField, childObj.objectName, parentSeq++
+                                ));
+                            }
+                        }
                     }
                 }
             }
@@ -466,6 +507,25 @@ public with sharing class DCMBuilder {
                         for (String fieldName : config.fieldsByObject.get(grandchildObj.objectName)) {
                             grandchildFields.add(createFieldRecord(
                                 dcm.Id, fieldName, grandchildObj.objectName, fieldSequence++));
+                        }
+                    }
+
+                    // V2.2 Task 2.11: Add parent fields for grandchild object
+                    if (config.selectedParentFields != null && config.selectedParentFields.containsKey(grandchildObj.objectName)) {
+                        Integer parentSeq = 1;
+                        for (String parentFieldPath : config.selectedParentFields.get(grandchildObj.objectName)) {
+                            List<String> parts = parentFieldPath.split('\\.');
+                            if (parts.size() == 2) {
+                                String lookupField = parts[0];
+                                String parentField = parts[1];
+                                String parentObject = getParentObjectFromLookup(grandchildObj.objectName, lookupField);
+
+                                if (parentObject != null) {
+                                    grandchildFields.add(createParentFieldRecord(
+                                        dcm.Id, lookupField, parentObject, parentField, grandchildObj.objectName, parentSeq++
+                                    ));
+                                }
+                            }
                         }
                     }
 

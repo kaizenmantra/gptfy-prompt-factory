@@ -255,6 +255,19 @@ public with sharing class Stage09_CreateAndDeploy implements IStage {
             }
         }
 
+        // V2.2 Task 2.11: Parse parent fields by object
+        Map<String, Object> selectedParentFieldsMap = (Map<String, Object>) dcmConfigMap.get('selectedParentFields');
+        if (selectedParentFieldsMap != null) {
+            for (String objectName : selectedParentFieldsMap.keySet()) {
+                List<Object> parentFieldsList = (List<Object>) selectedParentFieldsMap.get(objectName);
+                List<String> parentFields = new List<String>();
+                for (Object parentField : parentFieldsList) {
+                    parentFields.add((String) parentField);
+                }
+                config.selectedParentFields.put(objectName, parentFields);
+            }
+        }
+
         return config;
     }
 
