@@ -22,13 +22,12 @@ if (opps.size() < 3) {
     }
     String allIds = String.join(oppIds, ',');
 
-    // Create PF_Run directly
+    // Create PF_Run directly (store comma-separated IDs in Sample_Record_Id__c)
     PF_Run__c run = new PF_Run__c(
         Root_Object__c = 'Opportunity',
-        Sample_Record_Id__c = oppIds[0],
-        Sample_Record_Ids__c = allIds,
+        Sample_Record_Id__c = allIds,  // Comma-separated, Stage01 will parse
         Business_Context__c = 'Generate a sales pipeline dashboard. Focus on deal health and next steps.',
-        Output_Format__c = 'Visual Dashboard',
+        Output_Format__c = 'Dashboard',
         Prompt_Name__c = 'V2.1 Test - ' + DateTime.now().format('HH:mm:ss'),
         Status__c = 'Queued',
         Current_Stage__c = 1

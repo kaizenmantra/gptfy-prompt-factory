@@ -127,7 +127,7 @@ sf project deploy start -o agentictso -d force-app/main/default/classes/ClassNam
 |---|------|-------|--------|-------|
 | 1.9 | Fix single-line HTML requirement | Sonnet | done | Strengthened instruction with ENFORCEMENT section (commit 770aa3f) |
 | 1.10 | Remove emojis from builder prompts | Sonnet | done | Removed ✅ ❌ from Evidence Binding Rules v2 (commit 770aa3f) |
-| 1.11 | Test multi-sample flow with 3 records | Opus | not_started | Verify pattern detection works |
+| 1.11 | Test multi-sample flow with 3 records | Manual | pending | User to test via LWC UI with 3 Opportunity IDs |
 
 ---
 
