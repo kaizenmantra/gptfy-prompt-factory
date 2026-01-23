@@ -313,15 +313,31 @@ export default class PromptBuilderChat extends LightningElement {
      * Add message to conversation
      */
     addMessage(sender, content) {
+        // Create preview (first 100 chars for chat panel)
+        const preview = content.length > 100 ? content.substring(0, 100) + '...' : content;
+
         const message = {
             id: Date.now() + '-' + sender,
             sender: sender === 'user' ? 'You' : 'AI Assistant',
             content: this.formatMessageContent(content),
+            contentPreview: preview,
             icon: sender === 'user' ? 'utility:user' : 'utility:bot',
             cssClass: sender === 'user' ? 'message user-message' : 'message ai-message'
         };
 
         this.messages = [...this.messages, message];
+    }
+
+    /**
+     * Get latest AI message for main panel display
+     */
+    get latestAIMessage() {
+        // Find the most recent AI message
+        const aiMessages = this.messages.filter(msg => msg.sender === 'AI Assistant');
+        if (aiMessages.length > 0) {
+            return aiMessages[aiMessages.length - 1].content;
+        }
+        return '';
     }
 
     /**

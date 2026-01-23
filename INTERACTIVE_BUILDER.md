@@ -5,6 +5,25 @@
 
 ---
 
+## Current Status
+
+| Version | Status | Description |
+|---------|--------|-------------|
+| **V1** | ⚠️ Partial | Chat works, but deployed prompts fail in GPTfy (outputs markdown, GPTfy needs HTML) |
+| **V2** | 🔴 Not Started | Fix HTML output + add child object data (see V2 Task Queue below) |
+
+**V1 Limitations (discovered during testing):**
+1. ❌ Outputs markdown, GPTfy requires single-line HTML with inline styles
+2. ❌ Only queries root object, missing child object data (Tasks, Contacts, etc.)
+3. ❌ Prompt works in chat, fails when run in GPTfy
+
+**V2 Will Add:**
+1. ✓ HTML output generation (GPTfy-compliant)
+2. ✓ Child object data fetching (2nd and 3rd level relationships)
+3. ✓ Reuse patterns from existing 12-stage pipeline (Stage05-08)
+
+---
+
 ## MODEL INSTRUCTIONS (READ THIS FIRST)
 
 **When you start working on this project, follow these rules:**
@@ -721,12 +740,36 @@ Option B: Reuse existing `PF_Run__c` with new fields
 - Prompt Design: Self-evaluating with 6-dimension rubric ✓
 - Dependencies: DCMBuilder, PromptBuilder, SchemaHelper all exist ✓
 
-**Minor Polish Items (Not Blocking):**
-1. Markdown table rendering could be improved
-2. Loading spinner only shows on initial load, not during chat
-3. Could add more object-specific exemplars (Case, Lead)
+### 2025-01-22 - V1 Testing & Critical Discovery (Opus)
 
-**Ready for Testing!**
+**Testing Revealed Critical Compatibility Issues:**
+
+**Deployment Fixes Applied:**
+1. ✓ Added HTML template default (later discovered this wasn't the root cause)
+2. ✓ Fixed Description field length (LLM generates 255-char summary)
+3. ✓ Added `generatePromptMetadata` for description + "How it Works" rich text
+4. ✓ Fixed prompt command to not include sample analysis output
+
+**Critical Discovery: GPTfy Requires HTML Output**
+
+When testing deployed prompts, GPTfy threw runtime errors. Investigation revealed:
+- Our prompts output **markdown** text
+- GPTfy expects **single-line HTML** with inline styles
+- The 12-stage pipeline complexity exists precisely to generate HTML dashboards
+
+**What GPTfy Actually Needs:**
+```
+ONE continuous HTML line | NO newlines | Inline styles only | NO <style> tags | NO CSS classes
+```
+
+This is a fundamental architecture mismatch. V2 must address this.
+
+**Also Missing: Child Object Data**
+- Current implementation only queries root object fields
+- Deal Coach needs: OpportunityContactRoles, Tasks, Events, Competitors
+- Account 360 needs: Contacts, Opportunities, Cases, Activities
+
+**See V2 Task Queue below for remediation plan.**
 
 ---
 
@@ -741,6 +784,10 @@ Option B: Reuse existing `PF_Run__c` with new fields
 | 2025-01-22 | 3-5 sample records | Better understanding of data patterns than single record |
 | 2025-01-22 | Task queue with model assignments | Enables Sonnet to work autonomously, hand off to Opus when needed |
 | 2025-01-22 | Opus for thinking, Sonnet for doing | Cost/speed optimization - use the right model for the right task |
+| 2025-01-22 | **Markdown for iteration, HTML for deploy** | GPTfy requires HTML output, but markdown is better for human review during chat |
+| 2025-01-22 | **Hybrid HTML generation (JSON → HTML)** | LLM outputs structured JSON, controller converts to GPTfy-compliant HTML - keeps LLM focused on content |
+| 2025-01-22 | **Must include child object data** | Deal Coach needs stakeholders, activities; Account 360 needs contacts, opportunities, cases |
+| 2025-01-22 | **Reuse Stage05-08 patterns** | 12-stage pipeline has proven patterns for HTML generation - extract and reuse rather than rebuild |
 
 ---
 
@@ -754,6 +801,585 @@ Option B: Reuse existing `PF_Run__c` with new fields
 
 3. **Multi-user:** Can multiple users build prompts simultaneously?
    - Yes, each gets their own session
+
+---
+
+## GPTfy Output Requirements (Critical for V2)
+
+> **Discovered during V1 testing.** GPTfy has specific HTML rendering requirements that differ from our markdown approach.
+
+### HTML Format Rules
+
+GPTfy prompts must output HTML following these strict rules:
+
+1. **ONE continuous HTML line** - No newlines in the output
+2. **All inline styles** - No `<style>` tags, no CSS classes
+3. **No markdown** - GPTfy doesn't render markdown, only HTML
+4. **Specific structure** - Dashboard-style output with sections
+
+### Template Structure (4 Sections)
+
+GPTfy prompts follow a 4-section template pattern:
+
+| Section | Purpose | Example |
+|---------|---------|---------|
+| **Goal/Persona** | Define AI role and objective | "You are an expert sales analyst..." |
+| **Styling/CSS** | Inline style definitions | Color codes, font sizes, spacing |
+| **Data Mapping** | Merge field references | `{{{Account.Name}}}`, `{{{Opportunity.Amount}}}` |
+| **Guardrails** | Output constraints | "Do not include PII", "Maximum 500 words" |
+
+### Merge Field Syntax
+
+GPTfy uses triple curly braces for merge fields:
+```
+{{{Object.FieldName}}}
+```
+
+Examples:
+- `{{{Account.Name}}}` - Account name
+- `{{{Opportunity.Amount}}}` - Opportunity amount
+- `{{{Opportunity.StageName}}}` - Current stage
+
+### Standard Styling Patterns
+
+From `docs/PROMPT_TEMPLATE.txt`:
+```html
+<div style="font-family: Arial, sans-serif; background: #f8fafc; padding: 20px;">
+  <h2 style="color: #1e40af; margin: 0 0 16px 0;">{{{Account.Name}}}</h2>
+  <div style="background: white; border-radius: 8px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+    <span style="color: #059669; font-weight: bold;">Revenue:</span>
+    <span style="color: #374151;">{{{Account.AnnualRevenue}}}</span>
+  </div>
+</div>
+```
+
+### Why This Matters
+
+The 12-stage pipeline exists because:
+1. Stage 4-5: Determine which fields to include
+2. Stage 6: Build the DCM with field mappings
+3. Stage 7: Design HTML template structure
+4. Stage 8: Assemble prompt with styling + merge fields
+
+Our simplified approach skipped the HTML templating, which is why GPTfy couldn't render the output.
+
+---
+
+## Child Object Data Fetching (V2 Requirement)
+
+> **Current limitation:** V1 only queries root object fields. For useful analysis, we need related data.
+
+### Data Hierarchy Pattern
+
+```
+Root Object (e.g., Opportunity)
+├── 1st Level: Direct fields (Amount, Stage, CloseDate)
+├── 2nd Level: Parent lookups (Account.Name, Account.Industry)
+└── 3rd Level: Child objects (Tasks, Events, OpportunityContactRoles)
+```
+
+### Required Child Objects by Root
+
+#### For Opportunity Analysis
+| Object | Key Fields | Purpose |
+|--------|------------|---------|
+| OpportunityContactRole | Contact.Name, Role, IsPrimary | Stakeholder coverage |
+| Task | Subject, Status, ActivityDate | Activity history |
+| Event | Subject, StartDateTime | Meeting history |
+| Competitor | CompetitorName, Strengths, Weaknesses | Competitive landscape |
+| OpportunityLineItem | Product2.Name, Quantity, TotalPrice | Product mix |
+
+#### For Account Analysis
+| Object | Key Fields | Purpose |
+|--------|------------|---------|
+| Contact | Name, Title, Email, Phone | Key contacts |
+| Opportunity | Name, Amount, StageName, CloseDate | Pipeline view |
+| Case | Subject, Status, Priority, CreatedDate | Support health |
+| Task | Subject, Status, ActivityDate | Engagement history |
+| Contract | Status, StartDate, EndDate | Contract status |
+
+### Existing Implementation Reference
+
+The step wizard in the existing pipeline handles child object navigation. Key classes:
+
+- **`SchemaHelper.cls`** - Already has `getChildRelationships(objectName)` method
+- **`Stage05_FieldSelection.cls`** - Handles related object field selection
+- **`DCMBuilder.cls`** - Creates field mappings for parent/child relationships
+
+### Proposed Data Fetching Architecture
+
+```apex
+// In PromptBuilderController.initializeSession()
+
+// 1. Get root object fields (existing)
+Map<String, Object> rootFields = SchemaHelper.getFieldsForObject(rootObject);
+
+// 2. Get parent relationships (2nd level)
+Map<String, Schema.SObjectField> parentFields = getParentLookups(rootObject);
+
+// 3. Get child relationships (3rd level)
+List<Schema.ChildRelationship> children = SchemaHelper.getChildRelationships(rootObject);
+
+// 4. Query sample data with relationships
+String soql = buildRelationshipQuery(rootObject, sampleRecordIds, parentFields, children);
+List<SObject> records = Database.query(soql);
+
+// 5. Format for LLM context
+Map<String, Object> formattedData = formatRecordsWithRelationships(records);
+```
+
+### SOQL Query Pattern
+
+```sql
+SELECT Id, Name, Amount, StageName, CloseDate,
+       Account.Name, Account.Industry, Account.AnnualRevenue,
+       (SELECT Contact.Name, Role, IsPrimary FROM OpportunityContactRoles),
+       (SELECT Subject, Status, ActivityDate FROM Tasks ORDER BY ActivityDate DESC LIMIT 10),
+       (SELECT Subject, StartDateTime FROM Events ORDER BY StartDateTime DESC LIMIT 5)
+FROM Opportunity
+WHERE Id IN :sampleRecordIds
+```
+
+---
+
+## V2 Task Queue
+
+> **Goal:** Make deployed prompts work in GPTfy by outputting HTML and including child object data.
+
+| ID | Task | Model | Status | Blocked By | Notes |
+|----|------|-------|--------|------------|-------|
+| 16 | **Design HTML output architecture** | Opus | done | - | See [Task 16 Details](#task-16-html-output-architecture-opus---complete) |
+| 16a | **UI Redesign: Split-screen layout** | Sonnet | done | - | Fixed alignment bug + implemented 75/25 split layout |
+| 17 | Add child object relationship detection to initializeSession | Sonnet | not_started | - | Use SchemaHelper.getChildRelationships() |
+| 18 | Build SOQL query with parent/child relationships | Sonnet | not_started | 17 | Query 2nd/3rd level data |
+| 19 | Format relationship data for LLM context | Sonnet | not_started | 18 | Tables for child objects in prompt |
+| 20 | **Design HTML template generation strategy** | Opus | done | 16 | Merged into Task 16 - see conversion prompt approach |
+| 21 | Update system prompt for HTML output | Sonnet | not_started | 16 | Add `convertToHTML()` method using conversion prompt |
+| 22 | Create HTML exemplars (Deal Coach, Account 360) | Sonnet | not_started | 16 | Convert markdown exemplars to HTML with merge fields |
+| 23 | Update deployPrompt to handle HTML output | Sonnet | not_started | 21,22 | Call conversion, validate, create DCM+Prompt |
+| 24 | Add HTML preview in chat UI | Sonnet | not_started | 21 | Render HTML safely in LWC |
+| 25 | Deploy V2 to Salesforce and test | Sonnet | not_started | 17-24 | End-to-end GPTfy execution test |
+| 26 | **V2 Quality Review** | Opus | not_started | 25 | Verify GPTfy renders output correctly |
+
+### Task Details
+
+#### Task 16: HTML Output Architecture (Opus) - COMPLETE
+
+> **Designed by Opus** - Architecture decision for GPTfy-compliant output.
+
+**Key Questions Answered:**
+
+1. **Should LLM output raw HTML or structured JSON?**
+   → **Keep markdown during chat, convert to HTML on deploy**
+
+2. **How do we maintain the self-evaluation loop with HTML output?**
+   → **Self-evaluation stays in markdown** - it's about content quality, not format
+
+3. **Should we keep markdown for iteration, then convert to HTML on deploy?**
+   → **YES** - This is the recommended architecture
+
+**Architecture Decision: Markdown-to-HTML Conversion Pipeline**
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│  PHASE 2: Chat (Markdown Focus)                                         │
+│                                                                          │
+│  User ←→ LLM (Self-Evaluating)                                          │
+│           │                                                              │
+│           ↓                                                              │
+│  Markdown Output with Quality Rubric                                     │
+│  - Actionable insights (not data display)                               │
+│  - Data-grounded analysis                                                │
+│  - Risk identification                                                   │
+│  - Executive tone                                                        │
+│                                                                          │
+│  ✓ Human readable                                                        │
+│  ✓ Easy to iterate                                                       │
+│  ✓ Focus on CONTENT QUALITY                                              │
+└────────────────────────────────┬────────────────────────────────────────┘
+                                 │ [User clicks "Approve & Deploy"]
+                                 ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│  PHASE 3a: Extract Field Manifest                                        │
+│                                                                          │
+│  Parse approved markdown to identify:                                    │
+│  - Data values mentioned (e.g., "$400K", "Acme Corp")                   │
+│  - Map to DCM fields (e.g., {{{Opportunity.Amount}}}, {{{Account.Name}}} │
+│  - Build field whitelist for validation                                  │
+└────────────────────────────────┬────────────────────────────────────────┘
+                                 ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│  PHASE 3b: HTML Conversion (Separate LLM Call)                           │
+│                                                                          │
+│  Conversion Prompt includes:                                             │
+│  - Approved markdown structure                                           │
+│  - Field whitelist (only allowed fields)                                 │
+│  - GPTfy HTML requirements:                                              │
+│    • Single line, no newlines                                           │
+│    • Inline styles only (no CSS classes)                                │
+│    • No <style> or <script> tags                                        │
+│    • Merge fields as {{{Object.Field}}}                                 │
+│  - Inline style patterns (from PF_UIPatterns)                           │
+│  - Color scheme (Salesforce brand)                                       │
+│  - Pattern guidance (Account 360, Deal Coach layouts)                   │
+│                                                                          │
+│  Output: Single-line HTML with merge fields                              │
+└────────────────────────────────┬────────────────────────────────────────┘
+                                 ▼
+┌─────────────────────────────────────────────────────────────────────────┐
+│  PHASE 3c: Validation & DCM Creation                                     │
+│                                                                          │
+│  1. Validate merge fields against whitelist                              │
+│  2. Sanitize HTML (remove scripts, enforce single line)                  │
+│  3. Create DCM with field mappings                                       │
+│  4. Create Prompt with HTML template as Prompt_Command__c                │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+**Why This Architecture?**
+
+| Concern | Markdown Phase | HTML Conversion Phase |
+|---------|---------------|----------------------|
+| Focus | Content quality, insights, analysis | Format compliance, merge fields |
+| LLM skill | Analytical thinking, business context | Template formatting, syntax |
+| Iteration | Fast, human-readable | One-time conversion |
+| Validation | Self-evaluation rubric | Field whitelist, HTML safety |
+
+**Reusable Components from Stage07_TemplateDesign.cls:**
+
+1. **`buildFieldWhitelist()`** - Already validates fields against schema
+2. **`getColorSchemePrompt()`** - Returns Salesforce brand colors
+3. **`getStylePatternsPrompt()`** - Returns inline style patterns
+4. **`getPatternGuidance()`** - Returns layout guidance for Account, Opportunity, etc.
+5. **`validateHTMLSafety()`** - Checks for scripts, classes, line breaks
+6. **`sanitizeHTML()`** - Removes disallowed elements
+7. **`removeEmojis()`** - Strips emoji characters
+
+**Conversion Prompt Template:**
+
+```
+You are converting approved analysis content into a GPTfy-compatible HTML template.
+
+=== APPROVED CONTENT (Markdown) ===
+{approvedMarkdown}
+
+=== FIELD WHITELIST (Only these fields are available) ===
+{fieldWhitelistFormatted}
+
+=== GPTfy HTML REQUIREMENTS ===
+1. Output as ONE continuous line - NO line breaks
+2. Use ONLY inline styles (style="...") - NO class="..." attributes
+3. NO <style> blocks or CSS classes
+4. NO <script> tags or event handlers
+5. Start with <div style=" and end with </div>
+
+=== MERGE FIELD SYNTAX ===
+- Root object fields: {{{FieldName}}}
+- Lookup fields: {{{Relationship.FieldName}}}
+- Child collections: {{#ChildCollection}}...{{/ChildCollection}}
+- Empty check: {{^ChildCollection}}No items{{/ChildCollection}}
+
+=== INLINE STYLE PATTERNS (copy exactly) ===
+{inlineStylePatterns}
+
+=== COLOR SCHEME ===
+{colorScheme}
+
+=== LAYOUT PATTERN ===
+{patternGuidance}
+
+TASK:
+Convert the approved markdown content into a single-line HTML template.
+Replace specific data values with appropriate merge fields from the whitelist.
+Use the style patterns and colors provided.
+
+Output ONLY raw HTML starting with <div - no explanation:
+```
+
+**Implementation Notes for Sonnet (Tasks 21-23):**
+
+1. **Task 21 (Update system prompt):**
+   - No changes needed to chat phase prompts
+   - Add new `convertToHTML()` method to controller
+   - Use conversion prompt template above
+
+2. **Task 22 (Create HTML exemplars):**
+   - Convert existing markdown exemplars to HTML format
+   - These are used as examples in conversion prompt
+   - Include merge field examples
+
+3. **Task 23 (Update deployPrompt):**
+   - Add HTML conversion step before DCM/Prompt creation
+   - Call conversion LLM with approved markdown
+   - Validate output with `validateHTMLSafety()`
+   - Store HTML template in `ccai__Prompt_Command__c`
+
+#### Task 20: HTML Template Generation - MERGED INTO TASK 16
+
+This was merged into the comprehensive architecture above. The "conversion prompt" approach (Phase 3b) handles template generation.
+
+**Key Decision:** LLM-to-LLM conversion rather than JSON intermediate format.
+
+Why not JSON intermediate?
+- Markdown → JSON → HTML adds complexity
+- LLM can directly understand markdown structure
+- Stage07 already proves LLM can output valid HTML
+- Simpler debugging (can see markdown and final HTML)
+
+---
+
+## UI Redesign: Split-Screen Layout
+
+> **Task 16a** - Fix alignment issues and implement split-screen layout for better UX.
+
+### Current Issues
+
+1. **Alignment bug:** Root Object (combobox) and Sample Record IDs (input) fields are not vertically aligned
+   - Cause: `lightning-combobox` has built-in label, while Record IDs uses custom `div` wrapper
+   - Fix: Use consistent form element structure
+
+2. **Sequential layout:** Chat and content are stacked vertically, requiring scrolling
+
+### New Layout Design
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  Interactive Prompt Builder                                          [Header]
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌─────────────────────────────────────────┐  ┌──────────────────────────┐ │
+│  │                                         │  │                          │ │
+│  │  MAIN CONTENT AREA (75%)                │  │  CHAT PANEL (25%)        │ │
+│  │                                         │  │                          │ │
+│  │  Phase 1: Setup Form                    │  │  [Chat messages scroll   │ │
+│  │  - Root Object    [combobox        ]    │  │   area - grows with      │ │
+│  │  - Record IDs     [input           ]    │  │   conversation]          │ │
+│  │  - Business       [textarea        ]    │  │                          │ │
+│  │    Context                              │  │  User: ...               │ │
+│  │                                         │  │  AI: ...                 │ │
+│  │  [Initialize Session]                   │  │  User: ...               │ │
+│  │                                         │  │  AI: ...                 │ │
+│  │  ─────────────────────────────────────  │  │                          │ │
+│  │                                         │  │                          │ │
+│  │  Phase 2: Markdown Output               │  ├──────────────────────────┤ │
+│  │  (after initialization)                 │  │ [Type message...]   [>]  │ │
+│  │                                         │  │ [Start Analysis]         │ │
+│  │  ## Deal Health: 7/10                   │  └──────────────────────────┘ │
+│  │  ### Key Risks                          │                               │
+│  │  - No executive sponsor (HIGH)          │                               │
+│  │  - Competitor activity (MEDIUM)         │                               │
+│  │  ...                                    │                               │
+│  │                                         │                               │
+│  │  [scrollable markdown preview]          │                               │
+│  │                                         │                               │
+│  └─────────────────────────────────────────┘                               │
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────────┤
+│  │  Phase 3: Deploy                                                        │
+│  │  Prompt Name: [________________]  [Approve & Deploy]                    │
+│  └─────────────────────────────────────────────────────────────────────────┘
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Layout Behavior
+
+| Phase | Left Panel (75%) | Right Panel (25%) |
+|-------|------------------|-------------------|
+| **Setup** | Setup form (object, records, context) | Empty or instructions |
+| **Initialized** | Session info + Markdown output (scrollable) | Chat window with "Start Analysis" |
+| **Chatting** | Latest AI response (scrollable) | Chat history + input |
+| **Deploy** | Markdown preview | Chat + Deploy section |
+
+### CSS Implementation
+
+```css
+/* Split Screen Container */
+.split-container {
+    display: flex;
+    gap: 1rem;
+    min-height: calc(100vh - 120px);
+}
+
+/* Main Content Panel (75%) */
+.main-panel {
+    flex: 3;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Chat Panel (25%) */
+.chat-panel {
+    flex: 1;
+    min-width: 300px;
+    max-width: 400px;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border-radius: 0.25rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Chat panel sections */
+.chat-header {
+    padding: 0.75rem;
+    border-bottom: 1px solid #e0e0e0;
+    font-weight: 600;
+}
+
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.75rem;
+}
+
+.chat-input {
+    padding: 0.75rem;
+    border-top: 1px solid #e0e0e0;
+}
+
+/* Markdown output area */
+.markdown-output {
+    flex: 1;
+    overflow-y: auto;
+    background: #fff;
+    padding: 1rem;
+    border-radius: 0.25rem;
+}
+
+/* Fix form alignment */
+.form-row {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-end; /* Align inputs at bottom */
+}
+
+.form-field {
+    flex: 1;
+}
+
+/* Mobile: Stack vertically */
+@media (max-width: 1024px) {
+    .split-container {
+        flex-direction: column;
+    }
+
+    .chat-panel {
+        max-width: none;
+        max-height: 400px;
+    }
+}
+```
+
+### HTML Structure Changes
+
+```html
+<!-- After session initialized -->
+<div class="split-container">
+    <!-- Left: Main Content -->
+    <div class="main-panel">
+        <!-- Session Info Card -->
+        <div class="slds-card">...</div>
+
+        <!-- Markdown Output (scrollable) -->
+        <div class="markdown-output">
+            <lightning-formatted-rich-text value={latestAIResponse}>
+            </lightning-formatted-rich-text>
+        </div>
+
+        <!-- Deploy Section -->
+        <div class="slds-card">...</div>
+    </div>
+
+    <!-- Right: Chat Panel -->
+    <div class="chat-panel">
+        <div class="chat-header">
+            <lightning-icon icon-name="utility:comments" size="x-small"></lightning-icon>
+            Chat
+        </div>
+        <div class="chat-messages">
+            <!-- All messages scroll here -->
+        </div>
+        <div class="chat-input">
+            <lightning-textarea ...></lightning-textarea>
+            <lightning-button label="Send" ...></lightning-button>
+        </div>
+    </div>
+</div>
+```
+
+### Key UX Improvements
+
+1. **Side-by-side view:** User sees output and chat simultaneously
+2. **Scrollable output:** Long markdown responses don't push chat off screen
+3. **Persistent chat:** Chat input always visible for quick iteration
+4. **Clear separation:** Content vs conversation clearly delineated
+5. **Responsive:** Stacks on mobile/tablet
+
+### Implementation Notes for Sonnet
+
+1. **Fix alignment first** (quick win):
+   - Change Record IDs to use `lightning-input` with `label` attribute
+   - Remove custom div wrapper
+   - Both fields will align automatically
+
+2. **Split layout** (after alignment):
+   - Add `split-container` wrapper after session initialization
+   - Move chat UI to right panel
+   - Keep markdown in left panel
+   - Add CSS for flex layout
+
+3. **State management**:
+   - `latestAIResponse` - Shows in main panel
+   - `messages` array - Shows in chat panel (scrollable history)
+   - May need to track which message is "selected" for main display
+
+---
+
+## Integration with Existing Pipeline
+
+### Reusable Components from 12-Stage Pipeline
+
+| Stage | Class | What We Can Reuse |
+|-------|-------|-------------------|
+| Stage 5 | `Stage05_FieldSelection.cls` | Related object navigation logic |
+| Stage 6 | `Stage06_ConfigurationValidation.cls` | Field validation patterns |
+| Stage 7 | `Stage07_TemplateDesign.cls` | HTML template structure patterns |
+| Stage 8 | `Stage08_PromptAssembly.cls` | Prompt assembly with guardrails |
+
+### Key Code Patterns to Extract
+
+**From Stage05 - Child Object Navigation:**
+```apex
+// Get child relationships for an object
+public static List<ChildObjectInfo> getChildObjects(String parentObject) {
+    List<ChildObjectInfo> children = new List<ChildObjectInfo>();
+    Schema.DescribeSObjectResult descResult = Schema.getGlobalDescribe()
+        .get(parentObject).getDescribe();
+
+    for (Schema.ChildRelationship rel : descResult.getChildRelationships()) {
+        if (rel.getRelationshipName() != null) {
+            children.add(new ChildObjectInfo(
+                rel.getChildSObject().getDescribe().getName(),
+                rel.getRelationshipName(),
+                rel.getField().getDescribe().getName()
+            ));
+        }
+    }
+    return children;
+}
+```
+
+**From Stage07 - HTML Template Pattern:**
+```apex
+// Standard GPTfy card component
+private static String buildCard(String title, String content) {
+    return '<div style="background: white; border-radius: 8px; padding: 16px; ' +
+           'margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">' +
+           '<h3 style="color: #1e40af; margin: 0 0 8px 0;">' + title + '</h3>' +
+           '<div style="color: #374151;">' + content + '</div>' +
+           '</div>';
+}
+```
 
 ---
 
