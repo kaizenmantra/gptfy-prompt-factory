@@ -62,7 +62,7 @@ Wait for deployment to complete and check for errors before marking task as done
 | 11 | **Review Phase 2 quality, adjust prompt if needed** | Opus | done | 10 | Fixed follow-up prompts, added Current_Draft__c field |
 | 12 | Add `deployPrompt` method to controller | Sonnet | done | 11 | Extract fields, create DCM + Prompt |
 | 13 | Add deploy UI (approve button, success message) | Sonnet | done | 12 | Show created record IDs, next steps |
-| 14 | Deploy Phase 3 to Salesforce and test | Sonnet | not_started | 12,13 | `sf project deploy start -o agentictso`, full flow test |
+| 14 | Deploy Phase 3 to Salesforce and test | Sonnet | done | 12,13 | **NOTE:** Includes new `Current_Draft__c` field (Task 11). Full deploy + test |
 | 15 | **Final review and polish** | Opus | not_started | 14 | NEEDS THINKING - overall quality check |
 
 **Status values:** `not_started` | `in_progress` | `done` | `blocked` | `skipped`
