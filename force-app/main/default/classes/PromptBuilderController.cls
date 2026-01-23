@@ -526,7 +526,16 @@ public with sharing class PromptBuilderController {
             PromptBuilder.PromptConfig promptConfig = new PromptBuilder.PromptConfig();
             promptConfig.name = promptName;
             promptConfig.label = promptName;
-            promptConfig.description = session.Business_Context__c;
+
+            // Generate description and how-it-works using LLM
+            Map<String, String> promptMetadata = generatePromptMetadata(
+                promptName,
+                session.Business_Context__c,
+                session.Root_Object__c,
+                session.Current_Draft__c
+            );
+            promptConfig.description = promptMetadata.get('description');
+            promptConfig.howItWorks = promptMetadata.get('howItWorks');
             promptConfig.dcmId = dcmId;
             promptConfig.targetObject = session.Root_Object__c;
             promptConfig.promptType = 'Text';
@@ -578,6 +587,81 @@ public with sharing class PromptBuilderController {
         } catch (Exception e) {
             throw new AuraHandledException('Error deploying prompt: ' + e.getMessage());
         }
+    }
+
+    /**
+     * @description Generates prompt metadata (description and how-it-works) using LLM
+     * @param promptName Name of the prompt
+     * @param businessContext Original business context from user
+     * @param rootObject Root object being analyzed
+     * @param currentDraft The approved AI analysis draft
+     * @return Map with 'description' (<255 chars) and 'howItWorks' (detailed)
+     */
+    private static Map<String, String> generatePromptMetadata(
+        String promptName,
+        String businessContext,
+        String rootObject,
+        String currentDraft
+    ) {
+        Map<String, String> result = new Map<String, String>();
+
+        // Build prompt for LLM to generate metadata
+        String systemPrompt = 'You are a technical writer creating documentation for an AI prompt. ' +
+            'You must respond ONLY with valid JSON, no other text.';
+
+        String userPrompt = 'Create metadata for an AI prompt with these details:\n\n' +
+            'Prompt Name: ' + promptName + '\n' +
+            'Target Object: ' + rootObject + '\n' +
+            'Business Context: ' + businessContext + '\n\n' +
+            'Based on this context, generate:\n' +
+            '1. A concise description (MUST be under 250 characters) that summarizes what this prompt does\n' +
+            '2. A detailed "How it Works" explanation (can be longer, use HTML formatting)\n\n' +
+            'Respond with ONLY this JSON format, no markdown code blocks:\n' +
+            '{"description": "your concise description here", "howItWorks": "<p>Your detailed HTML explanation here</p>"}';
+
+        try {
+            // Call AI to generate metadata
+            AIServiceClient.AIResponse aiResponse = AIServiceClient.callAI(
+                systemPrompt,
+                userPrompt,
+                1024,
+                0.7
+            );
+
+            if (aiResponse.success && String.isNotBlank(aiResponse.content)) {
+                // Parse JSON response
+                String jsonContent = aiResponse.content.trim();
+                // Remove markdown code blocks if present
+                if (jsonContent.startsWith('```')) {
+                    jsonContent = jsonContent.replaceAll('```json\\s*', '').replaceAll('```\\s*$', '');
+                }
+
+                Map<String, Object> parsed = (Map<String, Object>)JSON.deserializeUntyped(jsonContent);
+
+                String description = (String)parsed.get('description');
+                String howItWorks = (String)parsed.get('howItWorks');
+
+                // Ensure description is under 255 chars
+                if (description != null && description.length() > 255) {
+                    description = description.substring(0, 252) + '...';
+                }
+
+                result.put('description', description);
+                result.put('howItWorks', howItWorks);
+                return result;
+            }
+        } catch (Exception e) {
+            System.debug(LoggingLevel.WARN, 'Failed to generate prompt metadata via LLM: ' + e.getMessage());
+        }
+
+        // Fallback: truncate business context for description, use it as-is for howItWorks
+        String fallbackDesc = businessContext;
+        if (fallbackDesc != null && fallbackDesc.length() > 255) {
+            fallbackDesc = fallbackDesc.substring(0, 252) + '...';
+        }
+        result.put('description', fallbackDesc);
+        result.put('howItWorks', '<p>' + businessContext + '</p>');
+        return result;
     }
 
     /**

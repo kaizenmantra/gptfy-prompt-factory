@@ -22,6 +22,7 @@ public with sharing class PromptBuilder {
         @AuraEnabled public Integer maxTokens;
         @AuraEnabled public Decimal temperature;
         @AuraEnabled public Boolean autoActivate;
+        @AuraEnabled public String howItWorks; // Rich text field for detailed explanation
 
         public PromptConfig() {
             this.promptType = 'Text';
@@ -56,6 +57,7 @@ public with sharing class PromptBuilder {
             ccai__AI_Prompt__c prompt = new ccai__AI_Prompt__c(
                 Name = config.name,
                 ccai__Description__c = config.description,
+                ccai__How_it_works__c = config.howItWorks,
                 ccai__AI_Data_Extraction_Mapping__c = config.dcmId,
                 ccai__AI_Connection__c = aiConnectionId,
                 ccai__Prompt_Command__c = buildPromptCommandWithTemplate(config.promptCommand, config.htmlTemplate, config.groundingRules),
