@@ -118,6 +118,7 @@ public with sharing class Stage04_DataProfiling implements IStage {
             result.outputs.put('businessObjectives', inputs.get('businessObjectives'));
             result.outputs.put('selectedObjects', selectedObjects);
             result.outputs.put('selectedGrandchildren', selectedGrandchildren);
+            result.outputs.put('childChains', inputs.get('childChains'));  // V2.2: Pass through child chains
             result.outputs.put('promptName', inputs.get('promptName'));
             result.outputs.put('sampleRecordId', sampleRecordId);
             result.outputs.put('sampleRecordIds', inputs.get('sampleRecordIds')); // V2.0 multi-sample

@@ -8,6 +8,23 @@ public with sharing class Stage03_SchemaDiscovery implements IStage {
     private static final Integer STAGE_NUMBER = 3;
     private static final Integer TARGET_CHILD_COUNT = 10;
     private static final Integer TARGET_GRANDCHILD_COUNT = 5;
+
+    /**
+     * @description V2.2: Inner class to hold parsed child chain traversal data
+     */
+    public class ChildChainDefinition {
+        public String rootObject;
+        public String description;
+        public List<ChainStep> chain;
+    }
+
+    public class ChainStep {
+        public String objectName;           // e.g., OpportunityContactRole
+        public String relationshipName;     // e.g., OpportunityContactRoles
+        public String relationshipField;    // e.g., OpportunityId
+        public String via;                  // For lookup traversal (e.g., ContactId)
+        public List<String> keyFields;      // Fields to include
+    }
     
     /**
      * @description Executes Stage 3: Schema Discovery
@@ -82,6 +99,26 @@ public with sharing class Stage03_SchemaDiscovery implements IStage {
             result.queueInfo(runId, STAGE_NUMBER,
                 'Selected ' + selectedChildObjects.size() + ' child objects');
 
+            // ===== V2.2: Load and apply child chain traversals =====
+            // These define mandatory object chains (e.g., Opportunity → OCR → Contact)
+            List<ChildChainDefinition> childChains = loadChildChains(rootObject, runId, result);
+
+            if (!childChains.isEmpty()) {
+                // Add all chain objects to selectedChildObjects if not already present
+                Set<String> selectedSet = new Set<String>(selectedChildObjects);
+                for (ChildChainDefinition chain : childChains) {
+                    for (ChainStep step : chain.chain) {
+                        if (!selectedSet.contains(step.objectName) &&
+                            SchemaHelper.isObjectAccessible(step.objectName)) {
+                            selectedChildObjects.add(step.objectName);
+                            selectedSet.add(step.objectName);
+                            result.queueInfo(runId, STAGE_NUMBER,
+                                'Added ' + step.objectName + ' from child chain: ' + chain.description);
+                        }
+                    }
+                }
+            }
+
             // ===== STAGE 3.3/3.4: Grandchild Discovery (2-level deep) =====
             // Mirrors shell script behavior: discover children of selected children
             result.queueInfo(runId, STAGE_NUMBER, 'Starting grandchild discovery (2-level deep)');
@@ -142,6 +179,13 @@ public with sharing class Stage03_SchemaDiscovery implements IStage {
             result.outputs.put('grandchildRelationships', JSON.serialize(availableGrandchildren));
             result.outputs.put('selectionJson', aiResponse.content);
             result.aiReasoning = (String) selectionResult.get('reasoning');
+
+            // V2.2: Pass child chains for DCMBuilder to add traversal fields
+            if (!childChains.isEmpty()) {
+                result.outputs.put('childChains', JSON.serialize(childChains));
+                result.queueInfo(runId, STAGE_NUMBER,
+                    'Passing ' + childChains.size() + ' child chains to downstream stages');
+            }
 
             // Pass through inputs (avoid large data to prevent serialization issues)
             result.outputs.put('rootObject', rootObject);
@@ -382,6 +426,107 @@ public with sharing class Stage03_SchemaDiscovery implements IStage {
         }
 
         return result;
+    }
+
+    /**
+     * @description V2.2: Loads child chain traversals for the root object
+     * These define which child objects and their lookups to include
+     * @param rootObject The root object API name
+     * @param runId Run ID for logging
+     * @param result StageResult for deferred logging
+     * @return List of ChildChainDefinition objects
+     */
+    private List<ChildChainDefinition> loadChildChains(String rootObject, Id runId, StageResult result) {
+        List<ChildChainDefinition> chains = new List<ChildChainDefinition>();
+
+        try {
+            // Get Builder RecordType ID
+            Id builderRtId = Schema.SObjectType.ccai__AI_Prompt__c.getRecordTypeInfosByDeveloperName()
+                .get('Builder').getRecordTypeId();
+
+            // Query child chain traversals for this root object
+            List<ccai__AI_Prompt__c> traversals = [
+                SELECT Id, Name, ccai__Prompt_Command__c
+                FROM ccai__AI_Prompt__c
+                WHERE RecordTypeId = :builderRtId
+                  AND Category__c = 'Traversal'
+                  AND ccai__Status__c = 'Active'
+                  AND ccai__Object__c = :rootObject
+                ORDER BY Name
+            ];
+
+            result.queueDebug(runId, STAGE_NUMBER,
+                'Found ' + traversals.size() + ' traversals for ' + rootObject);
+
+            for (ccai__AI_Prompt__c trav : traversals) {
+                try {
+                    ChildChainDefinition chain = parseChildChainJson(trav.ccai__Prompt_Command__c);
+                    if (chain != null && chain.chain != null && !chain.chain.isEmpty()) {
+                        chains.add(chain);
+                        result.queueDebug(runId, STAGE_NUMBER,
+                            'Loaded child chain: ' + trav.Name + ' with ' + chain.chain.size() + ' steps');
+                    }
+                } catch (Exception e) {
+                    result.queueWarning(runId, STAGE_NUMBER,
+                        'Failed to parse traversal ' + trav.Name + ': ' + e.getMessage());
+                }
+            }
+
+        } catch (Exception e) {
+            result.queueWarning(runId, STAGE_NUMBER,
+                'Failed to load child chains: ' + e.getMessage());
+        }
+
+        return chains;
+    }
+
+    /**
+     * @description V2.2: Parses child chain JSON into ChildChainDefinition
+     * @param jsonString The JSON string from ccai__Prompt_Command__c
+     * @return Parsed ChildChainDefinition or null if not a childChain type
+     */
+    private ChildChainDefinition parseChildChainJson(String jsonString) {
+        if (String.isBlank(jsonString)) {
+            return null;
+        }
+
+        Map<String, Object> data = (Map<String, Object>) JSON.deserializeUntyped(jsonString);
+
+        // Only process childChain type traversals
+        String traversalType = (String) data.get('traversalType');
+        if (traversalType != 'childChain') {
+            return null;
+        }
+
+        ChildChainDefinition def = new ChildChainDefinition();
+        def.rootObject = (String) data.get('rootObject');
+        def.description = (String) data.get('description');
+        def.chain = new List<ChainStep>();
+
+        List<Object> chainList = (List<Object>) data.get('chain');
+        if (chainList != null) {
+            for (Object stepObj : chainList) {
+                Map<String, Object> stepData = (Map<String, Object>) stepObj;
+                ChainStep step = new ChainStep();
+                step.objectName = (String) stepData.get('object');
+                step.relationshipName = (String) stepData.get('relationshipName');
+                step.relationshipField = (String) stepData.get('relationshipField');
+                step.via = (String) stepData.get('via');
+
+                // Parse keyFields
+                List<Object> keyFieldsRaw = (List<Object>) stepData.get('keyFields');
+                if (keyFieldsRaw != null) {
+                    step.keyFields = new List<String>();
+                    for (Object kf : keyFieldsRaw) {
+                        step.keyFields.add(String.valueOf(kf));
+                    }
+                }
+
+                def.chain.add(step);
+            }
+        }
+
+        return def;
     }
 
     /**

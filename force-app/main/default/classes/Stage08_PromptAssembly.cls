@@ -1096,6 +1096,12 @@ public without sharing class Stage08_PromptAssembly implements IStage {
         // V2.2 Task 2.12: Extract selectedParentFields from inputs
         Map<String, Object> selectedParentFieldsRaw = (Map<String, Object>) inputs.get('selectedParentFields');
 
+        // V2.2 Enhancement: Auto-load parent fields from traversal definitions if not already populated
+        if (selectedParentFieldsRaw == null || selectedParentFieldsRaw.isEmpty()) {
+            List<String> objectsForTraversal = new List<String>(fieldsByObject.keySet());
+            selectedParentFieldsRaw = loadParentFieldsFromTraversals(objectsForTraversal);
+        }
+
         return new Map<String, Object>{
             'name' => promptName + ' DCM',
             'rootObject' => rootObject,
@@ -1103,6 +1109,82 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             'fieldsByObject' => fieldsByObject,
             'selectedParentFields' => selectedParentFieldsRaw  // V2.2: Pass to Stage 9
         };
+    }
+
+    /**
+     * @description V2.2: Loads parent fields from traversal definitions for objects
+     * Reads existing Traversal builder prompts and extracts the fields to traverse
+     * @param objectNames List of object names to load traversals for
+     * @return Map of object name to list of parent field paths (e.g., "ContactId.Name")
+     */
+    private Map<String, Object> loadParentFieldsFromTraversals(List<String> objectNames) {
+        Map<String, Object> parentFieldsByObject = new Map<String, Object>();
+
+        try {
+            // Get Builder RecordType ID
+            Id builderRtId = Schema.SObjectType.ccai__AI_Prompt__c.getRecordTypeInfosByDeveloperName()
+                .get('Builder').getRecordTypeId();
+
+            // Query traversals for these objects (only parent-type traversals, not childChain)
+            Set<String> objectSet = new Set<String>(objectNames);
+            List<ccai__AI_Prompt__c> traversals = [
+                SELECT Id, Name, ccai__Object__c, ccai__Prompt_Command__c
+                FROM ccai__AI_Prompt__c
+                WHERE RecordTypeId = :builderRtId
+                  AND Category__c = 'Traversal'
+                  AND ccai__Status__c = 'Active'
+                  AND ccai__Object__c IN :objectSet
+                ORDER BY ccai__Object__c, Name
+            ];
+
+            System.debug('Stage8: Loaded ' + traversals.size() + ' traversals for ' + objectNames.size() + ' objects');
+
+            // Parse each traversal and build parent field paths
+            for (ccai__AI_Prompt__c trav : traversals) {
+                try {
+                    String objectName = trav.ccai__Object__c;
+                    Map<String, Object> travData = (Map<String, Object>) JSON.deserializeUntyped(trav.ccai__Prompt_Command__c);
+
+                    // Skip childChain type traversals - only process parent traversals
+                    String traversalType = (String) travData.get('traversalType');
+                    if (traversalType == 'childChain') {
+                        continue;
+                    }
+
+                    String sourceField = (String) travData.get('sourceField');
+                    List<Object> fieldsRaw = (List<Object>) travData.get('fields');
+
+                    if (String.isNotBlank(sourceField) && fieldsRaw != null) {
+                        // Initialize list for this object if needed
+                        if (!parentFieldsByObject.containsKey(objectName)) {
+                            parentFieldsByObject.put(objectName, new List<String>());
+                        }
+                        List<String> objectParentFields = (List<String>) parentFieldsByObject.get(objectName);
+
+                        // Build parent field paths (e.g., "ContactId.Name", "ContactId.Title")
+                        for (Object fieldObj : fieldsRaw) {
+                            Map<String, Object> fieldData = (Map<String, Object>) fieldObj;
+                            String path = (String) fieldData.get('path');
+                            if (String.isNotBlank(path)) {
+                                String fullPath = sourceField + '.' + path;
+                                if (!objectParentFields.contains(fullPath)) {
+                                    objectParentFields.add(fullPath);
+                                }
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    System.debug('Stage8: Failed to parse traversal ' + trav.Name + ': ' + e.getMessage());
+                }
+            }
+
+            System.debug('Stage8: Auto-loaded parent fields: ' + JSON.serialize(parentFieldsByObject));
+
+        } catch (Exception e) {
+            System.debug('Stage8: Failed to load traversals: ' + e.getMessage());
+        }
+
+        return parentFieldsByObject;
     }
 
     /**

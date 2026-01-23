@@ -213,6 +213,8 @@ public with sharing class Stage05_FieldSelection implements IStage {
             result.outputs.put('outputFormat', inputs.get('outputFormat'));
             // Pass through selectedGrandchildren for DCM creation in Stage 8/9
             result.outputs.put('selectedGrandchildren', inputs.get('selectedGrandchildren'));
+            // V2.2: Pass through child chains for traversal handling
+            result.outputs.put('childChains', inputs.get('childChains'));
             // Pass through selectedObjects - needed for DCM creation even if objects have no data
             // This ensures DCM Detail records are created for all child relationships
             result.outputs.put('selectedObjects', inputs.get('selectedObjects'));

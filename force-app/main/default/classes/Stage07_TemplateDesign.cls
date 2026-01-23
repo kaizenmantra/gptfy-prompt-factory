@@ -234,6 +234,8 @@ public with sharing class Stage07_TemplateDesign implements IStage {
             result.outputs.put('sampleRecordId', inputs.get('sampleRecordId'));
             // Pass through selectedGrandchildren for DCM creation in Stage 8/9
             result.outputs.put('selectedGrandchildren', inputs.get('selectedGrandchildren'));
+            // V2.2: Pass through child chains for traversal handling
+            result.outputs.put('childChains', inputs.get('childChains'));
             // Pass through selectedObjects - needed for DCM creation even if objects have no data
             result.outputs.put('selectedObjects', inputs.get('selectedObjects'));
             
