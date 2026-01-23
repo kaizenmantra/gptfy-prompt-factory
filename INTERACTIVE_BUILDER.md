@@ -53,7 +53,7 @@ Wait for deployment to complete and check for errors before marking task as done
 | 2 | Create `promptBuilderChat.html` - record selection UI | Sonnet | done | 1 | Object picker, record selector, business context input |
 | 3 | Create `promptBuilderChat.js` - wire up controller | Sonnet | done | 1,2 | Call initializeSession, handle responses |
 | 4 | Create `promptBuilderChat.css` - basic styling | Sonnet | done | 2 | Keep it simple, Salesforce-like |
-| 5 | Deploy Phase 1 to Salesforce and test | Sonnet | not_started | 1,2,3,4 | `sf project deploy start -o agentictso`, then test in org |
+| 5 | Deploy Phase 1 to Salesforce and test | Sonnet | done | 1,2,3,4 | `sf project deploy start -o agentictso`, then test in org |
 | 6 | **Design self-evaluating prompt template** | Opus | not_started | 5 | NEEDS THINKING - quality rubric, exemplar integration |
 | 7 | Create `PromptExemplars` static resource | Sonnet | not_started | 6 | Store Deal Coach + Account 360 exemplars |
 | 8 | Add `chat` method to controller | Sonnet | not_started | 6,7 | Build prompt, call AIServiceClient, return response |
