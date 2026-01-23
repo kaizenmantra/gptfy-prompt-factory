@@ -543,14 +543,26 @@ public with sharing class PromptBuilderController {
             promptConfig.temperature = 1.0;
             promptConfig.autoActivate = false;
 
-            // Build prompt command from the approved draft
-            // Use the system prompt + structure from the draft
+            // Build prompt command - use system prompt + analysis instructions
+            // Note: Current_Draft__c was used for interactive iteration but should NOT be
+            // included in the deployed prompt (it contains sample-specific analysis)
             Map<String, String> exemplars = loadExemplars();
             String systemPrompt = exemplars.get('SYSTEM_PROMPT');
 
+            // Build clean prompt command with just instructions
             promptConfig.promptCommand = systemPrompt + '\n\n---\n\n' +
-                'Generate an analysis following the structure below:\n\n' +
-                session.Current_Draft__c;
+                '## CONTEXT\n\n' +
+                'Business Objective: ' + session.Business_Context__c + '\n\n' +
+                '## INSTRUCTIONS\n\n' +
+                'Analyze the ' + session.Root_Object__c + ' record data provided below. ' +
+                'Apply the quality rubric above, perform your self-evaluation, and generate ' +
+                'an executive-ready analysis with actionable insights.\n\n' +
+                'Focus on:\n' +
+                '- Deal/account health assessment with specific scores\n' +
+                '- Key risks with severity ratings and mitigation actions\n' +
+                '- Stakeholder analysis and engagement gaps\n' +
+                '- Prioritized next steps with specific dates and owners\n\n' +
+                'Remember: Every insight must be grounded in the actual data provided.';
 
             // Set HTML template for rendering the AI response
             // This template displays the AI response with proper formatting
