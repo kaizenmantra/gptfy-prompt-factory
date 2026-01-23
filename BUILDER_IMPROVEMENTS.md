@@ -158,7 +158,7 @@ Query actual records to determine which fields are populated. Port from discover
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 2.5 | Design density profiling approach | Opus | not_started | Decide: Stage 4 vs new helper class. Consider governor limits for 100+ record queries |
+| 2.5 | Design density profiling approach | Opus | done | New `calculateFieldDensity()` method in SchemaHelper. See docs/design/V2.2_DESIGN_SPECS.md |
 | 2.6 | Implement field density calculation | Sonnet | not_started | Query N records (configurable, default 100), count non-null values per field. Port from discover-fields.sh lines 251-275 |
 | 2.7 | Add usagePercent to FieldMetadata | Sonnet | not_started | Store calculated density %. Fields with 0% usage deprioritized |
 | 2.8 | Integrate density into Stage 4 or Stage 5 | Sonnet | not_started | Call density calculation, merge into field metadata before LLM selection |
@@ -169,7 +169,7 @@ Make parent fields actually work in DCM and final output. V2.1 added suggestions
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 2.9 | Design parent field resolution architecture | Opus | not_started | How DCM specifies parent fields, how GPTfy resolves them at runtime |
+| 2.9 | Design parent field resolution architecture | Opus | done | Dot notation in DCM fields (Owner.Name). See docs/design/V2.2_DESIGN_SPECS.md |
 | 2.10 | Update DCMBuilder for parent field syntax | Sonnet | not_started | Support `Account.Name` via `AccountId` lookup. Investigate GPTfy DCM parent field format |
 | 2.11 | Update Stage 8 to include parent fields in DCM config | Sonnet | not_started | Pass selectedParentFields from Stage 5 through to DCM creation |
 | 2.12 | Update merge field reference for parent fields | Sonnet | not_started | Show `{{{Account.Name}}}` syntax in available merge fields section |
