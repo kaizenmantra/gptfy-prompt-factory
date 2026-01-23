@@ -1,33 +1,29 @@
 # Builder Improvements - Implementation Tracker
 
-Single source of truth for builder prompt optimization and multi-sample analysis features.
+Single source of truth for builder prompt optimization, field selection, and output quality features.
 All architecture, decisions, tasks, and progress tracked here.
 
 ---
 
-## Current Status
+## Release Strategy
 
-| Version | Status | Description |
-|---------|--------|-------------|
-| V1.1 | ✅ Complete | Builder prompt injection working (verified Run ID a0gQH000005GHurYAG) |
-| V2.0 | ✅ Complete | Meta-prompt architecture, LLM-generated metadata, field validation (verified 2026-01-23) |
-| V2.1 | 🔴 Not Started | Single-line HTML, emoji cleanup, multi-sample testing |
+### Current Branch: `feature/builder-improvements`
+**Status:** Ready to merge to `main`
 
-### V1.1 Limitations (discovered during analysis):
+**V2.0 is complete and working.** Recommend:
+1. Merge `feature/builder-improvements` → `main`
+2. Create new branch `feature/v2.1-enhancements` for next phase
+3. Continue iterative development on new branch
 
-- ❌ Builder prompts are verbose (Next Best Action Pattern is ~6,500 chars of documentation)
-- ❌ No intelligent selection (all builders injected regardless of relevance)
-- ❌ Single sample record limits data pattern analysis
-- ❌ Fixed HTML template constrains LLM to "template filler" role
-- ❌ Apex Service category not implemented
-- ❌ Output is table-heavy, not insight-driven
+### Version History
 
-### V2.0 Will Add:
-
-- ✅ Compressed builder prompts (principles only, not documentation)
-- ✅ Multi-sample support (3 records for richer data patterns)
-- ✅ Meta-prompt architecture (LLM as analyst, not template filler)
-- ✅ Smarter template approach (guidelines, not rigid structure)
+| Version | Branch | Status | Description |
+|---------|--------|--------|-------------|
+| V1.1 | main | ✅ Released | Builder prompt injection (Run ID a0gQH000005GHurYAG) |
+| V2.0 | feature/builder-improvements | ✅ Complete | Meta-prompt architecture, LLM metadata, field validation |
+| V2.1 | feature/v2.1-enhancements | 🔴 Not Started | Visual diversity, parent traversals, builder library |
+| V2.2 | TBD | 📋 Planned | Field density profiling, bidirectional traversal |
+| V2.3 | TBD | 📋 Planned | Knowledge base expansion, smart builder selection |
 
 ---
 
@@ -60,8 +56,6 @@ After completing each task (or group of related small tasks), commit your work:
 ./scripts/gitcommit.sh "feat: Task X - Brief description of what was done"
 ```
 
-This ensures work is saved and visible to the other model on handoff.
-
 ### DEPLOY TO SALESFORCE
 
 When a task involves Apex changes, deploy using:
@@ -70,136 +64,296 @@ When a task involves Apex changes, deploy using:
 sf project deploy start -o agentictso -d force-app/main/default/classes/ClassName.cls -d force-app/main/default/classes/ClassName.cls-meta.xml
 ```
 
-Wait for deployment to complete and check for errors before marking task as done.
-
 ---
 
 ## Key Files Reference
 
-### Existing (Reuse):
-- `Stage08_PromptAssembly.cls` - Builder prompt injection (modify for compression + multi-sample)
-- `Stage04_DataProfiling.cls` - Data querying (modify for multi-sample)
-- `Stage05_FieldSelection.cls` - Field relevance scoring
-- `Stage07_TemplateDesign.cls` - Template generation (modify for meta-prompt)
-- `SchemaHelper.cls` - Schema utilities
-- `DCMBuilder.cls` - Data context mapping
+### Apex Classes
+| File | Purpose |
+|------|---------|
+| `Stage03_SchemaAnalysis.cls` | Object/field discovery (needs parent traversal) |
+| `Stage04_DataProfiling.cls` | Sample data profiling, MultiSampleProfile |
+| `Stage05_FieldSelection.cls` | LLM-assisted field selection |
+| `Stage07_TemplateDesign.cls` | Analysis brief generation, prompt metadata |
+| `Stage08_PromptAssembly.cls` | Meta-prompt assembly, builder loading |
+| `Stage09_CreateAndDeploy.cls` | DCM and Prompt creation |
+| `SchemaHelper.cls` | Schema utilities (needs enhancement) |
+| `DCMBuilder.cls` | Data context mapping builder |
+| `PromptBuilder.cls` | AI Prompt record creation |
 
-### Builder Prompts in Org:
-| Name | Category | Chars | Needs Compression |
-|------|----------|-------|-------------------|
-| Next Best Action Pattern | Pattern | ~6,500 | ✅ Yes (high priority) |
-| Evidence Binding Rules v2 | Quality Rule | ~600 | ❌ Already concise |
-| Risk Assessment Pattern | Pattern | ~500 | ❌ Already concise |
-| Stat Card Component | UI Component | ~200 | ❌ Maybe expand |
-| Alert Box Component | UI Component | ~150 | ❌ Maybe expand |
-| Healthcare Payer Context | Context Template | ~180 | ❌ Context-specific |
-
----
-
-## Architecture: Multi-Sample Analysis
-
-### Current (Single Sample):
-```
-User provides 1 record ID
-    → Stage 4 queries that record
-    → Limited view of data patterns
-    → LLM fills template with that data
-```
-
-### New (Multi-Sample):
-```
-User provides 3 record IDs (comma-separated)
-    → Stage 4 queries all 3 records
-    → Aggregates patterns (min/max/avg, populated %, variance)
-    → LLM sees data patterns across samples
-    → LLM identifies what's significant, not just what's present
-```
-
-### Benefits:
-- Field relevance: "Amount populated 3/3" vs "Amount is $500K"
-- Pattern detection: "2/3 deals stuck in Qualification >30 days"
-- Variance analysis: "Probability ranges 20%-75%"
-- More robust field selection
+### Documentation
+| File | Purpose |
+|------|---------|
+| `BUILDER_IMPROVEMENTS.md` | This file - master tracker |
+| `docs/designs/META_PROMPT_DESIGN.md` | Meta-prompt 6-section architecture |
+| `docs/designs/MULTI_SAMPLE_DESIGN.md` | Multi-sample profiling architecture |
+| `docs/UI_TOOLKIT.md` | UI component library for dashboards |
 
 ---
 
-## Architecture: Meta-Prompt Approach
+## V2.1 Task Queue
 
-### Current (Template Filler):
-```
-Stage 7: Generate fixed HTML template with placeholders
-Stage 8: Inject ALL builder prompts verbatim
-Result: LLM fills in [ANALYSIS] and [PRIORITIES] placeholders
-```
+### Phase 1A: Visual Diversity Fixes
 
-### New (LLM as Analyst):
-```
-Stage 7: Generate "analysis brief" not fixed template
-Stage 8: Inject COMPRESSED builder prompts (principles only)
-         + Data payload from multi-sample analysis
-         + UI toolkit (available components)
-         + Meta-instruction: "Analyze and present what matters"
-Result: LLM decides what's important and how to show it
-```
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 1.1 | Update `buildUIToolkitSection()` with real HTML snippets | Sonnet | not_started | Add actual HTML patterns, not just component names |
+| 1.2 | Add visual diversity requirement to directive section | Sonnet | not_started | "MUST use colored alerts, stats strip, etc." |
+| 1.3 | Create UI Component builders in Salesforce org | Sonnet | not_started | Stats Strip, Health Score, Insight Card, Recommendation Card, Alert variants |
+| 1.4 | Test visual diversity in output | Sonnet | not_started | Verify colored components appear |
 
-### Meta-Prompt Structure:
-```
-=== YOUR ROLE ===
-Expert business analyst generating insights for {Persona}
+### Phase 1B: Personalization Fixes
 
-=== DATA PAYLOAD ===
-{Structured data from N sample records}
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 1.5 | Add "use names not titles" instruction to meta-prompt | Sonnet | not_started | "Say 'Sarah Johnson' not 'the CFO'" |
+| 1.6 | Document parent traversal catalog (see below) | Opus | not_started | Create reference list of 20 common traversals |
+| 1.7 | Store traversal catalog as Static Resource | Sonnet | not_started | JSON file for LLM/system reference |
+| 1.8 | Update Stage 5 to suggest parent fields | Opus | not_started | When OCR selected, suggest Contact.Name |
 
-=== ANALYSIS PRINCIPLES ===
-{Compressed builder prompts - principles only}
+### Phase 1C: Output Quality
 
-=== UI TOOLKIT ===
-{Available components: Stat Cards, Alerts, Tables, etc.}
-
-=== OUTPUT RULES ===
-{GPTfy-compliant HTML requirements}
-
-=== DIRECTIVE ===
-Analyze the data. Lead with insights. Let the data drive the structure.
-```
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 1.9 | Fix single-line HTML requirement | Sonnet | not_started | LLM output has newlines, GPTfy needs single-line |
+| 1.10 | Remove emojis from builder prompts | Sonnet | not_started | Clean up Evidence Binding Rules (✅ ❌) |
+| 1.11 | Test multi-sample flow with 3 records | Opus | not_started | Verify pattern detection works |
 
 ---
 
-## V2 Task Queue
+## V2.2 Task Queue (Architecture)
 
-### Phase 1: Compress Builder Prompts
-
-| # | Task | Model | Status | Notes |
-|---|------|-------|--------|-------|
-| 1.1 | Create compressed version of "Next Best Action Pattern" (~400 chars) | Sonnet | done | Created: 444 chars (93% reduction from 6,500) |
-| 1.2 | Test compressed prompt maintains quality | Sonnet | done | Builder deployed (a0DQH00000KZJXJ2A5), test procedure created |
-
-### Phase 2: Multi-Sample Support
+### Phase 2A: Parent Traversal Implementation
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 2.1 | Design multi-sample data structure for Stage 4 | Opus | done | See docs/designs/MULTI_SAMPLE_DESIGN.md |
-| 2.2 | Update `pfInputForm` LWC to accept comma-separated IDs | Sonnet | done | Deployed - supports 1-5 IDs with validation |
-| 2.3 | Update `PromptFactoryController.startPipelineRun` for multi-sample | Sonnet | done | Deployed - parses IDs, stores in Sample_Record_Ids__c |
-| 2.4 | Update Stage 4 to query multiple records | Sonnet | done | Deployed - profiles multiple samples, aggregates data, detects patterns |
-| 2.5 | Update Stage 5 field scoring for multi-sample relevance | Opus | done | AI prompt enhanced with data availability + patterns |
+| 2.1 | Design parent traversal architecture | Opus | not_started | How SchemaHelper discovers lookups |
+| 2.2 | Update SchemaHelper for lookup field detection | Sonnet | not_started | Identify AccountId, ContactId, OwnerId, etc. |
+| 2.3 | Update SchemaHelper for parent object mapping | Sonnet | not_started | Map lookup → target object |
+| 2.4 | Update DCMBuilder for parent field syntax | Sonnet | not_started | Support Contact.Name via ContactId |
+| 2.5 | Update Stage 5 to include parent candidates | Opus | not_started | Send parent fields to LLM for selection |
+| 2.6 | Test parent traversal end-to-end | Opus | not_started | Verify Contact.Name appears in output |
 
-### Phase 3: Meta-Prompt Architecture
-
-| # | Task | Model | Status | Notes |
-|---|------|-------|--------|-------|
-| 3.1 | Design meta-prompt structure | Opus | done | See docs/designs/META_PROMPT_DESIGN.md - 6 sections defined |
-| 3.2 | Modify Stage 7 to generate "analysis brief" not fixed template | Opus | done | Added USE_META_PROMPT flag, generateAnalysisBrief(), buildDataContext() |
-| 3.3 | Modify Stage 8 to assemble meta-prompt | Sonnet | done | Deployed - 6-section meta-prompt with compressed builders, data payload, UI toolkit |
-| 3.4 | Create UI toolkit section for meta-prompt | Sonnet | done | Created docs/UI_TOOLKIT.md with layouts, insights, data components |
-
-### Phase 4: Integration & Testing
+### Phase 2B: Field Density Profiling
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 4.1 | End-to-end test with 3 sample Opportunities | Opus | done | Fixed howItWorks bug, duplicate grounding rules. Pipeline working. |
-| 4.2 | Compare output quality: V1.1 vs V2.0 | Opus | done | See analysis below |
-| 4.3 | Document findings and next iteration priorities | Opus | done | See V2.1 priorities below |
+| 2.7 | Design field density profiling | Opus | not_started | Query 100+ records, calculate population % |
+| 2.8 | Update Stage 4 for density calculation | Sonnet | not_started | Add populationPercent to field metadata |
+| 2.9 | Prioritize long text / unstructured fields | Sonnet | not_started | Flag Description, Comments fields |
+| 2.10 | Update Stage 5 to use density in selection | Opus | not_started | Higher density = more relevant |
+
+### Phase 2C: Metadata-Rich Selection
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 2.11 | Extract field help text and descriptions | Sonnet | not_started | Include in field metadata |
+| 2.12 | Send metadata to LLM in Stage 5 | Opus | not_started | Help LLM understand field purpose |
+| 2.13 | Improve field relevance scoring | Opus | not_started | Combine density + metadata + type |
+
+---
+
+## V2.3 Task Queue (Knowledge Base)
+
+### Phase 3A: Builder Prompt Library Expansion
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 3.1 | Research UI component best practices | Sonnet | not_started | Dashboard design patterns |
+| 3.2 | Create UI Component builders (8 new) | Sonnet | not_started | See Builder Library section below |
+| 3.3 | Research analysis pattern best practices | Sonnet | not_started | Account health, opp coaching, etc. |
+| 3.4 | Create Analysis Pattern builders (5 new) | Sonnet | not_started | See Builder Library section below |
+| 3.5 | Research output format best practices | Sonnet | not_started | Executive summary, action lists |
+| 3.6 | Create Output Format builders (4 new) | Sonnet | not_started | See Builder Library section below |
+| 3.7 | Create Industry Context templates (4 new) | Opus | not_started | See Builder Library section below |
+
+### Phase 3B: Smart Builder Selection
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 3.8 | Add Weight__c to builder selection logic | Sonnet | not_started | Higher weight = higher priority |
+| 3.9 | Add object-specific builder filtering | Sonnet | not_started | Only load Opportunity builders for Opportunity |
+| 3.10 | Add token budget awareness | Opus | not_started | Don't exceed prompt size limit |
+| 3.11 | Test smart builder selection | Opus | not_started | Verify relevant builders loaded |
+
+---
+
+## Parent Traversal Catalog
+
+### Contact Traversals
+| Child Object | Lookup Field | Parent Object | Recommended Fields |
+|--------------|--------------|---------------|-------------------|
+| OpportunityContactRole | ContactId | Contact | Name, Title, Email, Phone |
+| CaseContactRole | ContactId | Contact | Name, Title, Email |
+| AccountContactRole | ContactId | Contact | Name, Title |
+| Task | WhoId | Contact/Lead | Name (polymorphic) |
+| Event | WhoId | Contact/Lead | Name (polymorphic) |
+| CampaignMember | ContactId | Contact | Name, Email |
+
+### Account Traversals
+| Child Object | Lookup Field | Parent Object | Recommended Fields |
+|--------------|--------------|---------------|-------------------|
+| Opportunity | AccountId | Account | Name, Industry, Type, BillingCity, AnnualRevenue |
+| Contact | AccountId | Account | Name, Industry, Type |
+| Case | AccountId | Account | Name, Type, Industry |
+| Contract | AccountId | Account | Name, BillingCity |
+| Order | AccountId | Account | Name, ShippingCity |
+| Quote | AccountId | Account | Name |
+| Asset | AccountId | Account | Name, Industry |
+
+### Opportunity Traversals
+| Child Object | Lookup Field | Parent Object | Recommended Fields |
+|--------------|--------------|---------------|-------------------|
+| OpportunityLineItem | OpportunityId | Opportunity | Name, StageName, Amount |
+| Quote | OpportunityId | Opportunity | Name, Amount, CloseDate |
+| Order | OpportunityId | Opportunity | Name, Amount |
+
+### Product Traversals
+| Child Object | Lookup Field | Parent Object | Recommended Fields |
+|--------------|--------------|---------------|-------------------|
+| OpportunityLineItem | Product2Id | Product2 | Name, Family, ProductCode, Description |
+| QuoteLineItem | Product2Id | Product2 | Name, Family, ProductCode |
+| OrderItem | Product2Id | Product2 | Name, Family |
+| PricebookEntry | Product2Id | Product2 | Name, Family |
+
+### User/Owner Traversals
+| Child Object | Lookup Field | Parent Object | Recommended Fields |
+|--------------|--------------|---------------|-------------------|
+| Opportunity | OwnerId | User | Name, Email, Title |
+| Case | OwnerId | User | Name, Email |
+| Account | OwnerId | User | Name, Email |
+| Lead | OwnerId | User | Name, Email |
+| Task | OwnerId | User | Name |
+| Event | OwnerId | User | Name |
+
+### Case Traversals
+| Child Object | Lookup Field | Parent Object | Recommended Fields |
+|--------------|--------------|---------------|-------------------|
+| CaseComment | ParentId | Case | Subject, Status, CaseNumber |
+| EmailMessage | ParentId | Case | Subject, CaseNumber |
+| CaseHistory | CaseId | Case | Subject, CaseNumber |
+
+### Other Common Traversals
+| Child Object | Lookup Field | Parent Object | Recommended Fields |
+|--------------|--------------|---------------|-------------------|
+| Task | WhatId | Opportunity/Account | Name (polymorphic) |
+| Event | WhatId | Opportunity/Account | Name (polymorphic) |
+| Attachment | ParentId | Any | (parent Name) |
+| ContentDocumentLink | LinkedEntityId | Any | (parent Name) |
+
+---
+
+## Builder Prompt Library Expansion
+
+### Current Inventory (6 builders)
+| Name | Category | Chars | Status |
+|------|----------|-------|--------|
+| Evidence Binding Rules v2 | Quality Rule | ~600 | Active |
+| Next Best Action Pattern (Compressed) | Pattern | ~450 | Active |
+| Risk Assessment Pattern | Pattern | ~500 | Active |
+| Stat Card Component | UI Component | ~200 | Active |
+| Alert Box Component | UI Component | ~150 | Active |
+| Healthcare Payer Context | Context Template | ~180 | Active |
+
+### Proposed UI Component Builders (8 new)
+| Name | Category | Description | Priority |
+|------|----------|-------------|----------|
+| Stats Strip Component | UI Component | Horizontal 3-5 KPI tiles with values and labels | High |
+| Health Score Component | UI Component | 0-100 gauge with color coding (green/yellow/red) | High |
+| Insight Card Component | UI Component | Finding + evidence citation with border | High |
+| Recommendation Card Component | UI Component | Action + urgency + deadline with colored left border | High |
+| Warning Alert Component | UI Component | Orange left-border alert box | Medium |
+| Critical Alert Component | UI Component | Red left-border alert box | Medium |
+| Info Alert Component | UI Component | Blue left-border alert box | Medium |
+| Two-Column Layout Component | UI Component | Side-by-side responsive grid | Medium |
+
+### Proposed Analysis Pattern Builders (5 new)
+| Name | Category | Object | Description |
+|------|----------|--------|-------------|
+| Account Health Analysis | Pattern | Account | Revenue trends, engagement scoring, risk factors |
+| Opportunity Coaching | Pattern | Opportunity | MEDDIC gaps, stakeholder coverage, next steps |
+| Case Triage Analysis | Pattern | Case | Urgency scoring, sentiment, escalation risk |
+| Pipeline Review Pattern | Pattern | Opportunity | Stage distribution, velocity, stuck deals |
+| Contact Engagement Pattern | Pattern | Contact | Last touch, frequency, preferred channels |
+
+### Proposed Output Format Builders (4 new)
+| Name | Category | Description |
+|------|----------|-------------|
+| Executive Summary Format | Output Format | 3-sentence pattern: status, risk, opportunity |
+| Action List Format | Output Format | WHO/WHAT/WHEN/WHY structure |
+| Risk Matrix Format | Output Format | Impact vs Likelihood grid |
+| Comparison Format | Output Format | Side-by-side evaluation table |
+
+### Proposed Industry Context Templates (4 new)
+| Name | Category | Industry | Key Considerations |
+|------|----------|----------|-------------------|
+| Financial Services Context | Context Template | Banking/Insurance | Compliance, AUM, risk tolerance, regulations |
+| Manufacturing Context | Context Template | Manufacturing | Supply chain, inventory, lead times, capacity |
+| Technology/SaaS Context | Context Template | Software | ARR, churn, expansion, NPS, adoption |
+| Retail Context | Context Template | Retail | Seasonality, inventory turns, margins |
+
+---
+
+## V1.1 vs V2.0 Quality Comparison
+
+| Aspect | V1.1 (Fixed Template) | V2.0 (Meta-Prompt) | Winner |
+|--------|----------------------|-------------------|--------|
+| **Output Structure** | Rigid template with placeholders | LLM decides structure based on data | V2.0 |
+| **Insight Quality** | "Fill in the blanks" approach | Evidence-cited insights with (Source:) annotations | V2.0 |
+| **Action Items** | Generic recommendations | Specific: WHO, WHAT, WHEN, WHY with deadlines | V2.0 |
+| **Data Tables** | Table-first approach | Tables last, insights first | V2.0 |
+| **Token Efficiency** | ~6,500 char builders injected verbatim | ~450 char compressed principles | V2.0 |
+| **Prompt Size** | Variable, no validation | Validated against field limit, % shown | V2.0 |
+| **Metadata** | Manual description | LLM-generated description + howItWorks | V2.0 |
+
+### V2.0 Remaining Gaps (addressed in V2.1+)
+1. Visual diversity lacking (no colored alerts, stats strips)
+2. Generic titles instead of names ("the CFO" not "Sarah Johnson")
+3. Single-line HTML not enforced
+4. Parent field traversal not supported
+5. Builder library limited (only 6 builders)
+
+---
+
+## Architecture: Field Selection Flow (V2.2 Target)
+
+### Current Flow (V2.0)
+```
+Stage 3: Schema Analysis
+    → Discover child relationships (DOWN only)
+    → List available objects and fields
+
+Stage 4: Data Profiling
+    → Query sample record(s)
+    → Extract field values
+    → Build data summary
+
+Stage 5: Field Selection
+    → Send fields to LLM
+    → LLM picks relevant fields
+    → No density, no metadata, no parents
+```
+
+### Target Flow (V2.2)
+```
+Stage 3: Schema Analysis (Enhanced)
+    → Discover child relationships (DOWN)
+    → Discover parent lookups (UP) - NEW
+    → Include help text, descriptions - NEW
+    → Build relationship map
+
+Stage 4: Data Profiling (Enhanced)
+    → Query 100+ records - NEW
+    → Calculate field population density - NEW
+    → Identify long text / unstructured fields - NEW
+    → Build interestingness scores
+
+Stage 5: Field Selection (Enhanced)
+    → Send fields WITH metadata to LLM - NEW
+    → Include parent field candidates - NEW
+    → LLM picks based on business context
+    → Weight by density + relevance
+```
 
 ---
 
@@ -211,6 +365,9 @@ Analyze the data. Lead with insights. Let the data drive the structure.
 | 2026-01-23 | Start with 3 sample records (not configurable N) | MVP simplicity |
 | 2026-01-23 | Compress only 2 builder prompts initially | Validate approach before scaling |
 | 2026-01-23 | Keep fixed template as "suggestion" initially | Incremental change, not full rewrite |
+| 2026-01-23 | Merge V2.0 to main, create new branch for V2.1 | V2.0 stable, avoid branch divergence |
+| 2026-01-23 | Store traversal catalog as Static Resource | Easy to update, queryable by Apex |
+| 2026-01-23 | Sonnet handles implementation, Opus handles design | Play to model strengths |
 
 ---
 
@@ -227,65 +384,29 @@ Analyze the data. Lead with insights. Let the data drive the structure.
 | 2026-01-23 | Task 3.4: Create UI toolkit documentation | Sonnet | Created comprehensive component library: layouts, insights, data components, usage rules |
 | 2026-01-23 | Task 2.1: Design multi-sample data structure | Opus | Created MULTI_SAMPLE_DESIGN.md with full architecture for N-sample profiling |
 | 2026-01-23 | Task 2.5: Update Stage 5 for multi-sample | Opus | Enhanced AI prompt with data availability across samples, detected patterns, field selection guidance |
-| 2026-01-23 | Task 3.1: Design meta-prompt structure | Opus | Created META_PROMPT_DESIGN.md with 6-section architecture: Role, Data Payload, Analysis Principles, UI Toolkit, Output Rules, Directive |
+| 2026-01-23 | Task 3.1: Design meta-prompt structure | Opus | Created META_PROMPT_DESIGN.md with 6-section architecture |
 | 2026-01-23 | Task 3.2: Modify Stage 7 for analysis brief | Opus | Added USE_META_PROMPT flag, generateAnalysisBrief() with analysis goals, data context, output guidelines |
-| 2026-01-23 | Task 3.3: Modify Stage 8 for meta-prompt assembly | Sonnet | Implemented 6-section meta-prompt: buildMetaPrompt(), buildRoleSection(), buildDataPayloadSection(), buildAnalysisPrinciplesSection(), buildUIToolkitSection(), buildOutputRulesSection(), buildDirectiveSection(). Fixed SOQL errors in builder loading. Deployed successfully. |
-| 2026-01-23 | Task 4.1: Fix metadata and field validation | Opus | Added LLM-generated prompt metadata (description ≤255 chars, howItWorks long text), field size validation for Prompt_Command__c. Stage 7 generates via AI, Stage 8 passes through, PromptBuilder validates sizes. |
-| 2026-01-23 | Task 4.1: Bug fixes from testing | Opus | Fixed howItWorks not saving (Stage 9 missing extraction), fixed duplicate grounding rules (Stage 8 was passing separately when already in promptCommand) |
-| 2026-01-23 | Task 4.2: V1.1 vs V2.0 comparison | Opus | Documented quality improvements: evidence-cited insights, specific actions with deadlines, insight-first structure, token efficiency |
-| 2026-01-23 | Task 4.3: V2.1 priorities | Opus | Identified: single-line HTML, emoji cleanup, multi-sample testing, token budget tracking |
-
----
-
-## V1.1 vs V2.0 Quality Comparison (Task 4.2)
-
-| Aspect | V1.1 (Fixed Template) | V2.0 (Meta-Prompt) | Winner |
-|--------|----------------------|-------------------|--------|
-| **Output Structure** | Rigid template with placeholders | LLM decides structure based on data | V2.0 |
-| **Insight Quality** | "Fill in the blanks" approach | Evidence-cited insights with (Source:) annotations | V2.0 |
-| **Action Items** | Generic recommendations | Specific: WHO, WHAT, WHEN, WHY with deadlines | V2.0 |
-| **Data Tables** | Table-first approach | Tables last, insights first | V2.0 |
-| **Token Efficiency** | ~6,500 char builders injected verbatim | ~450 char compressed principles | V2.0 |
-| **Prompt Size** | Variable, no validation | Validated against field limit, % shown | V2.0 |
-| **Metadata** | Manual description | LLM-generated description + howItWorks | V2.0 |
-
-### Key Improvements Observed:
-1. **Evidence Binding**: Output follows the rules - insights lead with analysis, citations follow
-2. **Executive Summary**: Concise health assessment with risks and opportunities
-3. **Actionable Recommendations**: Specific actions with owners and deadlines
-4. **No Table-First**: Output structure is insight-driven
-
-### Remaining Gaps for V2.1:
-1. Multi-sample not tested (single sample used in test run)
-2. HTML still has newlines (should be single-line for GPTfy)
-3. Some emojis in builder prompts (✅ ❌) - should be removed
-
----
-
-## V2.1 Priorities (Task 4.3)
-
-### High Priority:
-1. **Single-line HTML enforcement** - LLM output has newlines, GPTfy requires single-line
-2. **Remove emojis from builder prompts** - Clean up Evidence Binding Rules
-3. **Test multi-sample flow** - Verify 3-record pattern detection works
-
-### Medium Priority:
-4. **Token budget tracking** - Show prompt tokens used vs available
-5. **Smarter builder selection** - Use Weight__c and relevance scoring
-6. **Configurable sample count** - Let user choose 1-5 samples
-
-### Future Considerations:
-- Apex Service injection (Picklist Intelligence, Topic Service)
-- A/B testing framework for prompt variations
-- Output caching for similar record patterns
+| 2026-01-23 | Task 3.3: Modify Stage 8 for meta-prompt assembly | Sonnet | Implemented 6-section meta-prompt with all builder methods |
+| 2026-01-23 | Task 4.1: Fix metadata and field validation | Opus | Added LLM-generated prompt metadata, field size validation |
+| 2026-01-23 | Task 4.1: Bug fixes from testing | Opus | Fixed howItWorks not saving, fixed duplicate grounding rules |
+| 2026-01-23 | Task 4.2: V1.1 vs V2.0 comparison | Opus | Documented quality improvements across all aspects |
+| 2026-01-23 | Task 4.3: V2.1 priorities | Opus | Identified visual diversity, parent traversal, builder library expansion |
+| 2026-01-23 | V2.1 Planning | Opus | Documented traversal catalog, builder library, phased task queue |
 
 ---
 
 ## Notes for Future Iterations
 
-After V2.0 MVP, consider:
-- Implement Apex Service injection (Picklist Intelligence, Topic Service)
-- Add Weight__c filtering for builder prompt selection
-- Token budget awareness for prompt assembly
-- Configurable number of sample records
+### Post V2.3 Considerations
 - A/B testing framework for prompt variations
+- Output caching for similar record patterns
+- User feedback loop (thumbs up/down on outputs)
+- Apex Service injection (Picklist Intelligence, Topic Service)
+- Custom builder creation UI in Salesforce
+- Multi-language output support
+
+### Technical Debt to Address
+- Remove hardcoded parent traversals once dynamic discovery works
+- Consolidate UI Toolkit (Stage 8 section vs docs/UI_TOOLKIT.md)
+- Add unit tests for SchemaHelper enhancements
+- Performance optimization for 100+ record queries
