@@ -1,0 +1,178 @@
+<template>
+    <div class="prompt-builder-container">
+        <!-- Header -->
+        <div class="slds-page-header">
+            <div class="slds-page-header__row">
+                <div class="slds-page-header__col-title">
+                    <div class="slds-media">
+                        <div class="slds-media__figure">
+                            <lightning-icon icon-name="standard:bot" size="medium"></lightning-icon>
+                        </div>
+                        <div class="slds-media__body">
+                            <h1 class="slds-page-header__title slds-truncate">Interactive Prompt Builder</h1>
+                            <p class="slds-text-body_small slds-line-height_reset">
+                                Build high-quality prompts through interactive conversation
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error Message -->
+        <template if:true={errorMessage}>
+            <div class="slds-m-top_medium">
+                <div class="slds-notify slds-notify_alert slds-alert_error" role="alert">
+                    <span class="slds-assistive-text">Error</span>
+                    <h2>{errorMessage}</h2>
+                </div>
+            </div>
+        </template>
+
+        <!-- Phase 1: Setup Form (shown when no session) -->
+        <template if:false={sessionId}>
+            <div class="slds-m-top_medium">
+                <div class="slds-card">
+                    <div class="slds-card__header slds-grid">
+                        <div class="slds-media slds-media_center slds-has-flexi-truncate">
+                            <div class="slds-media__figure">
+                                <lightning-icon icon-name="utility:settings" size="small"></lightning-icon>
+                            </div>
+                            <div class="slds-media__body">
+                                <h2 class="slds-card__header-title">
+                                    <span>Phase 1: Setup</span>
+                                </h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="slds-card__body slds-card__body_inner">
+                        <div class="slds-grid slds-wrap slds-gutters_small">
+                            <!-- Root Object -->
+                            <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                                <lightning-combobox
+                                    label="Root Object"
+                                    value={rootObject}
+                                    options={objectOptions}
+                                    onchange={handleObjectChange}
+                                    placeholder="Select object (e.g., Account, Opportunity)"
+                                    required
+                                    disabled={isLoading}>
+                                </lightning-combobox>
+                            </div>
+
+                            <!-- Record Selector -->
+                            <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                                <div class="slds-form-element">
+                                    <label class="slds-form-element__label">
+                                        <abbr class="slds-required" title="required">*</abbr>
+                                        Sample Record IDs (3-5 records)
+                                    </label>
+                                    <div class="slds-form-element__control">
+                                        <lightning-input
+                                            type="text"
+                                            value={recordIdsInput}
+                                            onchange={handleRecordIdsChange}
+                                            placeholder="Comma-separated IDs: 001XX..., 001YY..."
+                                            disabled={isLoading}
+                                            field-level-help="Enter 3-5 sample record IDs separated by commas">
+                                        </lightning-input>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Business Context -->
+                            <div class="slds-col slds-size_1-of-1">
+                                <lightning-textarea
+                                    label="Business Context"
+                                    value={businessContext}
+                                    onchange={handleBusinessContextChange}
+                                    placeholder="Describe what you want to build: target audience, key insights, specific use case..."
+                                    required
+                                    rows="4"
+                                    disabled={isLoading}>
+                                </lightning-textarea>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="slds-card__footer">
+                        <lightning-button
+                            label="Initialize Session"
+                            variant="brand"
+                            onclick={handleInitializeSession}
+                            disabled={isInitializeDisabled}
+                            icon-name="utility:forward"
+                            class="slds-float_right">
+                        </lightning-button>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <!-- Phase 2: Session Summary (shown after initialization) -->
+        <template if:true={sessionId}>
+            <div class="slds-m-top_medium">
+                <div class="slds-card">
+                    <div class="slds-card__header slds-grid">
+                        <div class="slds-media slds-media_center slds-has-flexi-truncate">
+                            <div class="slds-media__figure">
+                                <lightning-icon icon-name="utility:info" size="small"></lightning-icon>
+                            </div>
+                            <div class="slds-media__body">
+                                <h2 class="slds-card__header-title">
+                                    <span>Session Information</span>
+                                </h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="slds-card__body slds-card__body_inner">
+                        <div class="slds-grid slds-wrap slds-gutters_small">
+                            <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                                <div class="slds-text-title slds-m-bottom_xx-small">Object</div>
+                                <div class="slds-text-body_regular">{sessionData.objectLabel}</div>
+                            </div>
+                            <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                                <div class="slds-text-title slds-m-bottom_xx-small">Fields</div>
+                                <div class="slds-text-body_regular">{sessionData.fieldCount} accessible</div>
+                            </div>
+                            <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-3">
+                                <div class="slds-text-title slds-m-bottom_xx-small">Sample Records</div>
+                                <div class="slds-text-body_regular">{sessionData.sampleRecordCount} loaded</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat Interface Placeholder -->
+                <div class="slds-m-top_medium">
+                    <div class="slds-card">
+                        <div class="slds-card__header slds-grid">
+                            <div class="slds-media slds-media_center slds-has-flexi-truncate">
+                                <div class="slds-media__figure">
+                                    <lightning-icon icon-name="utility:comments" size="small"></lightning-icon>
+                                </div>
+                                <div class="slds-media__body">
+                                    <h2 class="slds-card__header-title">
+                                        <span>Phase 2: Interactive Chat</span>
+                                    </h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="slds-card__body slds-card__body_inner">
+                            <div class="slds-text-align_center slds-p-vertical_large">
+                                <lightning-icon icon-name="utility:comments" size="large" class="slds-m-bottom_medium"></lightning-icon>
+                                <p class="slds-text-body_regular">Chat interface coming in Phase 2...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <!-- Loading Spinner Overlay -->
+        <template if:true={isLoading}>
+            <div class="loading-overlay">
+                <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+            </div>
+        </template>
+    </div>
+</template>
