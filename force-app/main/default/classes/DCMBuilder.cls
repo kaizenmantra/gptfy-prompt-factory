@@ -115,6 +115,78 @@ public with sharing class DCMBuilder {
     }
 
     /**
+     * @description Creates a FIELD type record for parent fields (V2.2 Task 2.10)
+     * Enables parent field resolution like "Owner.Name" via lookup relationships
+     * @param dcmId The DCM ID to associate with
+     * @param lookupField The lookup field API name (e.g., "OwnerId", "AccountId")
+     * @param parentObject The target object of the lookup (e.g., "User", "Account")
+     * @param parentField The field on the parent object (e.g., "Name", "Industry")
+     * @param sourceObject The source object containing the lookup field (e.g., "Opportunity")
+     * @param sequence The sequence number for ordering
+     * @return SObject The parent field record to insert
+     */
+    private static SObject createParentFieldRecord(
+        Id dcmId,
+        String lookupField,
+        String parentObject,
+        String parentField,
+        String sourceObject,
+        Integer sequence) {
+
+        // Determine the relationship name (e.g., "Owner" from "OwnerId")
+        String relationshipName = lookupField.endsWith('Id') ?
+            lookupField.removeEnd('Id') : lookupField;
+
+        // Build the field path using dot notation (e.g., "Owner.Name")
+        String fieldPath = relationshipName + '.' + parentField;
+
+        // Get the parent field's label for better display
+        String parentFieldLabel = getFieldLabel(parentObject, parentField);
+        String combinedLabel = relationshipName + ' ' + parentFieldLabel;
+
+        SObject field = newSObject('ccai__AI_Data_Extraction_Field__c');
+        field.put('ccai__AI_Data_Extraction_Mapping__c', dcmId);
+        field.put('ccai__Type__c', 'FIELD');
+        field.put('ccai__Field__c', fieldPath);  // Dot notation: "Owner.Name"
+        field.put('ccai__Object__c', sourceObject);  // Source object: "Opportunity"
+        field.put('ccai__Label__c', combinedLabel);  // "Owner Name"
+        field.put('ccai__Send_To_AI__c', true);
+        field.put('ccai__Scan_for_PII__c', shouldMaskField(parentField));
+        return field;
+    }
+
+    /**
+     * @description Gets the parent object name from a lookup field (V2.2 Task 2.10)
+     * @param objectName The source object containing the lookup field
+     * @param lookupField The lookup field API name (e.g., "OwnerId", "AccountId")
+     * @return String The name of the parent object (e.g., "User", "Account"), or null if not found
+     */
+    private static String getParentObjectFromLookup(String objectName, String lookupField) {
+        try {
+            Schema.DescribeSObjectResult objDescribe = SchemaHelper.getObjectDescribe(objectName);
+            if (objDescribe != null) {
+                Map<String, Schema.SObjectField> fieldMap = objDescribe.fields.getMap();
+                if (fieldMap.containsKey(lookupField.toLowerCase())) {
+                    Schema.DescribeFieldResult fieldDescribe =
+                        fieldMap.get(lookupField.toLowerCase()).getDescribe();
+
+                    // Check if this is a reference field
+                    if (fieldDescribe.getType() == Schema.DisplayType.REFERENCE) {
+                        List<Schema.SObjectType> refs = fieldDescribe.getReferenceTo();
+                        if (refs != null && !refs.isEmpty()) {
+                            // Return the first reference target (for polymorphic fields, this returns the first)
+                            return refs[0].getDescribe().getName();
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            System.debug('Error getting parent object for ' + objectName + '.' + lookupField + ': ' + e.getMessage());
+        }
+        return null;
+    }
+
+    /**
      * @description Gets the label for a field from schema
      */
     private static String getFieldLabel(String objectName, String fieldName) {
