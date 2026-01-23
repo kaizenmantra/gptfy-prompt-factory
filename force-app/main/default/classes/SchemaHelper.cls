@@ -25,6 +25,7 @@ public with sharing class SchemaHelper {
 
     /**
      * @description Wrapper class for field metadata
+     * V2.2: Enhanced with helpText, picklistValues, category, and parent relationship info
      */
     public class FieldMetadata {
         @AuraEnabled public String name;
@@ -33,6 +34,15 @@ public with sharing class SchemaHelper {
         @AuraEnabled public Boolean isAccessible;
         @AuraEnabled public Boolean isUpdateable;
         @AuraEnabled public Boolean isCustom;
+        // V2.2: New fields for enriched metadata
+        @AuraEnabled public String helpText;              // Admin-defined field description
+        @AuraEnabled public String category;              // narrative, metric, classification, temporal, flag, relationship, contact, other
+        @AuraEnabled public List<PicklistValue> picklistValues;  // For picklist/multipicklist fields
+        @AuraEnabled public List<String> referenceTo;     // Target objects for lookup fields
+        @AuraEnabled public String relationshipName;      // For lookup fields (e.g., Account for AccountId)
+        @AuraEnabled public Integer length;               // Field length for text fields
+        @AuraEnabled public Boolean isFormula;            // Is this a formula field?
+        @AuraEnabled public Integer usagePercent;         // V2.2: Field population density (0-100), null if not calculated
 
         public FieldMetadata(String name, String label, String type,
                            Boolean isAccessible, Boolean isUpdateable, Boolean isCustom) {
@@ -43,6 +53,173 @@ public with sharing class SchemaHelper {
             this.isUpdateable = isUpdateable;
             this.isCustom = isCustom;
         }
+
+        // V2.2: Extended constructor with all metadata
+        public FieldMetadata(Schema.DescribeFieldResult fieldDescribe) {
+            this.name = fieldDescribe.getName();
+            this.label = fieldDescribe.getLabel();
+            this.type = String.valueOf(fieldDescribe.getType());
+            this.isAccessible = fieldDescribe.isAccessible();
+            this.isUpdateable = fieldDescribe.isUpdateable();
+            this.isCustom = fieldDescribe.isCustom();
+            this.helpText = fieldDescribe.getInlineHelpText();
+            this.length = fieldDescribe.getLength();
+            this.isFormula = fieldDescribe.isCalculated();
+            this.relationshipName = fieldDescribe.getRelationshipName();
+
+            // Get reference targets for lookup fields
+            List<Schema.SObjectType> refs = fieldDescribe.getReferenceTo();
+            if (refs != null && !refs.isEmpty()) {
+                this.referenceTo = new List<String>();
+                for (Schema.SObjectType ref : refs) {
+                    this.referenceTo.add(ref.getDescribe().getName());
+                }
+            }
+
+            // Get picklist values
+            if (fieldDescribe.getType() == Schema.DisplayType.PICKLIST ||
+                fieldDescribe.getType() == Schema.DisplayType.MULTIPICKLIST) {
+                this.picklistValues = new List<PicklistValue>();
+                for (Schema.PicklistEntry entry : fieldDescribe.getPicklistValues()) {
+                    this.picklistValues.add(new PicklistValue(entry));
+                }
+            }
+
+            // Categorize the field
+            this.category = categorizeField(fieldDescribe);
+        }
+    }
+
+    /**
+     * @description Wrapper class for picklist values (V2.2)
+     */
+    public class PicklistValue {
+        @AuraEnabled public String value;
+        @AuraEnabled public String label;
+        @AuraEnabled public Boolean isActive;
+        @AuraEnabled public Boolean isDefault;
+
+        public PicklistValue(Schema.PicklistEntry entry) {
+            this.value = entry.getValue();
+            this.label = entry.getLabel();
+            this.isActive = entry.isActive();
+            this.isDefault = entry.isDefaultValue();
+        }
+    }
+
+    /**
+     * @description Wrapper class for parent (lookup) relationships (V2.2)
+     * Represents a lookup field that points to a parent object
+     */
+    public class ParentRelationship {
+        @AuraEnabled public String fieldApi;           // e.g., AccountId
+        @AuraEnabled public String fieldLabel;         // e.g., Account ID
+        @AuraEnabled public String relationshipName;   // e.g., Account
+        @AuraEnabled public String referenceTo;        // e.g., Account (target object)
+        @AuraEnabled public Boolean isRequired;        // Is this lookup required?
+        @AuraEnabled public Boolean isPolymorphic;     // Does it reference multiple objects? (e.g., WhoId)
+
+        public ParentRelationship(Schema.DescribeFieldResult fieldDescribe) {
+            this.fieldApi = fieldDescribe.getName();
+            this.fieldLabel = fieldDescribe.getLabel();
+            this.relationshipName = fieldDescribe.getRelationshipName();
+            this.isRequired = !fieldDescribe.isNillable();
+
+            List<Schema.SObjectType> refs = fieldDescribe.getReferenceTo();
+            if (refs != null && !refs.isEmpty()) {
+                this.referenceTo = refs[0].getDescribe().getName();
+                this.isPolymorphic = refs.size() > 1;
+            }
+        }
+    }
+
+    /**
+     * @description Categorizes a field based on its type and name (V2.2)
+     * Categories: narrative, metric, classification, temporal, flag, relationship, contact, other
+     * Ported from discover-fields.sh lines 207-216
+     * @param fieldDescribe The field describe result
+     * @return Category string
+     */
+    private static String categorizeField(Schema.DescribeFieldResult fieldDescribe) {
+        Schema.DisplayType fieldType = fieldDescribe.getType();
+        String fieldName = fieldDescribe.getName().toLowerCase();
+
+        // Check type first
+        if (fieldType == Schema.DisplayType.ID || fieldType == Schema.DisplayType.REFERENCE) {
+            return 'relationship';
+        }
+        if (fieldType == Schema.DisplayType.TEXTAREA ||
+            fieldName.contains('description') ||
+            fieldName.contains('comment') ||
+            fieldName.contains('note') ||
+            fieldName.contains('detail')) {
+            return 'narrative';
+        }
+        if (fieldType == Schema.DisplayType.CURRENCY ||
+            fieldType == Schema.DisplayType.DOUBLE ||
+            fieldType == Schema.DisplayType.PERCENT ||
+            fieldType == Schema.DisplayType.INTEGER) {
+            return 'metric';
+        }
+        if (fieldType == Schema.DisplayType.PICKLIST ||
+            fieldType == Schema.DisplayType.MULTIPICKLIST) {
+            return 'classification';
+        }
+        if (fieldType == Schema.DisplayType.DATE ||
+            fieldType == Schema.DisplayType.DATETIME) {
+            return 'temporal';
+        }
+        if (fieldType == Schema.DisplayType.BOOLEAN) {
+            return 'flag';
+        }
+        if (fieldType == Schema.DisplayType.EMAIL ||
+            fieldType == Schema.DisplayType.PHONE ||
+            fieldType == Schema.DisplayType.URL) {
+            return 'contact';
+        }
+
+        return 'other';
+    }
+
+    /**
+     * @description Gets parent (lookup) relationships for an object (V2.2)
+     * Identifies all lookup fields and their target objects
+     * Ported from discover-relationships.sh lines 161-175
+     * @param objectName API name of the object
+     * @return List of ParentRelationship wrapper objects
+     */
+    public static List<ParentRelationship> getParentRelationships(String objectName) {
+        Schema.DescribeSObjectResult describe = getObjectDescribe(objectName);
+        if (describe == null) {
+            return new List<ParentRelationship>();
+        }
+
+        List<ParentRelationship> relationships = new List<ParentRelationship>();
+        Map<String, Schema.SObjectField> fieldMap = describe.fields.getMap();
+
+        for (Schema.SObjectField field : fieldMap.values()) {
+            Schema.DescribeFieldResult fieldDescribe = field.getDescribe();
+
+            // Only include reference (lookup) fields
+            if (fieldDescribe.getType() != Schema.DisplayType.REFERENCE) {
+                continue;
+            }
+
+            // Skip if no reference targets
+            List<Schema.SObjectType> refs = fieldDescribe.getReferenceTo();
+            if (refs == null || refs.isEmpty()) {
+                continue;
+            }
+
+            // Skip if not accessible
+            if (!fieldDescribe.isAccessible()) {
+                continue;
+            }
+
+            relationships.add(new ParentRelationship(fieldDescribe));
+        }
+
+        return relationships;
     }
 
     /**
@@ -102,8 +279,9 @@ public with sharing class SchemaHelper {
 
     /**
      * @description Gets field metadata for an object
+     * V2.2: Now uses extended constructor to populate helpText, picklistValues, category, etc.
      * @param objectName API name of the object
-     * @return List of FieldMetadata wrapper objects
+     * @return List of FieldMetadata wrapper objects with enriched metadata
      */
     public static List<FieldMetadata> getFields(String objectName) {
         Schema.DescribeSObjectResult objDescribe = getObjectDescribe(objectName);
@@ -123,14 +301,8 @@ public with sharing class SchemaHelper {
                 continue;
             }
 
-            fields.add(new FieldMetadata(
-                fieldDescribe.getName(),
-                fieldDescribe.getLabel(),
-                String.valueOf(fieldDescribe.getType()),
-                fieldDescribe.isAccessible(),
-                fieldDescribe.isUpdateable(),
-                fieldDescribe.isCustom()
-            ));
+            // V2.2: Use extended constructor for enriched metadata
+            fields.add(new FieldMetadata(fieldDescribe));
         }
 
         return fields;

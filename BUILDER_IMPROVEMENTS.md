@@ -147,10 +147,10 @@ Enhance SchemaHelper with richer field metadata. Port logic from shell scripts.
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 2.1 | Add helpText to FieldMetadata class | Sonnet | not_started | Add `inlineHelpText` from field describe. Port from discover-fields.sh line 153 |
-| 2.2 | Add picklistValues to FieldMetadata class | Sonnet | not_started | Add `List<PicklistValue>` with value, label, active. Port from discover-fields.sh lines 144-150 |
-| 2.3 | Add parent lookup detection to SchemaHelper | Sonnet | not_started | New method `getParentRelationships(objectName)` returns lookup fields with target object. Port from discover-relationships.sh lines 161-175 |
-| 2.4 | Add field categorization to FieldMetadata | Sonnet | not_started | Add `category` (narrative, metric, classification, temporal, flag, relationship). Port from discover-fields.sh lines 207-216 |
+| 2.1 | Add helpText to FieldMetadata class | Sonnet | done | Added `helpText` from field describe |
+| 2.2 | Add picklistValues to FieldMetadata class | Sonnet | done | Added `List<PicklistValue>` with value, label, active, isDefault |
+| 2.3 | Add parent lookup detection to SchemaHelper | Sonnet | done | Added `getParentRelationships()` method and `ParentRelationship` class |
+| 2.4 | Add field categorization to FieldMetadata | Sonnet | done | Added `category` field and `categorizeField()` helper |
 
 ### Phase 2B: Field Density Profiling
 
