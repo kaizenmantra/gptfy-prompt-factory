@@ -164,6 +164,22 @@
     z-index: 9999;
 }
 
+.loading-content {
+    background-color: #fff;
+    padding: 2rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    text-align: center;
+    min-width: 250px;
+}
+
+/* Loading Status in Chat Panel */
+.loading-status {
+    background-color: #f9f9f9;
+    border-radius: 0.25rem;
+    margin-top: 0.5rem;
+}
+
 /* Session Info Grid */
 .slds-text-title {
     font-size: 0.75rem;

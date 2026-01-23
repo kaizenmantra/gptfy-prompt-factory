@@ -208,14 +208,10 @@
                                 <template if:false={isDeployed}>
                                     <!-- Deploy Form -->
                                     <div class="slds-form">
-                                        <div class="slds-form-element">
-                                            <label class="slds-form-element__label" for="prompt-name-input">
-                                                <abbr class="slds-required" title="required">*</abbr>
-                                                Prompt Name
-                                            </label>
-                                            <div class="slds-form-element__control">
+                                        <div class="slds-grid slds-wrap slds-gutters_small">
+                                            <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
                                                 <lightning-input
-                                                    id="prompt-name-input"
+                                                    label="Prompt Name"
                                                     type="text"
                                                     value={promptName}
                                                     onchange={handlePromptNameChange}
@@ -223,6 +219,17 @@
                                                     required
                                                     disabled={isDeployLoading}>
                                                 </lightning-input>
+                                            </div>
+                                            <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                                                <lightning-combobox
+                                                    label="AI Model Connection"
+                                                    value={selectedAIModel}
+                                                    options={aiModelOptions}
+                                                    onchange={handleAIModelChange}
+                                                    placeholder="Select AI model..."
+                                                    required
+                                                    disabled={isDeployLoading}>
+                                                </lightning-combobox>
                                             </div>
                                         </div>
                                         <div class="slds-m-top_medium">
@@ -313,6 +320,14 @@
                                 <p class="slds-text-body_small">Click "Start Analysis" to begin</p>
                             </div>
                         </template>
+
+                        <!-- Loading Status Indicator -->
+                        <template if:true={isChatLoading}>
+                            <div class="loading-status slds-p-around_medium slds-text-align_center">
+                                <lightning-spinner alternative-text="Processing" size="small"></lightning-spinner>
+                                <p class="slds-text-body_small slds-m-top_small slds-text-color_weak">{statusMessage}</p>
+                            </div>
+                        </template>
                     </div>
 
                     <!-- Chat Input -->
@@ -320,11 +335,11 @@
                         <template if:false={hasMessages}>
                             <!-- Start Analysis Button -->
                             <lightning-button
-                                label="Start Analysis"
+                                label={startButtonLabel}
                                 variant="brand"
                                 onclick={handleStartChat}
                                 disabled={isChatLoading}
-                                icon-name="utility:priority"
+                                icon-name={startButtonIcon}
                                 class="slds-size_1-of-1">
                             </lightning-button>
                         </template>
@@ -338,7 +353,7 @@
                                 disabled={isChatLoading}>
                             </lightning-textarea>
                             <lightning-button
-                                label="Send"
+                                label={sendButtonLabel}
                                 variant="brand"
                                 onclick={handleSendMessage}
                                 disabled={isSendDisabled}
@@ -361,7 +376,10 @@
         <!-- Loading Spinner Overlay -->
         <template if:true={isLoading}>
             <div class="loading-overlay">
-                <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+                <div class="loading-content">
+                    <lightning-spinner alternative-text="Loading" size="medium"></lightning-spinner>
+                    <p class="slds-m-top_medium slds-text-heading_small">{statusMessage}</p>
+                </div>
             </div>
         </template>
     </div>

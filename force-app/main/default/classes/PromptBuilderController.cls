@@ -244,6 +244,35 @@ public with sharing class PromptBuilderController {
     }
 
     /**
+     * @description Gets available AI Connections for the model selection dropdown
+     * @return List of maps with id, label for combobox options
+     */
+    @AuraEnabled(cacheable=true)
+    public static List<Map<String, String>> getAIConnections() {
+        List<Map<String, String>> options = new List<Map<String, String>>();
+
+        try {
+            List<ccai__AI_Connection__c> connections = [
+                SELECT Id, Name
+                FROM ccai__AI_Connection__c
+                ORDER BY Name ASC
+                LIMIT 20
+            ];
+
+            for (ccai__AI_Connection__c conn : connections) {
+                options.add(new Map<String, String>{
+                    'value' => conn.Id,
+                    'label' => conn.Name
+                });
+            }
+        } catch (Exception e) {
+            System.debug(LoggingLevel.WARN, 'Could not load AI Connections: ' + e.getMessage());
+        }
+
+        return options;
+    }
+
+    /**
      * @description Chat with LLM to iteratively build prompt content
      * Phase 2: Interactive conversation with self-evaluating AI
      *
@@ -622,10 +651,11 @@ public with sharing class PromptBuilderController {
      *
      * @param sessionId ID of the PF_Run__c session record
      * @param promptName Name for the prompt
+     * @param aiModelId ID of the selected AI Connection (ccai__AI_Connection__c)
      * @return Map containing success status, DCM ID, and Prompt ID
      */
     @AuraEnabled
-    public static Map<String, Object> deployPrompt(Id sessionId, String promptName) {
+    public static Map<String, Object> deployPrompt(Id sessionId, String promptName, Id aiModelId) {
         try {
             // Load session
             PF_Run__c session = [
@@ -689,8 +719,10 @@ public with sharing class PromptBuilderController {
                 session.Root_Object__c
             );
 
-            // Use approved markdown as HTML template (Interactive Builder uses markdown output)
-            String htmlTemplate = session.Current_Draft__c;
+            // No HTML conversion needed - AI instructions have the 10 GPTfy rules
+            // The prompt will generate HTML at runtime when it has actual data
+            // This matches the 12-step approach where Stage 8 provides rules, not templates
+            String htmlTemplate = '';
 
             // Build simplified grounding rules
             String groundingRules = buildSimplifiedGroundingRules(session.Root_Object__c);
@@ -718,7 +750,7 @@ public with sharing class PromptBuilderController {
 
             // Convert prompt config Map and create Prompt
             PromptBuilder.PromptConfig promptConfig =
-                Stage09_CreateAndDeploy.buildPromptConfig(promptConfigMap, dcmId, null);
+                Stage09_CreateAndDeploy.buildPromptConfig(promptConfigMap, dcmId, aiModelId);
 
             // Create Prompt using existing builder
             Id promptId = PromptBuilder.createPrompt(promptConfig);
@@ -745,19 +777,59 @@ public with sharing class PromptBuilderController {
     }
 
     /**
-     * @description Builds simplified AI instructions for Interactive Builder
-     * (Simplified version for Interactive Builder - full version is in Stage08)
+     * @description Builds AI instructions for Interactive Builder with GPTfy HTML output rules
+     * Uses the same critical rules as Stage08 for GPTfy compatibility
      * @param businessContext User's business requirements
      * @param rootObject The root Salesforce object
-     * @return Simplified AI instructions
+     * @return AI instructions with HTML output rules
      */
     private static String buildSimplifiedAIInstructions(String businessContext, String rootObject) {
         List<String> parts = new List<String>();
 
-        parts.add('You are a Salesforce AI assistant generating analysis for GPTfy.\n\n');
+        parts.add('You are a Salesforce AI assistant generating HTML content for GPTfy.\n\n');
 
-        // Output format instructions
-        parts.add('OUTPUT FORMAT: Respond with markdown-formatted analysis.\n\n');
+        // === CRITICAL OUTPUT RULES (same as Stage08) ===
+        String rules = '=== CRITICAL OUTPUT RULES (GPTfy Runtime Validation) ===\n\n' +
+            'Rule 1 - SINGLE LINE: Output MUST be a single line with NO newline characters.\n' +
+            '  WHY: GPTfy stores output as a single field value. Line breaks cause parsing issues.\n\n' +
+            'Rule 2 - NO STYLE BLOCKS: Do NOT include any style tags.\n' +
+            '  WHY: GPTfy renders in Salesforce Lightning which strips style blocks. Only inline styles work.\n\n' +
+            'Rule 3 - NO CSS CLASSES: Do NOT use class attributes.\n' +
+            '  WHY: Without style blocks, CSS classes have no definitions and elements remain unstyled.\n\n' +
+            'Rule 4 - NO SCRIPT TAGS: Do NOT include any JavaScript.\n' +
+            '  WHY: Scripts are a security risk and are stripped by Salesforce Lightning.\n\n' +
+            'Rule 5 - NO MARKDOWN: Do NOT wrap output in code blocks or use markdown formatting.\n' +
+            '  WHY: Output must be raw HTML, not markdown.\n\n' +
+            'Rule 6 - START WITH DIV STYLE: Output MUST begin with a div element with inline style attribute.\n' +
+            '  WHY: Ensures proper container structure with inline styles.\n\n' +
+            'Rule 7 - END WITH DIV: Output MUST end with a closing div tag.\n' +
+            '  WHY: Ensures HTML structure is complete and properly closed.\n\n' +
+            'Rule 8 - NO PLACEHOLDERS: Never output bracket-X patterns, placeholder text, TBD, TODO, or similar.\n' +
+            '  WHY: Indicates the prompt didn\'t properly integrate real data.\n\n' +
+            'Rule 9 - NO NULL VALUES: Never output null, undefined, or Not Available in visible text.\n' +
+            '  WHY: Missing data should be handled gracefully by omitting the section.\n\n' +
+            'Rule 10 - NO EMOJIS: Do NOT use any emoji characters.\n' +
+            '  WHY: Professional business content should not contain emojis.\n\n';
+        parts.add(rules);
+
+        // === STYLING REQUIREMENTS ===
+        String styling = '=== STYLING REQUIREMENTS (Salesforce Brand) ===\n\n' +
+            'Font: \'Salesforce Sans\', -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Arial, sans-serif\n' +
+            'Base Size: 14px\n\n' +
+            'Colors:\n' +
+            '- Primary Blue: #0176D3\n' +
+            '- Success Green: #2E844A\n' +
+            '- Warning Orange: #DD7A01\n' +
+            '- Error Red: #BA0517\n' +
+            '- Text Primary: #181818\n' +
+            '- Text Secondary: #706E6B\n' +
+            '- Card Background: #FFFFFF\n' +
+            '- Border: #DDDBDA\n\n' +
+            'Components:\n' +
+            '- Cards: white background, 8px border-radius, 1px solid border, 16px padding\n' +
+            '- Headers: Primary Blue background, white text, 16px padding\n' +
+            '- Tables: border-collapse, light header background, 10px 12px cell padding\n\n';
+        parts.add(styling);
 
         // Business context
         if (String.isNotBlank(businessContext)) {
@@ -775,8 +847,9 @@ public with sharing class PromptBuilderController {
         // Data handling
         parts.add('DATA HANDLING:\n' +
             '- Analyze the ' + rootObject + ' record and related data\n' +
-            '- If fields are empty/null, omit those sections\n' +
-            '- Focus on meaningful insights, not comprehensive data display\n');
+            '- If fields are empty/null, OMIT that section entirely - do not show empty labels\n' +
+            '- Focus on meaningful insights, not comprehensive data display\n' +
+            '- Use merge field syntax {{{FieldName}}} for dynamic data\n');
 
         return String.join(parts, '');
     }
@@ -1058,6 +1131,268 @@ public with sharing class PromptBuilderController {
         }
 
         return result;
+    }
+
+    /**
+     * @description Builds comprehensive merge field context for HTML conversion
+     * Includes root fields, lookup fields, and child collections with their fields
+     *
+     * @param rootObject Root object API name
+     * @param rootFieldNames List of root object field names
+     * @param childRelationships List of child relationships
+     * @return Map containing structured merge field information
+     */
+    private static Map<String, Object> buildMergeFieldContext(
+        String rootObject,
+        List<String> rootFieldNames,
+        List<SchemaHelper.ChildRelationship> childRelationships
+    ) {
+        Map<String, Object> context = new Map<String, Object>();
+
+        // Root object fields (no prefix needed)
+        List<String> rootFields = new List<String>();
+        Set<String> lookupFields = new Set<String>();
+
+        for (String fieldName : rootFieldNames) {
+            rootFields.add(fieldName);
+
+            // Check for common lookup relationships
+            if (fieldName == 'OwnerId') {
+                lookupFields.add('Owner.Name');
+                lookupFields.add('Owner.Email');
+            } else if (fieldName == 'AccountId') {
+                lookupFields.add('Account.Name');
+            } else if (fieldName == 'CreatedById') {
+                lookupFields.add('CreatedBy.Name');
+            } else if (fieldName == 'LastModifiedById') {
+                lookupFields.add('LastModifiedBy.Name');
+            }
+        }
+
+        context.put('rootObject', rootObject);
+        context.put('rootFields', rootFields);
+        context.put('lookupFields', new List<String>(lookupFields));
+
+        // Child collections with their fields
+        List<Map<String, Object>> collections = new List<Map<String, Object>>();
+
+        for (SchemaHelper.ChildRelationship rel : childRelationships) {
+            if (String.isBlank(rel.relationshipName)) {
+                continue;
+            }
+
+            Map<String, Object> collection = new Map<String, Object>();
+            collection.put('name', rel.relationshipName);
+            collection.put('childObject', rel.childObject);
+
+            // Get key fields for child object
+            try {
+                List<SchemaHelper.FieldMetadata> childFieldMeta = SchemaHelper.getFields(rel.childObject);
+                List<String> childFields = new List<String>();
+
+                for (SchemaHelper.FieldMetadata fm : childFieldMeta) {
+                    if (fm.isAccessible && !fm.name.endsWith('__c')) {
+                        // Include standard fields
+                        childFields.add(fm.name);
+                    }
+                    if (childFields.size() >= 15) break; // Limit for context size
+                }
+
+                collection.put('fields', childFields);
+            } catch (Exception e) {
+                collection.put('fields', new List<String>{'Id', 'Name'});
+            }
+
+            collections.add(collection);
+        }
+
+        context.put('childCollections', collections);
+
+        return context;
+    }
+
+    /**
+     * @description Convert approved markdown to GPTfy-compliant HTML with comprehensive merge field context
+     *
+     * @param approvedMarkdown The final approved markdown from chat phase
+     * @param rootObject The root Salesforce object
+     * @param mergeFieldContext Comprehensive context with root fields, lookups, and child collections
+     * @return GPTfy-compliant HTML template with merge fields
+     */
+    public static String convertToHTMLWithContext(
+        String approvedMarkdown,
+        String rootObject,
+        Map<String, Object> mergeFieldContext
+    ) {
+        // Build conversion prompt with comprehensive merge field rules
+        String conversionPrompt = buildComprehensiveConversionPrompt(
+            approvedMarkdown,
+            rootObject,
+            mergeFieldContext
+        );
+
+        // Call AI for HTML conversion
+        AIServiceClient.AIResponse aiResponse = AIServiceClient.callAI(
+            null, // No system prompt needed - instructions in user prompt
+            conversionPrompt,
+            8192, // Max tokens for HTML output
+            0.2   // Low temperature for consistent formatting
+        );
+
+        if (aiResponse == null || String.isBlank(aiResponse.content)) {
+            throw new AuraHandledException('Failed to convert markdown to HTML');
+        }
+
+        String htmlTemplate = aiResponse.content.trim();
+
+        // Remove markdown code fences if present
+        if (htmlTemplate.startsWith('```html')) {
+            htmlTemplate = htmlTemplate.substring(7);
+        } else if (htmlTemplate.startsWith('```')) {
+            htmlTemplate = htmlTemplate.substring(3);
+        }
+        if (htmlTemplate.endsWith('```')) {
+            htmlTemplate = htmlTemplate.substring(0, htmlTemplate.length() - 3);
+        }
+        htmlTemplate = htmlTemplate.trim();
+
+        // Validate and sanitize
+        List<String> safetyIssues = validateHTMLSafety(htmlTemplate);
+        if (!safetyIssues.isEmpty()) {
+            System.debug('HTML safety issues detected: ' + safetyIssues);
+            htmlTemplate = sanitizeHTML(htmlTemplate);
+        }
+
+        return htmlTemplate;
+    }
+
+    /**
+     * @description Build comprehensive HTML conversion prompt following PROMPT_GENERATION_RULES.md
+     */
+    private static String buildComprehensiveConversionPrompt(
+        String approvedMarkdown,
+        String rootObject,
+        Map<String, Object> mergeFieldContext
+    ) {
+        List<String> promptParts = new List<String>();
+
+        promptParts.add('You are converting analysis content into a GPTfy HTML template with merge fields.\n');
+        promptParts.add('GPTfy will substitute merge fields with actual data BEFORE sending to the LLM.\n\n');
+
+        // === MERGE FIELD SYNTAX RULES ===
+        promptParts.add('=== MERGE FIELD SYNTAX RULES (CRITICAL) ===\n\n');
+
+        promptParts.add('Rule 1 - TRIPLE BRACES for values:\n');
+        promptParts.add('  {{{FieldName}}}  ✓ Outputs raw value\n');
+        promptParts.add('  {{FieldName}}    ✗ HTML-escapes (breaks special chars)\n\n');
+
+        promptParts.add('Rule 2 - ROOT OBJECT fields have NO prefix:\n');
+        promptParts.add('  {{{Name}}}       ✓ Correct for ' + rootObject + '.Name\n');
+        promptParts.add('  {{{' + rootObject + '.Name}}} ✗ Wrong - don\'t prefix with primary object\n\n');
+
+        promptParts.add('Rule 3 - LOOKUP fields use dot notation:\n');
+        promptParts.add('  {{{Owner.Name}}}      ✓ Owner lookup field\n');
+        promptParts.add('  {{{Account.Name}}}    ✓ Account lookup field\n\n');
+
+        promptParts.add('Rule 4 - CHILD COLLECTIONS use plural names with double braces:\n');
+        promptParts.add('  {{#Contacts}}...{{/Contacts}}     ✓ Iterate contacts\n');
+        promptParts.add('  {{#Opportunities}}...{{/Opportunities}} ✓ Iterate opportunities\n\n');
+
+        promptParts.add('Rule 5 - Fields INSIDE loops have NO prefix (context is the child):\n');
+        promptParts.add('  {{#Contacts}}\n');
+        promptParts.add('    {{{Name}}}   ✓ Contact\'s name\n');
+        promptParts.add('    {{{Title}}}  ✓ Contact\'s title\n');
+        promptParts.add('  {{/Contacts}}\n\n');
+
+        promptParts.add('Rule 6 - EMPTY STATES use inverted section or else:\n');
+        promptParts.add('  {{#Contacts}}<div>{{{Name}}}</div>{{else}}<div>No contacts</div>{{/Contacts}}\n');
+        promptParts.add('  OR: {{^Contacts}}<div>No contacts</div>{{/Contacts}}\n\n');
+
+        // === AVAILABLE FIELDS ===
+        promptParts.add('=== AVAILABLE MERGE FIELDS ===\n\n');
+
+        promptParts.add('PRIMARY OBJECT: ' + rootObject + '\n');
+        promptParts.add('Root fields (use as {{{FieldName}}}):\n');
+        List<String> rootFields = (List<String>)mergeFieldContext.get('rootFields');
+        if (rootFields != null) {
+            for (String f : rootFields) {
+                promptParts.add('  - ' + f + '\n');
+            }
+        }
+
+        List<String> lookupFields = (List<String>)mergeFieldContext.get('lookupFields');
+        if (lookupFields != null && !lookupFields.isEmpty()) {
+            promptParts.add('\nLookup fields (use as {{{Relationship.Field}}}):\n');
+            for (String f : lookupFields) {
+                promptParts.add('  - ' + f + '\n');
+            }
+        }
+
+        List<Object> collections = (List<Object>)mergeFieldContext.get('childCollections');
+        if (collections != null && !collections.isEmpty()) {
+            promptParts.add('\nCHILD COLLECTIONS:\n');
+            for (Object collObj : collections) {
+                Map<String, Object> coll = (Map<String, Object>)collObj;
+                String collName = (String)coll.get('name');
+                String childObj = (String)coll.get('childObject');
+                List<String> collFields = (List<String>)coll.get('fields');
+
+                promptParts.add('\n{{#' + collName + '}}...{{/' + collName + '}} (' + childObj + ')\n');
+                promptParts.add('  Fields inside loop (no prefix): ');
+                if (collFields != null && !collFields.isEmpty()) {
+                    List<String> first5 = new List<String>();
+                    for (Integer i = 0; i < Math.min(5, collFields.size()); i++) {
+                        first5.add(collFields[i]);
+                    }
+                    promptParts.add(String.join(first5, ', ') + '\n');
+                }
+            }
+        }
+
+        // === HTML REQUIREMENTS ===
+        promptParts.add('\n=== HTML OUTPUT REQUIREMENTS ===\n\n');
+        promptParts.add('1. Output as ONE continuous line - NO line breaks or newlines\n');
+        promptParts.add('2. Use ONLY inline styles (style="...") - NO class="..." attributes\n');
+        promptParts.add('3. NO <style> blocks or CSS classes\n');
+        promptParts.add('4. NO <script> tags or event handlers\n');
+        promptParts.add('5. Start with <div style="..." and end with </div>\n');
+        promptParts.add('6. NO markdown syntax (##, **, etc.) - pure HTML only\n\n');
+
+        // === STYLING ===
+        promptParts.add('=== SALESFORCE BRAND STYLING ===\n');
+        promptParts.add('Font: font-family:\'Salesforce Sans\',-apple-system,sans-serif\n');
+        promptParts.add('Colors: Primary #0176D3, Success #2E844A, Warning #DD7A01, Error #BA0517\n');
+        promptParts.add('Cards: background:white; padding:16px; border-radius:8px; border:1px solid #DDDBDA\n');
+        promptParts.add('Headers: background:#0176D3; color:white; padding:16px\n\n');
+
+        // === APPROVED CONTENT ===
+        promptParts.add('=== CONTENT TO CONVERT ===\n\n');
+        promptParts.add(approvedMarkdown + '\n\n');
+
+        // === TASK ===
+        promptParts.add('=== YOUR TASK ===\n\n');
+        promptParts.add('IMPORTANT: REMOVE these sections entirely (they are NOT part of the template):\n');
+        promptParts.add('   - Any "Self-Evaluation" or "Rubric" sections with scores like "9/10"\n');
+        promptParts.add('   - Any meta-commentary about the analysis quality\n');
+        promptParts.add('   - Any AI self-assessment content\n\n');
+        promptParts.add('KEEP only the actual business analysis content (deal health, risks, recommendations, etc.)\n\n');
+        promptParts.add('Then:\n');
+        promptParts.add('1. Convert the business content into a SINGLE LINE of HTML\n');
+        promptParts.add('2. Replace ALL hardcoded data values with appropriate merge fields:\n');
+        promptParts.add('   - Opportunity/Account names → {{{Name}}}\n');
+        promptParts.add('   - Dollar amounts → {{{Amount}}}\n');
+        promptParts.add('   - Dates → {{{CloseDate}}}, {{{CreatedDate}}}\n');
+        promptParts.add('   - Stages → {{{StageName}}}\n');
+        promptParts.add('   - Person names in stakeholder tables → {{#Contacts}}{{{Name}}}{{/Contacts}}\n');
+        promptParts.add('   - Contact titles/roles → {{{Title}}} inside {{#Contacts}} loop\n');
+        promptParts.add('   - Owner info → {{{Owner.Name}}}\n');
+        promptParts.add('3. For stakeholder/contact tables, use: {{#Contacts}}<tr><td>{{{Name}}}</td><td>{{{Title}}}</td></tr>{{/Contacts}}\n');
+        promptParts.add('4. Add {{else}} inside collection for empty state: {{#Contacts}}...{{else}}<tr><td>No contacts</td></tr>{{/Contacts}}\n');
+        promptParts.add('5. Apply inline Salesforce styling\n\n');
+
+        promptParts.add('Output ONLY the raw HTML starting with <div style=" - no explanation, no code fences:');
+
+        return String.join(promptParts, '');
     }
 
     /**

@@ -1,7 +1,8 @@
-import { LightningElement, track } from 'lwc';
+import { LightningElement, track, wire } from 'lwc';
 import initializeSession from '@salesforce/apex/PromptBuilderController.initializeSession';
 import chat from '@salesforce/apex/PromptBuilderController.chat';
 import deployPrompt from '@salesforce/apex/PromptBuilderController.deployPrompt';
+import getAIConnections from '@salesforce/apex/PromptBuilderController.getAIConnections';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 
 /**
@@ -27,14 +28,34 @@ export default class PromptBuilderChat extends LightningElement {
 
     // Deploy State
     @track promptName = '';
+    @track selectedAIModel = '';
+    @track aiModelOptions = [];
     @track isDeployed = false;
     @track isDeployLoading = false;
     @track deployResult = {};
+
+    // Wire AI Connections for model dropdown
+    @wire(getAIConnections)
+    wiredAIConnections({ error, data }) {
+        if (data) {
+            this.aiModelOptions = data.map(conn => ({
+                label: conn.label,
+                value: conn.value
+            }));
+            // Auto-select first option if available
+            if (this.aiModelOptions.length > 0 && !this.selectedAIModel) {
+                this.selectedAIModel = this.aiModelOptions[0].value;
+            }
+        } else if (error) {
+            console.error('Error loading AI connections:', error);
+        }
+    }
 
     // UI State
     @track isLoading = false;
     @track errorMessage = '';
     @track showHTMLPreview = false;  // Toggle for HTML vs Markdown preview
+    @track statusMessage = '';  // Current operation status message
 
     // Object Options (Common Salesforce Objects)
     objectOptions = [
@@ -98,6 +119,7 @@ export default class PromptBuilderChat extends LightningElement {
 
         // Call Apex controller
         this.isLoading = true;
+        this.statusMessage = 'Initializing session and loading schema...';
         this.clearError();
 
         initializeSession({
@@ -126,6 +148,7 @@ export default class PromptBuilderChat extends LightningElement {
             })
             .finally(() => {
                 this.isLoading = false;
+                this.statusMessage = '';
             });
     }
 
@@ -252,6 +275,27 @@ export default class PromptBuilderChat extends LightningElement {
     }
 
     /**
+     * Get Start Analysis button label based on loading state
+     */
+    get startButtonLabel() {
+        return this.isChatLoading ? 'Analyzing...' : 'Start Analysis';
+    }
+
+    /**
+     * Get Start Analysis button icon based on loading state
+     */
+    get startButtonIcon() {
+        return this.isChatLoading ? '' : 'utility:priority';
+    }
+
+    /**
+     * Get Send button label based on loading state
+     */
+    get sendButtonLabel() {
+        return this.isChatLoading ? 'Processing...' : 'Send';
+    }
+
+    /**
      * Handle chat input change
      */
     handleChatInputChange(event) {
@@ -282,6 +326,13 @@ export default class PromptBuilderChat extends LightningElement {
         this.isChatLoading = true;
         this.clearError();
 
+        // Set status message based on action
+        if (userMessage === 'START') {
+            this.statusMessage = 'Analyzing sample records and generating insights...';
+        } else {
+            this.statusMessage = 'Processing your feedback...';
+        }
+
         // Add user message to conversation (except for START)
         if (userMessage !== 'START') {
             this.addMessage('user', userMessage);
@@ -296,13 +347,16 @@ export default class PromptBuilderChat extends LightningElement {
                 if (result.success) {
                     // Add AI response to conversation
                     this.addMessage('assistant', result.message);
+                    this.statusMessage = '';
                     console.log('Chat response received:', result);
                 } else {
                     this.showError('Failed to get response from AI');
+                    this.statusMessage = '';
                 }
             })
             .catch(error => {
                 this.showError(this.getErrorMessage(error));
+                this.statusMessage = '';
                 console.error('Error in chat:', error);
             })
             .finally(() => {
@@ -424,10 +478,20 @@ export default class PromptBuilderChat extends LightningElement {
     }
 
     /**
+     * Handle AI model selection change
+     */
+    handleAIModelChange(event) {
+        this.selectedAIModel = event.detail.value;
+    }
+
+    /**
      * Check if deploy button should be disabled
      */
     get isDeployDisabled() {
-        return this.isDeployLoading || !this.promptName || this.promptName.trim().length === 0;
+        return this.isDeployLoading ||
+               !this.promptName ||
+               this.promptName.trim().length === 0 ||
+               !this.selectedAIModel;
     }
 
     /**
@@ -464,7 +528,8 @@ export default class PromptBuilderChat extends LightningElement {
 
         deployPrompt({
             sessionId: this.sessionId,
-            promptName: this.promptName
+            promptName: this.promptName,
+            aiModelId: this.selectedAIModel
         })
             .then(result => {
                 if (result.success) {
