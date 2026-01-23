@@ -654,7 +654,7 @@ public with sharing class PromptBuilderController {
             List<SchemaHelper.ChildRelationship> childRelationships =
                 SchemaHelper.getChildRelationships(session.Root_Object__c);
             List<SchemaHelper.ChildRelationship> prioritizedRelationships =
-                prioritizeRelationships(childRelationships, session.Root_Object__c);
+                selectImportantRelationships(childRelationships, session.Root_Object__c);
 
             // Build selectedFields map (Map<String, List<String>> by object)
             Map<String, Object> selectedFields = new Map<String, Object>();
@@ -665,13 +665,13 @@ public with sharing class PromptBuilderController {
 
             // Add child object fields
             for (SchemaHelper.ChildRelationship rel : prioritizedRelationships) {
-                if (String.isNotBlank(rel.objectName)) {
+                if (String.isNotBlank(rel.childObject)) {
                     // Get fields for child object
                     List<SchemaHelper.FieldMetadata> childFields =
-                        SchemaHelper.getFields(rel.objectName);
+                        SchemaHelper.getFields(rel.childObject);
                     List<String> childFieldNames = getQueryableFieldNames(childFields);
-                    List<String> childKeyFields = getKeyFields(rel.objectName, childFieldNames);
-                    selectedFields.put(rel.objectName, childKeyFields);
+                    List<String> childKeyFields = getKeyFields(rel.childObject, childFieldNames);
+                    selectedFields.put(rel.childObject, childKeyFields);
                 }
             }
 

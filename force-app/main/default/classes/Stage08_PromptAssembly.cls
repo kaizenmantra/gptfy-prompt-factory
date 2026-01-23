@@ -439,7 +439,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
      * @param runId PF_Run__c ID for logging
      * @return Combined quality rules content
      */
-    private String loadQualityRules(Id runId) {
+    private static String loadQualityRules(Id runId) {
         try {
             PromptFactoryLogger.info(runId, 8, '🔍 loadQualityRules() called - using HARDCODED IDs as test');
             
@@ -486,7 +486,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
      * @param runId PF_Run__c ID for logging
      * @return Combined pattern content
      */
-    private String loadPatterns(String rootObject, Id runId) {
+    private static String loadPatterns(String rootObject, Id runId) {
         try {
             PromptFactoryLogger.info(runId, 8, '🔍 loadPatterns() called - using HARDCODED IDs as test');
             
@@ -533,7 +533,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
      * @param runId PF_Run__c ID for logging
      * @return Combined UI component content
      */
-    private String loadUIComponents(Id runId) {
+    private static String loadUIComponents(Id runId) {
         try {
             PromptFactoryLogger.info(runId, 8, '🔍 loadUIComponents() called - using HARDCODED IDs as test');
             
@@ -579,7 +579,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
      * @param runId PF_Run__c ID for logging
      * @return Combined context template content
      */
-    private String loadContextTemplates(Id runId) {
+    private static String loadContextTemplates(Id runId) {
         try {
             PromptFactoryLogger.info(runId, 8, '🔍 loadContextTemplates() called - using HARDCODED IDs as test');
             
@@ -626,7 +626,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
      * @param runId PF_Run__c ID for logging
      * @return Combined output from all Apex Services
      */
-    private String loadApexServices(Map<String, Object> inputs, Id runId) {
+    private static String loadApexServices(Map<String, Object> inputs, Id runId) {
         try {
             PromptFactoryLogger.info(runId, 8, '🔍 loadApexServices() called');
             
@@ -887,7 +887,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
      * @param grandchildRelFieldMap Map of grandchild to relationship field
      * @return Configuration map for the child object
      */
-    private Map<String, Object> buildChildObjectConfig(
+    private static Map<String, Object> buildChildObjectConfig(
             String objectName,
             String rootObject,
             Set<String> grandchildObjectNames,
@@ -934,7 +934,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
      * @param parentObject The parent object API name
      * @return The relationship field name (e.g., AccountId)
      */
-    private String getRelationshipField(String childObject, String parentObject) {
+    private static String getRelationshipField(String childObject, String parentObject) {
         // Use DCMBuilder's auto-detection if available
         DCMBuilder.RelationshipDetectionResult detection =
             DCMBuilder.detectRelationshipField(childObject, parentObject);
@@ -952,7 +952,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
      * @param parentObject The parent object API name
      * @return The relationship name from schema, or null if no valid relationship exists
      */
-    private String getChildRelationshipName(String childObject, String parentObject) {
+    private static String getChildRelationshipName(String childObject, String parentObject) {
         // Get actual relationship name from Salesforce schema
         List<SchemaHelper.ChildRelationship> childRels = SchemaHelper.getChildRelationships(parentObject);
 
@@ -988,7 +988,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
      * @description Returns true if the object has minimum meaningful fields.
      * "Meaningful" excludes Id and all *Id / *ById fields, since those do not provide LLM context.
      */
-    private Boolean hasMinimumMeaningfulFields(List<String> fields) {
+    private static Boolean hasMinimumMeaningfulFields(List<String> fields) {
         if (fields == null || fields.isEmpty()) {
             return false;
         }
