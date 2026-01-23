@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # =============================================================================
-# GPTfy Predictive Intelligence - Git Commit & Push Script
+# GPTfy Prompt Factory - Git Commit & Push Script
 # =============================================================================
 #
 # This script handles git commits with consistent formatting and safety checks.
@@ -16,9 +16,9 @@
 #   ./scripts/gitcommit.sh "commit message" [branch_name]
 #
 # Examples:
-#   ./scripts/gitcommit.sh "Add PI_Aggregate_Metric__c custom object"
-#   ./scripts/gitcommit.sh "Fix vector search connector" feature/vector-search
-#   ./scripts/gitcommit.sh "refactor: extract metrics filtering logic"
+#   ./scripts/gitcommit.sh "Add prompt builder controller"
+#   ./scripts/gitcommit.sh "Fix interactive chat component" feature/interactive-builder
+#   ./scripts/gitcommit.sh "refactor: extract HTML conversion logic"
 #
 # =============================================================================
 
@@ -64,7 +64,7 @@ print_error() {
 }
 
 show_help() {
-    echo "GPTfy Predictive Intelligence - Git Commit & Push Script"
+    echo "GPTfy Prompt Factory - Git Commit & Push Script"
     echo ""
     echo "Usage: ./scripts/gitcommit.sh \"commit message\" [branch_name]"
     echo ""
@@ -73,16 +73,16 @@ show_help() {
     echo "  branch_name        Optional. Branch to push to (default: current branch)"
     echo ""
     echo "Examples:"
-    echo "  ./scripts/gitcommit.sh \"Add PI metrics custom object\""
-    echo "  ./scripts/gitcommit.sh \"Fix vector DB connection\" feature/azure-search"
-    echo "  ./scripts/gitcommit.sh \"feat: add LLM calculation architecture\""
+    echo "  ./scripts/gitcommit.sh \"Add prompt builder controller\""
+    echo "  ./scripts/gitcommit.sh \"Fix interactive chat UI\" feature/interactive-builder"
+    echo "  ./scripts/gitcommit.sh \"feat: add HTML conversion with merge fields\""
     echo ""
     echo "Conventional Commit Prefixes:"
     echo "  feat:     New feature (LWC, Apex class, custom object)"
     echo "  fix:      Bug fix"
     echo "  refactor: Code refactoring"
     echo "  chore:    Maintenance tasks"
-    echo "  docs:     Documentation (PRD updates)"
+    echo "  docs:     Documentation updates"
     echo "  test:     Adding tests (Jest, Apex tests)"
     echo ""
     echo "Project-Specific Prefixes:"
@@ -104,7 +104,7 @@ if [ -z "$1" ]; then
     print_error "Please provide a commit message"
     echo ""
     echo "Usage: ./scripts/gitcommit.sh \"commit message\" [branch_name]"
-    echo "Example: ./scripts/gitcommit.sh \"Add vector search connector\""
+    echo "Example: ./scripts/gitcommit.sh \"Add prompt builder controller\""
     echo ""
     echo "Use -h or --help for more information"
     exit 1
@@ -118,7 +118,7 @@ BRANCH=${2:-$CURRENT_BRANCH}
 # Main Script
 # =============================================================================
 
-print_header "GPTfy Predictive Intelligence - Git Commit"
+print_header "GPTfy Prompt Factory - Git Commit"
 
 # -----------------------------------------------------------------------------
 # Step 1: Show current status
