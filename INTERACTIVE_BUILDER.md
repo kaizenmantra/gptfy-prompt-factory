@@ -55,7 +55,7 @@ Wait for deployment to complete and check for errors before marking task as done
 | 4 | Create `promptBuilderChat.css` - basic styling | Sonnet | done | 2 | Keep it simple, Salesforce-like |
 | 5 | Deploy Phase 1 to Salesforce and test | Sonnet | done | 1,2,3,4 | `sf project deploy start -o agentictso`, then test in org |
 | 6 | **Design self-evaluating prompt template** | Opus | done | 5 | See [Prompt Template Design](#prompt-template-design-task-6) section |
-| 7 | Create `PromptExemplars` static resource | Sonnet | not_started | 6 | Store Deal Coach + Account 360 exemplars |
+| 7 | Create `PromptExemplars` static resource | Sonnet | done | 6 | Store Deal Coach + Account 360 exemplars |
 | 8 | Add `chat` method to controller | Sonnet | not_started | 6,7 | Build prompt, call AIServiceClient, return response |
 | 9 | Add chat UI to LWC (message list, input, send) | Sonnet | not_started | 8 | Render markdown responses |
 | 10 | Deploy Phase 2 to Salesforce and test | Sonnet | not_started | 7,8,9 | `sf project deploy start -o agentictso`, test chat flow |
