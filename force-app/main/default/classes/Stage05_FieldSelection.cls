@@ -371,6 +371,25 @@ public with sharing class Stage05_FieldSelection implements IStage {
                 Boolean hasRestrictions = !safeFields.isEmpty();
 
                 List<SchemaHelper.FieldMetadata> allFields = SchemaHelper.getFields(objectName);
+
+                // V2.2 Task 2.8: Calculate field density and populate usagePercent
+                try {
+                    Map<String, Integer> fieldDensity = SchemaHelper.calculateFieldDensity(objectName, 100);
+                    Integer fieldsWithDensity = 0;
+                    for (SchemaHelper.FieldMetadata field : allFields) {
+                        if (fieldDensity.containsKey(field.name)) {
+                            field.usagePercent = fieldDensity.get(field.name);
+                            fieldsWithDensity++;
+                        }
+                    }
+                    result.queueDebug(runId, STAGE_NUMBER,
+                        objectName + ': Calculated density for ' + fieldsWithDensity + ' fields');
+                } catch (Exception densityEx) {
+                    // Non-fatal: Continue without density data if calculation fails
+                    result.queueDebug(runId, STAGE_NUMBER,
+                        objectName + ': Density calculation skipped - ' + densityEx.getMessage());
+                }
+
                 List<SchemaHelper.FieldMetadata> accessibleFields = new List<SchemaHelper.FieldMetadata>();
                 Integer skippedInaccessible = 0;
 
