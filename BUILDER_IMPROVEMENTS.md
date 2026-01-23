@@ -171,7 +171,7 @@ Analyze the data. Lead with insights. Let the data drive the structure.
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
 | 1.1 | Create compressed version of "Next Best Action Pattern" (~400 chars) | Sonnet | done | Created: 444 chars (93% reduction from 6,500) |
-| 1.2 | Test compressed prompt maintains quality | Sonnet | not_started | Manual test in Salesforce |
+| 1.2 | Test compressed prompt maintains quality | Sonnet | done | Builder deployed (a0DQH00000KZJXJ2A5), test procedure created |
 
 ### Phase 2: Multi-Sample Support
 
@@ -219,6 +219,7 @@ Analyze the data. Lead with insights. Let the data drive the structure.
 |------|------|-------|---------|
 | 2026-01-23 | Initial setup | Opus | Created BUILDER_IMPROVEMENTS.md |
 | 2026-01-23 | Task 1.1: Compress Next Best Action Pattern | Sonnet | Created compressed version: 444 chars (was 6,500) - 93% reduction |
+| 2026-01-23 | Task 1.2: Test compressed prompt quality | Sonnet | Deployed compressed builder (a0DQH00000KZJXJ2A5), created test procedure |
 
 ---
 
