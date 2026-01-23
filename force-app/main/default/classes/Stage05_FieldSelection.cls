@@ -99,15 +99,6 @@ public with sharing class Stage05_FieldSelection implements IStage {
                     fieldsByObject, traversalsByObject, rootObject, businessContext, targetPersona,
                     multiSampleProfile, runId, result, selectedParentFields);
 
-                // V2.2 FALLBACK: If LLM didn't return parent fields but traversals exist, add defaults
-                if (selectedParentFields.isEmpty() && traversalsByObject != null && !traversalsByObject.isEmpty()) {
-                    result.queueInfo(runId, STAGE_NUMBER,
-                        'LLM did not return selectedParentFields - adding defaults from available traversals');
-                    addDefaultParentFields(selectedParentFields, traversalsByObject, objectsWithData);
-                    result.queueInfo(runId, STAGE_NUMBER,
-                        'Default parent fields added: ' + JSON.serialize(selectedParentFields));
-                }
-
                 // Step 3: Validate AI-selected fields against schema
                 Map<String, List<String>> validatedFields = new Map<String, List<String>>();
                 for (String objectName : selectedFields.keySet()) {
@@ -621,14 +612,11 @@ public with sharing class Stage05_FieldSelection implements IStage {
             }
 
             promptParts.add('');
-            promptParts.add('PARENT FIELD SELECTION GUIDANCE (V2.2 - REQUIRED):');
-            promptParts.add('YOU MUST SELECT PARENT FIELDS for personalization. At minimum:');
-            promptParts.add('- ALWAYS select OwnerId.Name on root object (e.g., "Opportunity": ["OwnerId.Name"])');
-            promptParts.add('- ALWAYS select ContactId.Name on OpportunityContactRole (if present)');
-            promptParts.add('- Consider AccountId.Name, AccountId.Industry for business context');
-            promptParts.add('');
-            promptParts.add('Without parent fields, output will say "the owner" instead of "Sarah Johnson".');
-            promptParts.add('This is a critical personalization requirement - do NOT skip selectedParentFields!');
+            promptParts.add('PARENT FIELD SELECTION GUIDANCE:');
+            promptParts.add('- Use Owner.Name to personalize "assigned to Sarah Johnson" instead of "the owner"');
+            promptParts.add('- Use Contact.Name for stakeholder names in OpportunityContactRole');
+            promptParts.add('- Use Account.Industry for business context');
+            promptParts.add('- Include 1-3 key parent fields per object for personalization');
         }
 
         promptParts.add('');
@@ -732,19 +720,12 @@ public with sharing class Stage05_FieldSelection implements IStage {
         promptParts.add('    "' + rootObject + '": ["Id", "Name", "Field3", "Field4", ...],');
         promptParts.add('    "ChildObject": ["Id", "Name", "MeaningfulField1", "MeaningfulField2", ...]');
         promptParts.add('  },');
-        // V2.2: Add parent field selection format - REQUIRED if traversals are available
+        // V2.1: Add parent field selection format if traversals are available
         if (traversalsByObject != null && !traversalsByObject.isEmpty()) {
             promptParts.add('  "selectedParentFields": {');
-            promptParts.add('    "' + rootObject + '": ["OwnerId.Name"],');
+            promptParts.add('    "' + rootObject + '": ["OwnerId.Name", "OwnerId.Email"],');
             promptParts.add('    "OpportunityContactRole": ["ContactId.Name", "ContactId.Title"]');
             promptParts.add('  },');
-            promptParts.add('');
-            promptParts.add('CRITICAL: "selectedParentFields" is REQUIRED - you MUST include it!');
-            promptParts.add('- For ' + rootObject + ': ALWAYS include "OwnerId.Name" at minimum');
-            promptParts.add('- For OpportunityContactRole: ALWAYS include "ContactId.Name" and "ContactId.Title"');
-            promptParts.add('- Use the EXACT format from AVAILABLE PARENT TRAVERSALS section above');
-            promptParts.add('- Parent fields enable personalization (names instead of "the owner")');
-            promptParts.add('');
         }
         promptParts.add('  "reasoning": "Brief explanation of your field selection strategy"');
         promptParts.add('}');
@@ -1054,59 +1035,6 @@ public with sharing class Stage05_FieldSelection implements IStage {
         }
 
         return def;
-    }
-
-    /**
-     * @description V2.2: Adds default parent fields when LLM doesn't return any
-     * This ensures personalization works even if LLM doesn't follow instructions
-     * @param selectedParentFields Output map to populate
-     * @param traversalsByObject Available traversals by object
-     * @param objectsWithData Objects that have data
-     */
-    private void addDefaultParentFields(
-            Map<String, List<String>> selectedParentFields,
-            Map<String, List<TraversalDefinition>> traversalsByObject,
-            List<String> objectsWithData) {
-
-        // Priority fields to add by source field
-        Map<String, List<String>> priorityFields = new Map<String, List<String>>{
-            'OwnerId' => new List<String>{'Name'},
-            'AccountId' => new List<String>{'Name', 'Industry'},
-            'ContactId' => new List<String>{'Name', 'Title', 'Email'}
-        };
-
-        for (String objectName : objectsWithData) {
-            if (!traversalsByObject.containsKey(objectName)) {
-                continue;
-            }
-
-            List<String> parentFields = new List<String>();
-
-            for (TraversalDefinition trav : traversalsByObject.get(objectName)) {
-                // Skip polymorphic fields (WhatId, WhoId) - too complex for auto-selection
-                if (trav.isPolymorphic) {
-                    continue;
-                }
-
-                // Check if this is a priority traversal
-                if (priorityFields.containsKey(trav.sourceField)) {
-                    List<String> fieldsToAdd = priorityFields.get(trav.sourceField);
-                    for (String fieldPath : fieldsToAdd) {
-                        // Check if traversal has this field
-                        for (TraversalField tf : trav.fields) {
-                            if (tf.path == fieldPath) {
-                                parentFields.add(trav.sourceField + '.' + tf.path);
-                                break;
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (!parentFields.isEmpty()) {
-                selectedParentFields.put(objectName, parentFields);
-            }
-        }
     }
 
     /**
