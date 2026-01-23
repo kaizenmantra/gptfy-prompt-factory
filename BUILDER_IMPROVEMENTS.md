@@ -11,7 +11,7 @@ All architecture, decisions, tasks, and progress tracked here.
 |-------|------|---------------------|---------|
 | - | - | - | - |
 
-**Status:** V2.1 COMPLETE - All Phase 1A, 1B, 1C tasks done. Ready for V2.2.
+**Status:** V2.1 COMPLETE. V2.2 planned (20 tasks) - Schema intelligence, field density, parent traversal resolution.
 
 ---
 
@@ -32,7 +32,7 @@ All architecture, decisions, tasks, and progress tracked here.
 | V1.1 | main | ✅ Released | Builder prompt injection (Run ID a0gQH000005GHurYAG) |
 | V2.0 | feature/builder-improvements | ✅ Complete | Meta-prompt architecture, LLM metadata, field validation |
 | V2.1 | feature/v2.1-enhancements | ✅ Complete | Visual diversity, parent traversals, builder library |
-| V2.2 | TBD | 📋 Planned | Field density profiling, bidirectional traversal |
+| V2.2 | feature/v2.2-schema-intelligence | 📋 Planned | Schema enrichment (helpText, density), parent traversal resolution |
 | V2.3 | TBD | 📋 Planned | Knowledge base expansion, smart builder selection |
 
 ---
@@ -131,35 +131,90 @@ sf project deploy start -o agentictso -d force-app/main/default/classes/ClassNam
 
 ---
 
-## V2.2 Task Queue (Architecture)
+## V2.2 Task Queue (Schema Intelligence)
 
-### Phase 2A: Parent Traversal Implementation
+**Goal:** Make field selection smarter by enriching schema metadata with helpText, density, and parent relationships. Then make parent fields actually work end-to-end in the output.
+
+**Reference Implementation:** Logic ported from `gptfy-claude-automation` repo:
+- `scripts/discover-fields.sh` → Field metadata, density calculation
+- `scripts/discover-relationships.sh` → Parent lookup detection
+
+---
+
+### Phase 2A: Schema Enrichment (Foundation)
+
+Enhance SchemaHelper with richer field metadata. Port logic from shell scripts.
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 2.1 | Design parent traversal architecture | Opus | not_started | How SchemaHelper discovers lookups |
-| 2.2 | Update SchemaHelper for lookup field detection | Sonnet | not_started | Identify AccountId, ContactId, OwnerId, etc. |
-| 2.3 | Update SchemaHelper for parent object mapping | Sonnet | not_started | Map lookup → target object |
-| 2.4 | Update DCMBuilder for parent field syntax | Sonnet | not_started | Support Contact.Name via ContactId |
-| 2.5 | Update Stage 5 to include parent candidates | Opus | not_started | Send parent fields to LLM for selection |
-| 2.6 | Test parent traversal end-to-end | Opus | not_started | Verify Contact.Name appears in output |
+| 2.1 | Add helpText to FieldMetadata class | Sonnet | not_started | Add `inlineHelpText` from field describe. Port from discover-fields.sh line 153 |
+| 2.2 | Add picklistValues to FieldMetadata class | Sonnet | not_started | Add `List<PicklistValue>` with value, label, active. Port from discover-fields.sh lines 144-150 |
+| 2.3 | Add parent lookup detection to SchemaHelper | Sonnet | not_started | New method `getParentRelationships(objectName)` returns lookup fields with target object. Port from discover-relationships.sh lines 161-175 |
+| 2.4 | Add field categorization to FieldMetadata | Sonnet | not_started | Add `category` (narrative, metric, classification, temporal, flag, relationship). Port from discover-fields.sh lines 207-216 |
 
 ### Phase 2B: Field Density Profiling
 
-| # | Task | Model | Status | Notes |
-|---|------|-------|--------|-------|
-| 2.7 | Design field density profiling | Opus | not_started | Query 100+ records, calculate population % |
-| 2.8 | Update Stage 4 for density calculation | Sonnet | not_started | Add populationPercent to field metadata |
-| 2.9 | Prioritize long text / unstructured fields | Sonnet | not_started | Flag Description, Comments fields |
-| 2.10 | Update Stage 5 to use density in selection | Opus | not_started | Higher density = more relevant |
-
-### Phase 2C: Metadata-Rich Selection
+Query actual records to determine which fields are populated. Port from discover-fields.sh CHECK_USAGE section.
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 2.11 | Extract field help text and descriptions | Sonnet | not_started | Include in field metadata |
-| 2.12 | Send metadata to LLM in Stage 5 | Opus | not_started | Help LLM understand field purpose |
-| 2.13 | Improve field relevance scoring | Opus | not_started | Combine density + metadata + type |
+| 2.5 | Design density profiling approach | Opus | not_started | Decide: Stage 4 vs new helper class. Consider governor limits for 100+ record queries |
+| 2.6 | Implement field density calculation | Sonnet | not_started | Query N records (configurable, default 100), count non-null values per field. Port from discover-fields.sh lines 251-275 |
+| 2.7 | Add usagePercent to FieldMetadata | Sonnet | not_started | Store calculated density %. Fields with 0% usage deprioritized |
+| 2.8 | Integrate density into Stage 4 or Stage 5 | Sonnet | not_started | Call density calculation, merge into field metadata before LLM selection |
+
+### Phase 2C: Parent Traversal Resolution (Core Feature)
+
+Make parent fields actually work in DCM and final output. V2.1 added suggestions; V2.2 makes them real.
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 2.9 | Design parent field resolution architecture | Opus | not_started | How DCM specifies parent fields, how GPTfy resolves them at runtime |
+| 2.10 | Update DCMBuilder for parent field syntax | Sonnet | not_started | Support `Account.Name` via `AccountId` lookup. Investigate GPTfy DCM parent field format |
+| 2.11 | Update Stage 8 to include parent fields in DCM config | Sonnet | not_started | Pass selectedParentFields from Stage 5 through to DCM creation |
+| 2.12 | Update merge field reference for parent fields | Sonnet | not_started | Show `{{{Account.Name}}}` syntax in available merge fields section |
+| 2.13 | Test parent traversal end-to-end | Manual | not_started | Verify `{{{Owner.Name}}}` resolves to actual user name in output |
+
+### Phase 2D: LLM-Enhanced Field Selection
+
+Send enriched metadata to LLM for smarter field selection.
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 2.14 | Update Stage 5 prompt with helpText | Opus | not_started | Include field helpText in LLM prompt so it understands field purpose |
+| 2.15 | Update Stage 5 prompt with density | Opus | not_started | Show usagePercent so LLM prioritizes populated fields |
+| 2.16 | Update Stage 5 prompt with categories | Sonnet | not_started | Group fields by category (narrative, metric, etc.) in prompt |
+| 2.17 | Add relevance scoring hints | Opus | not_started | Boost fields with helpText, high density, matching use case keywords |
+
+### Phase 2E: Testing & Validation
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 2.18 | Create test script for enriched schema | Sonnet | not_started | Verify FieldMetadata has helpText, density, category |
+| 2.19 | Create test script for parent field resolution | Sonnet | not_started | Verify DCM includes parent fields, output shows resolved values |
+| 2.20 | End-to-end V2.2 validation | Manual | not_started | Full pipeline test with enriched metadata and parent fields |
+
+---
+
+### V2.2 Summary
+
+| Phase | Tasks | Focus |
+|-------|-------|-------|
+| 2A | 2.1-2.4 | Schema enrichment (helpText, picklist, parents, categories) |
+| 2B | 2.5-2.8 | Field density profiling (query records, calculate %) |
+| 2C | 2.9-2.13 | Parent traversal resolution (make it actually work) |
+| 2D | 2.14-2.17 | LLM-enhanced selection (use the enriched data) |
+| 2E | 2.18-2.20 | Testing & validation |
+
+**Total: 20 tasks** (was 13 in original plan)
+
+**Key Deliverables:**
+1. `SchemaHelper.FieldMetadata` enriched with helpText, picklistValues, category, usagePercent
+2. `SchemaHelper.getParentRelationships()` for lookup field detection
+3. Field density calculation (query N records, count non-nulls)
+4. DCMBuilder parent field support (`Account.Name` via `AccountId`)
+5. Stage 5 prompt includes enriched metadata for smarter selection
+6. Parent fields resolve to actual values in final output
 
 ---
 
