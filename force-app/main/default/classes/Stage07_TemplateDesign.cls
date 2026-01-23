@@ -771,7 +771,7 @@ public with sharing class Stage07_TemplateDesign implements IStage {
      * @description Gets color scheme prompt section from static resource
      * @return Color scheme string for prompt
      */
-    private String getColorSchemePrompt() {
+    public static String getColorSchemePrompt() {
         Map<String, Object> colorPalette = PromptFactoryRulesLoader.getColorPalette();
 
         if (colorPalette == null || colorPalette.isEmpty()) {
@@ -821,7 +821,7 @@ public with sharing class Stage07_TemplateDesign implements IStage {
     /**
      * @description Returns default Salesforce brand colors
      */
-    private String getSalesforceBrandColors() {
+    private static String getSalesforceBrandColors() {
         return '### Primary Colors (Salesforce Brand)\n' +
                '- Main Blue: #0176D3 (headers, links, primary actions)\n' +
                '- Dark Blue: #014486 (hover states, gradients)\n' +
@@ -841,7 +841,7 @@ public with sharing class Stage07_TemplateDesign implements IStage {
      * Returns ready-to-use inline style strings
      * @return Style patterns string for prompt
      */
-    private String getStylePatternsPrompt() {
+    public static String getStylePatternsPrompt() {
         Map<String, Object> inlineStyles = PromptFactoryRulesLoader.getInlineStyles();
 
         if (inlineStyles == null || inlineStyles.isEmpty()) {
@@ -973,7 +973,7 @@ public with sharing class Stage07_TemplateDesign implements IStage {
     /**
      * @description Returns default inline styles when static resource is not available
      */
-    private String getDefaultInlineStyles() {
+    private static String getDefaultInlineStyles() {
         return '### Ready-to-Use Inline Styles (copy these exactly)\n\n' +
                '#### Container & Layout\n' +
                '- Container: style="font-family:\'Salesforce Sans\',-apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,Arial,sans-serif;max-width:100%;background:#F3F3F3;color:#181818;font-size:14px;line-height:1.5;padding:16px;"\n' +

@@ -954,7 +954,7 @@ WHERE Id IN :sampleRecordIds
 | 18 | Build SOQL query with parent/child relationships | Sonnet | done | 17 | Query 2nd/3rd level data with subqueries + separate queries |
 | 19 | Format relationship data for LLM context | Sonnet | done | 18 | Markdown lists for child objects in prompt |
 | 20 | **Design HTML template generation strategy** | Opus | done | 16 | Merged into Task 16 - see conversion prompt approach |
-| 21 | Update system prompt for HTML output | Sonnet | not_started | 16 | Add `convertToHTML()` method using conversion prompt |
+| 21 | Update system prompt for HTML output | Sonnet | done | 16 | Added `convertToHTML()` method with GPTfy conversion prompt |
 | 22 | Create HTML exemplars (Deal Coach, Account 360) | Sonnet | not_started | 16 | Convert markdown exemplars to HTML with merge fields |
 | 23 | Update deployPrompt to handle HTML output | Sonnet | not_started | 21,22 | Call conversion, validate, create DCM+Prompt |
 | 24 | Add HTML preview in chat UI | Sonnet | not_started | 21 | Render HTML safely in LWC |

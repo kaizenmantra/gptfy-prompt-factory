@@ -999,4 +999,188 @@ public with sharing class PromptBuilderController {
 
         return result;
     }
+
+    /**
+     * Convert approved markdown to GPTfy-compliant HTML
+     * Phase 3b: HTML Conversion (Task 21)
+     *
+     * @param approvedMarkdown The final approved markdown from chat phase
+     * @param rootObject The root Salesforce object
+     * @param fieldWhitelist Set of allowed merge fields (e.g., "Amount", "Account.Name")
+     * @return GPTfy-compliant HTML template with merge fields
+     */
+    public static String convertToHTML(
+        String approvedMarkdown,
+        String rootObject,
+        Set<String> fieldWhitelist
+    ) {
+        // Build conversion prompt
+        String conversionPrompt = buildHTMLConversionPrompt(
+            approvedMarkdown,
+            rootObject,
+            fieldWhitelist
+        );
+
+        // Call AI for HTML conversion
+        AIServiceClient.AIResponse aiResponse = AIServiceClient.callAI(
+            null, // No system prompt needed - instructions in user prompt
+            conversionPrompt,
+            8192, // Max tokens for HTML output
+            0.3   // Lower temperature for more consistent formatting
+        );
+
+        if (aiResponse == null || String.isBlank(aiResponse.content)) {
+            throw new PromptBuilderException('Failed to convert markdown to HTML');
+        }
+
+        String htmlTemplate = aiResponse.content.trim();
+
+        // Remove markdown code fences if present
+        if (htmlTemplate.startsWith('```html')) {
+            htmlTemplate = htmlTemplate.substring(7);
+        } else if (htmlTemplate.startsWith('```')) {
+            htmlTemplate = htmlTemplate.substring(3);
+        }
+        if (htmlTemplate.endsWith('```')) {
+            htmlTemplate = htmlTemplate.substring(0, htmlTemplate.length() - 3);
+        }
+        htmlTemplate = htmlTemplate.trim();
+
+        // Validate HTML safety
+        List<String> safetyIssues = validateHTMLSafety(htmlTemplate);
+        if (!safetyIssues.isEmpty()) {
+            System.debug('HTML safety issues detected: ' + safetyIssues);
+            htmlTemplate = sanitizeHTML(htmlTemplate);
+        }
+
+        return htmlTemplate;
+    }
+
+    /**
+     * Build the HTML conversion prompt with GPTfy requirements
+     */
+    private static String buildHTMLConversionPrompt(
+        String approvedMarkdown,
+        String rootObject,
+        Set<String> fieldWhitelist
+    ) {
+        String prompt = '';
+
+        prompt += 'You are converting approved analysis content into a GPTfy-compatible HTML template.\n\n';
+
+        prompt += '=== APPROVED CONTENT (Markdown) ===\n';
+        prompt += approvedMarkdown + '\n\n';
+
+        prompt += '=== FIELD WHITELIST (Only these fields are available) ===\n';
+        if (fieldWhitelist != null && !fieldWhitelist.isEmpty()) {
+            List<String> sortedFields = new List<String>(fieldWhitelist);
+            sortedFields.sort();
+            for (String field : sortedFields) {
+                prompt += '- ' + field + '\n';
+            }
+        }
+        prompt += '\n';
+
+        prompt += '=== GPTfy HTML REQUIREMENTS ===\n';
+        prompt += '1. Output as ONE continuous line - NO line breaks\n';
+        prompt += '2. Use ONLY inline styles (style="...") - NO class="..." attributes\n';
+        prompt += '3. NO <style> blocks or CSS classes\n';
+        prompt += '4. NO <script> tags or event handlers\n';
+        prompt += '5. Start with <div style=" and end with </div>\n\n';
+
+        prompt += '=== MERGE FIELD SYNTAX ===\n';
+        prompt += '- Root object fields: {{{FieldName}}}\n';
+        prompt += '- Lookup fields: {{{Relationship.FieldName}}}\n';
+        prompt += '- Child collections: {{#ChildCollection}}...{{/ChildCollection}}\n';
+        prompt += '- Empty check: {{^ChildCollection}}No items{{/ChildCollection}}\n\n';
+
+        prompt += '=== INLINE STYLE PATTERNS (Salesforce Brand) ===\n';
+        prompt += Stage07_TemplateDesign.getStylePatternsPrompt() + '\n';
+
+        prompt += '=== COLOR SCHEME ===\n';
+        prompt += Stage07_TemplateDesign.getColorSchemePrompt() + '\n';
+
+        prompt += 'TASK:\n';
+        prompt += 'Convert the approved markdown content into a single-line HTML template.\n';
+        prompt += 'Replace specific data values with appropriate merge fields from the whitelist.\n';
+        prompt += 'Use the style patterns and colors provided.\n\n';
+
+        prompt += 'Output ONLY raw HTML starting with <div - no explanation:';
+
+        return prompt;
+    }
+
+    /**
+     * Validate HTML safety (no scripts, single line, etc.)
+     */
+    private static List<String> validateHTMLSafety(String html) {
+        List<String> issues = new List<String>();
+
+        if (String.isBlank(html)) {
+            issues.add('HTML is empty');
+            return issues;
+        }
+
+        String htmlLower = html.toLowerCase();
+
+        // Check for disallowed tags
+        if (htmlLower.contains('<script')) {
+            issues.add('Contains <script> tag');
+        }
+        if (htmlLower.contains('<style')) {
+            issues.add('Contains <style> tag');
+        }
+        if (htmlLower.contains('javascript:')) {
+            issues.add('Contains javascript: protocol');
+        }
+        if (htmlLower.contains('onerror=') || htmlLower.contains('onclick=') || htmlLower.contains('onload=')) {
+            issues.add('Contains event handler attributes');
+        }
+
+        // Check for CSS classes (should use inline styles only)
+        if (html.contains('class="')) {
+            issues.add('Contains class attributes (use inline styles)');
+        }
+
+        // Check for newlines (GPTfy requires single line)
+        if (html.contains('\n') || html.contains('\r')) {
+            issues.add('Contains line breaks (must be single line)');
+        }
+
+        return issues;
+    }
+
+    /**
+     * Sanitize HTML by removing disallowed elements
+     */
+    private static String sanitizeHTML(String html) {
+        if (String.isBlank(html)) {
+            return html;
+        }
+
+        String sanitized = html;
+
+        // Remove script tags
+        sanitized = sanitized.replaceAll('(?i)<script[^>]*>.*?</script>', '');
+
+        // Remove style tags
+        sanitized = sanitized.replaceAll('(?i)<style[^>]*>.*?</style>', '');
+
+        // Remove event handlers
+        sanitized = sanitized.replaceAll('(?i)\\s+on\\w+\\s*=\\s*["\'][^"\']*["\']', '');
+
+        // Remove class attributes
+        sanitized = sanitized.replaceAll('(?i)\\s+class\\s*=\\s*["\'][^"\']*["\']', '');
+
+        // Remove newlines (convert to single line)
+        sanitized = sanitized.replaceAll('\\r\\n|\\r|\\n', ' ');
+
+        // Remove multiple spaces
+        sanitized = sanitized.replaceAll('\\s+', ' ');
+
+        // Trim
+        sanitized = sanitized.trim();
+
+        return sanitized;
+    }
 }
