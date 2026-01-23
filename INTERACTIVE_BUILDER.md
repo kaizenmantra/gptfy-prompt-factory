@@ -49,7 +49,7 @@ Wait for deployment to complete and check for errors before marking task as done
 
 | ID | Task | Model | Status | Blocked By | Notes |
 |----|------|-------|--------|------------|-------|
-| 1 | Create `PromptBuilderController.cls` scaffold with `initializeSession` method | Sonnet | not_started | - | Reuse SchemaHelper for schema queries |
+| 1 | Create `PromptBuilderController.cls` scaffold with `initializeSession` method | Sonnet | done | - | Reuse SchemaHelper for schema queries |
 | 2 | Create `promptBuilderChat.html` - record selection UI | Sonnet | not_started | 1 | Object picker, record selector, business context input |
 | 3 | Create `promptBuilderChat.js` - wire up controller | Sonnet | not_started | 1,2 | Call initializeSession, handle responses |
 | 4 | Create `promptBuilderChat.css` - basic styling | Sonnet | not_started | 2 | Keep it simple, Salesforce-like |
