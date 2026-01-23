@@ -248,10 +248,10 @@ public with sharing class PromptBuilderController {
     @AuraEnabled
     public static Map<String, Object> chat(Id sessionId, String userMessage) {
         try {
-            // Load session
+            // Load session with conversation history
             PF_Run__c session = [
                 SELECT Id, Root_Object__c, Business_Context__c, Sample_Record_Id__c,
-                       Status__c, AI_Model__c
+                       Status__c, AI_Model__c, Current_Draft__c
                 FROM PF_Run__c
                 WHERE Id = :sessionId
                 LIMIT 1
@@ -276,6 +276,10 @@ public with sharing class PromptBuilderController {
                          ' WHERE Id IN :sampleRecordIds';
             List<SObject> sampleRecords = Database.query(soql);
 
+            // Determine if this is first message or follow-up
+            Boolean isFirstMessage = String.isBlank(userMessage) || userMessage.equals('START');
+            String previousDraft = session.Current_Draft__c;
+
             // Build user prompt
             String userPrompt = buildUserPrompt(
                 session.Root_Object__c,
@@ -283,7 +287,9 @@ public with sharing class PromptBuilderController {
                 sampleRecords,
                 fieldNames,
                 exemplars,
-                userMessage
+                userMessage,
+                previousDraft,
+                isFirstMessage
             );
 
             // Call AI
@@ -298,6 +304,10 @@ public with sharing class PromptBuilderController {
             if (!aiResponse.success) {
                 throw new AuraHandledException('AI service error: ' + aiResponse.errorMessage);
             }
+
+            // Store the AI response as current draft for future follow-ups
+            session.Current_Draft__c = aiResponse.content;
+            update session;
 
             // Build response
             Map<String, Object> response = new Map<String, Object>{
@@ -361,6 +371,8 @@ public with sharing class PromptBuilderController {
      * @param fieldNames Field names queried
      * @param exemplars Map of exemplars
      * @param userMessage Optional user message for follow-up
+     * @param previousDraft Previous AI response (for follow-ups)
+     * @param isFirstMessage Whether this is the first message or a follow-up
      * @return String containing the formatted user prompt
      */
     private static String buildUserPrompt(
@@ -369,7 +381,9 @@ public with sharing class PromptBuilderController {
         List<SObject> sampleRecords,
         List<String> fieldNames,
         Map<String, String> exemplars,
-        String userMessage
+        String userMessage,
+        String previousDraft,
+        Boolean isFirstMessage
     ) {
         // Select relevant exemplar
         String relevantExemplar = selectExemplar(rootObject, exemplars);
@@ -378,7 +392,7 @@ public with sharing class PromptBuilderController {
         String formattedData = formatSampleData(sampleRecords, fieldNames, rootObject);
 
         // Build prompt based on whether this is first message or follow-up
-        if (String.isBlank(userMessage) || userMessage.equals('START')) {
+        if (isFirstMessage) {
             // First message template
             return '## WHAT I\'M BUILDING\n\n' +
                    businessContext + '\n\n' +
@@ -391,11 +405,23 @@ public with sharing class PromptBuilderController {
                    '---\n\n' +
                    'Generate an analysis following the exemplar\'s structure and quality level. Remember to self-evaluate against the rubric before presenting.';
         } else {
-            // Follow-up message template
-            return '## USER FEEDBACK\n\n' +
-                   userMessage + '\n\n' +
-                   '---\n\n' +
-                   'Revise your analysis based on the feedback above. Self-evaluate the revision against the rubric before presenting.';
+            // Follow-up message template - CRITICAL: Include data and previous draft
+            String prompt = '## USER FEEDBACK\n\n' +
+                   userMessage + '\n\n';
+
+            // Include the previous analysis so AI knows what to revise
+            if (String.isNotBlank(previousDraft)) {
+                prompt += '## YOUR PREVIOUS ANALYSIS (to revise)\n\n' +
+                         previousDraft + '\n\n';
+            }
+
+            // Re-include the data so AI can reference it during revision
+            prompt += '## DATA REFERENCE (for your revision)\n\n' +
+                     formattedData + '\n\n' +
+                     '---\n\n' +
+                     'Revise your analysis based on the feedback above. Keep what was good, improve what was requested. Self-evaluate the revision against the rubric before presenting.';
+
+            return prompt;
         }
     }
 

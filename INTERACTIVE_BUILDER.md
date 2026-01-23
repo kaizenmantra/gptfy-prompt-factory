@@ -59,7 +59,7 @@ Wait for deployment to complete and check for errors before marking task as done
 | 8 | Add `chat` method to controller | Sonnet | done | 6,7 | Build prompt, call AIServiceClient, return response |
 | 9 | Add chat UI to LWC (message list, input, send) | Sonnet | done | 8 | Render markdown responses |
 | 10 | Deploy Phase 2 to Salesforce and test | Sonnet | done | 7,8,9 | `sf project deploy start -o agentictso`, test chat flow |
-| 11 | **Review Phase 2 quality, adjust prompt if needed** | Opus | not_started | 10 | NEEDS THINKING - evaluate output quality |
+| 11 | **Review Phase 2 quality, adjust prompt if needed** | Opus | done | 10 | Fixed follow-up prompts, added Current_Draft__c field |
 | 12 | Add `deployPrompt` method to controller | Sonnet | not_started | 11 | Extract fields, create DCM + Prompt |
 | 13 | Add deploy UI (approve button, success message) | Sonnet | not_started | 12 | Show created record IDs, next steps |
 | 14 | Deploy Phase 3 to Salesforce and test | Sonnet | not_started | 12,13 | `sf project deploy start -o agentictso`, full flow test |
@@ -690,6 +690,21 @@ Option B: Reuse existing `PF_Run__c` with new fields
 - [x] Defined exemplar selection logic based on root object
 - [x] Documented implementation notes for Sonnet (Tasks 7-8)
 - [x] Estimated token budget (~8,000 tokens per call)
+
+### 2025-01-22 - Task 11: Phase 2 Quality Review (Opus)
+**Issues Found & Fixed:**
+1. **CRITICAL FIX:** Follow-up prompts were broken - didn't include sample data or previous AI response
+   - Updated `buildUserPrompt` to accept `previousDraft` and `isFirstMessage` parameters
+   - Follow-ups now include: user feedback + previous analysis + data reference
+2. **CRITICAL FIX:** Added `Current_Draft__c` field to PF_Run__c to persist AI responses
+   - Created field definition (LongTextArea, 131072 chars)
+   - `chat` method now saves AI response after each call
+3. **Updated method signature:** `buildUserPrompt` now has 8 parameters instead of 6
+
+**Still TODO (for Sonnet in Task 12-13):**
+- Add "Approve & Deploy" button to UI (transition to Phase 3)
+- Better markdown rendering (tables don't render properly)
+- Loading spinner during chat messages (currently only shows on init)
 
 ---
 
