@@ -142,7 +142,7 @@
                     </div>
                 </div>
 
-                <!-- Chat Interface Placeholder -->
+                <!-- Chat Interface -->
                 <div class="slds-m-top_medium">
                     <div class="slds-card">
                         <div class="slds-card__header slds-grid">
@@ -158,9 +158,66 @@
                             </div>
                         </div>
                         <div class="slds-card__body slds-card__body_inner">
-                            <div class="slds-text-align_center slds-p-vertical_large">
-                                <lightning-icon icon-name="utility:comments" size="large" class="slds-m-bottom_medium"></lightning-icon>
-                                <p class="slds-text-body_regular">Chat interface coming in Phase 2...</p>
+                            <!-- Message List -->
+                            <div class="chat-messages-container">
+                                <template if:true={hasMessages}>
+                                    <template for:each={messages} for:item="msg">
+                                        <div key={msg.id} class={msg.cssClass}>
+                                            <div class="message-header">
+                                                <lightning-icon icon-name={msg.icon} size="x-small" class="message-icon"></lightning-icon>
+                                                <span class="message-sender">{msg.sender}</span>
+                                            </div>
+                                            <div class="message-content">
+                                                <lightning-formatted-rich-text value={msg.content}></lightning-formatted-rich-text>
+                                            </div>
+                                        </div>
+                                    </template>
+                                </template>
+                                <template if:false={hasMessages}>
+                                    <div class="slds-text-align_center slds-p-vertical_medium">
+                                        <lightning-icon icon-name="utility:comments" size="large" class="slds-m-bottom_small"></lightning-icon>
+                                        <p class="slds-text-body_regular">Click "Start Analysis" to begin</p>
+                                    </div>
+                                </template>
+                            </div>
+
+                            <!-- Chat Input -->
+                            <div class="chat-input-container slds-m-top_medium">
+                                <template if:false={hasMessages}>
+                                    <!-- Start Analysis Button (shown before first message) -->
+                                    <lightning-button
+                                        label="Start Analysis"
+                                        variant="brand"
+                                        onclick={handleStartChat}
+                                        disabled={isChatLoading}
+                                        icon-name="utility:priority"
+                                        class="slds-m-bottom_small">
+                                    </lightning-button>
+                                </template>
+                                <template if:true={hasMessages}>
+                                    <!-- Follow-up Input (shown after first message) -->
+                                    <div class="slds-grid slds-gutters_x-small">
+                                        <div class="slds-col slds-grow">
+                                            <lightning-textarea
+                                                value={chatInput}
+                                                onchange={handleChatInputChange}
+                                                placeholder="Provide feedback or ask for changes..."
+                                                rows="2"
+                                                disabled={isChatLoading}>
+                                            </lightning-textarea>
+                                        </div>
+                                        <div class="slds-col slds-no-flex">
+                                            <lightning-button
+                                                label="Send"
+                                                variant="brand"
+                                                onclick={handleSendMessage}
+                                                disabled={isSendDisabled}
+                                                icon-name="utility:send"
+                                                class="send-button">
+                                            </lightning-button>
+                                        </div>
+                                    </div>
+                                </template>
                             </div>
                         </div>
                     </div>

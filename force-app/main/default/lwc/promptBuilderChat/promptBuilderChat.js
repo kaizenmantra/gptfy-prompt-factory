@@ -1,5 +1,6 @@
 import { LightningElement, track } from 'lwc';
 import initializeSession from '@salesforce/apex/PromptBuilderController.initializeSession';
+import chat from '@salesforce/apex/PromptBuilderController.chat';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 
 /**
@@ -17,6 +18,11 @@ export default class PromptBuilderChat extends LightningElement {
     // Session State
     @track sessionId = null;
     @track sessionData = {};
+
+    // Chat State
+    @track messages = [];
+    @track chatInput = '';
+    @track isChatLoading = false;
 
     // UI State
     @track isLoading = false;
@@ -217,5 +223,125 @@ export default class PromptBuilderChat extends LightningElement {
             return error.message;
         }
         return 'An unknown error occurred';
+    }
+
+    /**
+     * Phase 2: Chat Methods
+     */
+
+    /**
+     * Check if there are any messages
+     */
+    get hasMessages() {
+        return this.messages && this.messages.length > 0;
+    }
+
+    /**
+     * Check if send button should be disabled
+     */
+    get isSendDisabled() {
+        return this.isChatLoading || !this.chatInput || this.chatInput.trim().length === 0;
+    }
+
+    /**
+     * Handle chat input change
+     */
+    handleChatInputChange(event) {
+        this.chatInput = event.target.value;
+    }
+
+    /**
+     * Handle Start Analysis button click
+     */
+    handleStartChat() {
+        this.sendChatMessage('START');
+    }
+
+    /**
+     * Handle Send button click
+     */
+    handleSendMessage() {
+        if (this.chatInput && this.chatInput.trim().length > 0) {
+            this.sendChatMessage(this.chatInput);
+            this.chatInput = '';
+        }
+    }
+
+    /**
+     * Send message to AI
+     */
+    sendChatMessage(userMessage) {
+        this.isChatLoading = true;
+        this.clearError();
+
+        // Add user message to conversation (except for START)
+        if (userMessage !== 'START') {
+            this.addMessage('user', userMessage);
+        }
+
+        // Call chat method
+        chat({
+            sessionId: this.sessionId,
+            userMessage: userMessage
+        })
+            .then(result => {
+                if (result.success) {
+                    // Add AI response to conversation
+                    this.addMessage('assistant', result.message);
+                    console.log('Chat response received:', result);
+                } else {
+                    this.showError('Failed to get response from AI');
+                }
+            })
+            .catch(error => {
+                this.showError(this.getErrorMessage(error));
+                console.error('Error in chat:', error);
+            })
+            .finally(() => {
+                this.isChatLoading = false;
+            });
+    }
+
+    /**
+     * Add message to conversation
+     */
+    addMessage(sender, content) {
+        const message = {
+            id: Date.now() + '-' + sender,
+            sender: sender === 'user' ? 'You' : 'AI Assistant',
+            content: this.formatMessageContent(content),
+            icon: sender === 'user' ? 'utility:user' : 'utility:bot',
+            cssClass: sender === 'user' ? 'message user-message' : 'message ai-message'
+        };
+
+        this.messages = [...this.messages, message];
+    }
+
+    /**
+     * Format message content for display
+     * Converts markdown to HTML for rich text display
+     */
+    formatMessageContent(content) {
+        if (!content) return '';
+
+        // Convert markdown to HTML (basic conversion)
+        let formatted = content;
+
+        // Headers
+        formatted = formatted.replace(/### (.*)/g, '<h3>$1</h3>');
+        formatted = formatted.replace(/## (.*)/g, '<h2>$1</h2>');
+        formatted = formatted.replace(/# (.*)/g, '<h1>$1</h1>');
+
+        // Bold
+        formatted = formatted.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+        // Lists
+        formatted = formatted.replace(/^- (.*)/gm, '<li>$1</li>');
+        formatted = formatted.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+
+        // Line breaks
+        formatted = formatted.replace(/\n/g, '<br/>');
+
+        return formatted;
     }
 }
