@@ -865,8 +865,35 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             }
         }
 
+        // Generate dynamic example based on actual selected objects
         ref += 'EXAMPLE USAGE:\n';
-        ref += '<div style="..."><h1>{{{Name}}}</h1>{{#Tasks}}<div>{{{Subject}}} - {{{Status}}}</div>{{/Tasks}}{{^Tasks}}<div>No tasks</div>{{/Tasks}}</div>\n\n';
+        ref += '<div style="..."><h1>{{{Name}}}</h1>';
+
+        // Use first child object for example, if available
+        String exampleChild = null;
+        String exampleField = null;
+        for (String objName : selectedFieldsRaw.keySet()) {
+            if (objName != rootObject) {
+                exampleChild = getRelationshipNameForObject(objName, rootObject);
+                List<Object> fields = (List<Object>) selectedFieldsRaw.get(objName);
+                if (fields != null && !fields.isEmpty()) {
+                    exampleField = String.valueOf(fields[0]);
+                }
+                break;
+            }
+        }
+
+        if (String.isNotBlank(exampleChild) && String.isNotBlank(exampleField)) {
+            ref += '{{#' + exampleChild + '}}<div>{{{' + exampleField + '}}}</div>{{/' + exampleChild + '}}';
+            ref += '{{^' + exampleChild + '}}<div>No records</div>{{/' + exampleChild + '}}';
+        }
+        ref += '</div>\n\n';
+
+        // CRITICAL: Enforce that ONLY listed merge fields can be used
+        ref += 'CRITICAL RESTRICTION:\n';
+        ref += 'You may ONLY use merge fields that are explicitly listed above.\n';
+        ref += 'Do NOT invent or guess merge fields. Do NOT use relationships not shown above.\n';
+        ref += 'If a field or relationship is not listed, you cannot use it.\n\n';
 
         return ref;
     }
@@ -1565,6 +1592,8 @@ public without sharing class Stage08_PromptAssembly implements IStage {
 
         section += '4. SUPPORTING DATA (if warranted)\n';
         section += '   - Tables for detailed records ONLY if adds value\n';
+        section += '   - ONLY use child objects listed in AVAILABLE MERGE FIELDS section\n';
+        section += '   - Do NOT create tables for objects not in the merge field reference\n';
         section += '   - Keep tables compact (5-7 rows max)\n';
         section += '   - Add context paragraph before each table\n\n';
 
@@ -1587,6 +1616,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
         section += '[ ] Is the layout insight-first, not table-first?\n';
         section += '[ ] Did I use colored alerts and stats strip?\n';
         section += '[ ] Did I use actual names instead of titles?\n';
+        section += '[ ] Did I ONLY use merge fields from the AVAILABLE MERGE FIELDS list?\n';
         section += '[ ] Would an executive find this valuable?\n\n';
 
         section += 'Generate the dashboard now. Output raw HTML only.\n\n';

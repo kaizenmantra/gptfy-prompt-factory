@@ -11,7 +11,7 @@ All architecture, decisions, tasks, and progress tracked here.
 |-------|------|---------------------|---------|
 | - | - | - | - |
 
-**Status:** V2.0 tested successfully (Run ID: a0gQH000005GJILYA4). V2.1 Phase 1A, 1B, 1C complete (except 1.4, 1.11 testing tasks). Ready for V2.2 or further testing.
+**Status:** V2.1 COMPLETE - All Phase 1A, 1B, 1C tasks done. Ready for V2.2.
 
 ---
 
@@ -31,7 +31,7 @@ All architecture, decisions, tasks, and progress tracked here.
 |---------|--------|--------|-------------|
 | V1.1 | main | ✅ Released | Builder prompt injection (Run ID a0gQH000005GHurYAG) |
 | V2.0 | feature/builder-improvements | ✅ Complete | Meta-prompt architecture, LLM metadata, field validation |
-| V2.1 | feature/v2.1-enhancements | 🔴 Not Started | Visual diversity, parent traversals, builder library |
+| V2.1 | feature/v2.1-enhancements | ✅ Complete | Visual diversity, parent traversals, builder library |
 | V2.2 | TBD | 📋 Planned | Field density profiling, bidirectional traversal |
 | V2.3 | TBD | 📋 Planned | Knowledge base expansion, smart builder selection |
 
@@ -110,7 +110,7 @@ sf project deploy start -o agentictso -d force-app/main/default/classes/ClassNam
 | 1.1 | Update `buildUIToolkitSection()` with real HTML snippets | Sonnet | done | Added actual HTML patterns from UI_TOOLKIT.md (commit bd06599) |
 | 1.2 | Add visual diversity requirement to directive section | Sonnet | done | Added VISUAL DIVERSITY REQUIREMENT section (commit bd06599) |
 | 1.3 | Create UI Component builders in Salesforce org | Sonnet | done | 12 UI Component builders already deployed |
-| 1.4 | Test visual diversity in output | Sonnet | not_started | Verify colored components appear |
+| 1.4 | Test visual diversity in output | Manual | done | Verified: Stats Strip, Insight Cards, Recommendation Cards with colors |
 
 ### Phase 1B: Personalization Fixes
 
@@ -127,7 +127,7 @@ sf project deploy start -o agentictso -d force-app/main/default/classes/ClassNam
 |---|------|-------|--------|-------|
 | 1.9 | Fix single-line HTML requirement | Sonnet | done | Strengthened instruction with ENFORCEMENT section (commit 770aa3f) |
 | 1.10 | Remove emojis from builder prompts | Sonnet | done | Removed ✅ ❌ from Evidence Binding Rules v2 (commit 770aa3f) |
-| 1.11 | Test multi-sample flow with 3 records | Manual | pending | User to test via LWC UI with 3 Opportunity IDs |
+| 1.11 | Test multi-sample flow with 3 records | Manual | done | Tested via LWC UI - output verified with personalization, UI components, evidence citations |
 
 ---
 
@@ -408,6 +408,8 @@ Stage 5: Field Selection (Enhanced)
 | 2026-01-23 | Tasks 1.3, 1.7: Builder deployment | Sonnet | Verified 59 active builders deployed (12 UI Components, 25 Traversals) |
 | 2026-01-23 | Tasks 1.9, 1.10: Output quality fixes | Sonnet | Strengthened single-line HTML instruction, removed emojis from Evidence builder |
 | 2026-01-23 | Task 1.8: Stage 5 parent traversals | Opus | Wired traversal builders into field selection: loadTraversalsForObjects(), prompt section, selectedParentFields output |
+| 2026-01-23 | Tasks 1.4, 1.11: V2.1 End-to-End Testing | Manual | V2.1 fully validated - Stats Strip, Insight Cards, Recommendation Cards, personalization (names not titles), evidence citations, single-line HTML |
+| 2026-01-23 | Bug fix: Invalid merge field references | Opus | Fixed hardcoded Tasks example in buildMergeFieldReference(); now dynamic based on selected objects. Added CRITICAL RESTRICTION to prevent LLM from inventing merge fields |
 
 ---
 
