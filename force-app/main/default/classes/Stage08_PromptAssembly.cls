@@ -72,7 +72,18 @@ public without sharing class Stage08_PromptAssembly implements IStage {
                 result.queueInfo(runId, STAGE_NUMBER, 'Using company profile (no direct research available)');
             }
 
-            result.queueInfo(runId, STAGE_NUMBER, 'Assembling prompt for ' + rootObject);
+            // V2.0: Check if using meta-prompt architecture
+            Boolean useMetaPrompt = (Boolean) inputs.get('useMetaPrompt');
+            if (useMetaPrompt == null) {
+                useMetaPrompt = false; // Default to legacy template approach
+            }
+
+            // V2.0: Extract multi-sample profile if available
+            Object multiSampleProfileRaw = inputs.get('multiSampleProfile');
+
+            result.queueInfo(runId, STAGE_NUMBER,
+                'Assembling prompt for ' + rootObject +
+                (useMetaPrompt ? ' (Meta-Prompt V2.0)' : ' (Template V1.1)'));
 
             // Validate merge fields against selected fields
             List<MergeFieldValidator.MergeField> validatedFields =
@@ -96,17 +107,35 @@ public without sharing class Stage08_PromptAssembly implements IStage {
                 }
             }
 
-            // Build AI instructions with REAL company research
-            String aiInstructions = buildAIInstructions(
-                businessContext, targetPersona, businessObjectivesRaw, rootObject,
-                effectiveCompanyContext, strategicInsights, industryContext, runId);
+            // Build AI instructions - branch based on architecture version
+            String aiInstructions;
+            if (useMetaPrompt) {
+                // V2.0: Build meta-prompt with 6 sections
+                aiInstructions = buildMetaPrompt(
+                    businessContext, targetPersona, businessObjectivesRaw, rootObject,
+                    effectiveCompanyContext, strategicInsights, industryContext,
+                    multiSampleProfileRaw, selectedFieldsRaw, runId, result);
+            } else {
+                // V1.1: Build traditional AI instructions (legacy)
+                aiInstructions = buildAIInstructions(
+                    businessContext, targetPersona, businessObjectivesRaw, rootObject,
+                    effectiveCompanyContext, strategicInsights, industryContext, runId);
+            }
 
             // Build grounding rules
             String groundingRules = buildGroundingRules(rootObject, targetPersona);
 
             // Assemble complete prompt configuration
-            Map<String, Object> promptConfig = assemblePromptConfiguration(
-                aiInstructions, htmlTemplate, groundingRules, rootObject);
+            // V2.0: In meta-prompt mode, don't append the minimal validation template
+            // The LLM generates HTML structure based on meta-prompt instructions
+            Map<String, Object> promptConfig;
+            if (useMetaPrompt) {
+                promptConfig = assembleMetaPromptConfiguration(
+                    aiInstructions, groundingRules, rootObject, selectedFieldsRaw);
+            } else {
+                promptConfig = assemblePromptConfiguration(
+                    aiInstructions, htmlTemplate, groundingRules, rootObject);
+            }
 
             // Build assembly summary
             String assemblySummary = buildAssemblySummary(
@@ -692,6 +721,105 @@ public without sharing class Stage08_PromptAssembly implements IStage {
     }
 
     /**
+     * @description Assembles meta-prompt configuration (V2.0)
+     * In meta-prompt mode, the LLM generates the HTML structure - we provide
+     * merge field references so it knows what data is available.
+     * @param aiInstructions Meta-prompt with 6 sections
+     * @param groundingRules Grounding rules for AI behavior
+     * @param rootObject The root Salesforce object
+     * @param selectedFieldsRaw Map of object to field list
+     * @return Map containing the complete prompt configuration
+     */
+    private Map<String, Object> assembleMetaPromptConfiguration(
+            String aiInstructions,
+            String groundingRules,
+            String rootObject,
+            Map<String, Object> selectedFieldsRaw) {
+
+        // Build merge field reference section
+        String mergeFieldReference = buildMergeFieldReference(rootObject, selectedFieldsRaw);
+
+        // Build complete meta-prompt:
+        // 1. Meta-prompt (6 sections with role, data, principles, toolkit, rules, directive)
+        // 2. Grounding Rules
+        // 3. Available Merge Fields (so LLM knows what data to reference)
+        String completePrompt = aiInstructions;
+        completePrompt += '\n\n' + groundingRules;
+        completePrompt += '\n\n' + mergeFieldReference;
+
+        // For meta-prompt, htmlTemplate is the LLM-generated output
+        // We don't have a fixed template - the LLM creates it
+        Map<String, Object> config = new Map<String, Object>{
+            'promptText' => completePrompt,
+            'aiInstructions' => aiInstructions,
+            'groundingRules' => groundingRules,
+            'htmlTemplate' => '', // LLM will generate this
+            'rootObject' => rootObject,
+            'version' => '2.0',
+            'createdDate' => System.now().format()
+        };
+
+        return config;
+    }
+
+    /**
+     * @description Builds merge field reference for meta-prompt mode
+     * Shows LLM what fields are available and how to reference them
+     */
+    private String buildMergeFieldReference(String rootObject, Map<String, Object> selectedFieldsRaw) {
+        String ref = '=== AVAILABLE MERGE FIELDS ===\n\n';
+        ref += 'Use these merge fields to reference Salesforce data in your HTML output.\n';
+        ref += 'GPTfy will substitute these with actual values at runtime.\n\n';
+
+        // Root object fields
+        if (selectedFieldsRaw.containsKey(rootObject)) {
+            ref += rootObject.toUpperCase() + ' (Root Object) - use {{{FieldName}}}:\n';
+            List<Object> fields = (List<Object>) selectedFieldsRaw.get(rootObject);
+            for (Object field : fields) {
+                ref += '  {{{' + String.valueOf(field) + '}}}\n';
+            }
+            ref += '\n';
+        }
+
+        // Child object fields
+        for (String objName : selectedFieldsRaw.keySet()) {
+            if (objName != rootObject) {
+                List<Object> fields = (List<Object>) selectedFieldsRaw.get(objName);
+                String relationshipName = getRelationshipNameForObject(objName, rootObject);
+
+                ref += objName.toUpperCase() + ' (Child) - iterate with {{#' + relationshipName + '}}...{{/' + relationshipName + '}}:\n';
+                ref += '  Start iteration: {{#' + relationshipName + '}}\n';
+                for (Object field : fields) {
+                    ref += '    {{{' + String.valueOf(field) + '}}}\n';
+                }
+                ref += '  End iteration: {{/' + relationshipName + '}}\n';
+                ref += '  Empty check: {{^' + relationshipName + '}}No ' + objName + ' records{{/' + relationshipName + '}}\n';
+                ref += '\n';
+            }
+        }
+
+        ref += 'EXAMPLE USAGE:\n';
+        ref += '<div style="..."><h1>{{{Name}}}</h1>{{#Tasks}}<div>{{{Subject}}} - {{{Status}}}</div>{{/Tasks}}{{^Tasks}}<div>No tasks</div>{{/Tasks}}</div>\n\n';
+
+        return ref;
+    }
+
+    /**
+     * @description Gets relationship name for a child object
+     */
+    private String getRelationshipNameForObject(String childObject, String parentObject) {
+        String relName = getChildRelationshipName(childObject, parentObject);
+        if (String.isNotBlank(relName)) {
+            return relName;
+        }
+        // Fallback: simple pluralization
+        if (childObject.endsWith('y')) {
+            return childObject.substring(0, childObject.length() - 1) + 'ies';
+        }
+        return childObject + 's';
+    }
+
+    /**
      * @description Builds a human-readable assembly summary
      * @param aiInstructions AI instructions section
      * @param htmlTemplate HTML template
@@ -955,9 +1083,11 @@ public without sharing class Stage08_PromptAssembly implements IStage {
 
     /**
      * @description Builds Prompt configuration for Stage 9
+     * V2.0: In meta-prompt mode, the promptCommand contains the full meta-prompt
+     * and htmlTemplate is empty (LLM generates the HTML structure)
      * @param rootObject The root Salesforce object
-     * @param aiInstructions AI instructions section
-     * @param htmlTemplate HTML template with merge fields
+     * @param aiInstructions AI instructions section (or full meta-prompt in V2.0)
+     * @param htmlTemplate HTML template with merge fields (empty in V2.0 meta-prompt mode)
      * @param groundingRules Grounding rules for AI behavior
      * @param inputs Full inputs for additional context
      * @return Map with Prompt configuration
@@ -977,13 +1107,39 @@ public without sharing class Stage08_PromptAssembly implements IStage {
 
         String businessContext = (String) inputs.get('businessContext');
 
+        // V2.0: Check if using meta-prompt mode
+        Boolean useMetaPrompt = (Boolean) inputs.get('useMetaPrompt');
+        if (useMetaPrompt == null) {
+            useMetaPrompt = false;
+        }
+
+        // In meta-prompt mode, the promptCommand IS the complete prompt
+        // (includes merge field reference at the end)
+        // htmlTemplate is not used - LLM generates structure from instructions
+        String finalPromptCommand;
+        String finalHtmlTemplate;
+
+        if (useMetaPrompt) {
+            // V2.0: Full meta-prompt with merge field reference
+            Map<String, Object> selectedFieldsRaw = (Map<String, Object>) inputs.get('selectedFields');
+            finalPromptCommand = aiInstructions + '\n\n' + groundingRules + '\n\n' +
+                                buildMergeFieldReference(rootObject, selectedFieldsRaw);
+            // Empty template - LLM generates the HTML
+            finalHtmlTemplate = '';
+        } else {
+            // V1.1: Traditional approach with fixed template
+            finalPromptCommand = aiInstructions;
+            finalHtmlTemplate = htmlTemplate;
+        }
+
         return new Map<String, Object>{
             'name' => promptName,
             'label' => promptName,
             'description' => 'Auto-generated prompt for ' + rootObject + '. ' +
-                           (String.isNotBlank(businessContext) ? businessContext.left(200) : ''),
-            'promptCommand' => aiInstructions,
-            'htmlTemplate' => htmlTemplate,
+                           (String.isNotBlank(businessContext) ? businessContext.left(200) : '') +
+                           (useMetaPrompt ? ' [Meta-Prompt V2.0]' : ''),
+            'promptCommand' => finalPromptCommand,
+            'htmlTemplate' => finalHtmlTemplate,
             'groundingRules' => groundingRules,
             'targetObject' => rootObject,
             'promptType' => 'Text',
@@ -991,6 +1147,333 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             'maxTokens' => 4096,
             'temperature' => 1.0
         };
+    }
+
+    // ========================================================================
+    // META-PROMPT ASSEMBLY (V2.0)
+    // ========================================================================
+
+    /**
+     * @description Builds meta-prompt with 6 sections (V2.0 architecture)
+     * Transforms LLM from "template filler" to "business analyst"
+     */
+    private String buildMetaPrompt(
+            String businessContext,
+            String targetPersona,
+            List<Object> businessObjectivesRaw,
+            String rootObject,
+            String companyProfile,
+            String strategicInsights,
+            String industryContext,
+            Object multiSampleProfileRaw,
+            Map<String, Object> selectedFieldsRaw,
+            Id runId,
+            StageResult result) {
+
+        result.queueInfo(runId, STAGE_NUMBER, 'Building meta-prompt (V2.0)');
+
+        String metaPrompt = '';
+
+        // Section 1: ROLE
+        metaPrompt += buildRoleSection(targetPersona);
+
+        // Section 2: DATA PAYLOAD
+        metaPrompt += buildDataPayloadSection(multiSampleProfileRaw, rootObject, selectedFieldsRaw);
+
+        // Section 3: ANALYSIS PRINCIPLES
+        metaPrompt += buildAnalysisPrinciplesSection(rootObject, runId);
+
+        // Section 4: UI TOOLKIT
+        metaPrompt += buildUIToolkitSection();
+
+        // Section 5: OUTPUT RULES
+        metaPrompt += buildOutputRulesSection();
+
+        // Section 6: DIRECTIVE
+        metaPrompt += buildDirectiveSection(rootObject, businessContext);
+
+        result.queueInfo(runId, STAGE_NUMBER,
+            'Meta-prompt built: ' + metaPrompt.length() + ' chars');
+
+        return metaPrompt;
+    }
+
+    /**
+     * @description Section 1: ROLE - Defines LLM as business analyst
+     */
+    private String buildRoleSection(String targetPersona) {
+        String section = '=== YOUR ROLE ===\n\n';
+        section += 'You are an expert business analyst creating an executive dashboard for ' + targetPersona + '.\n\n';
+        section += 'Your job is NOT to display data tables. Your job is to:\n';
+        section += '- ANALYZE the Salesforce data provided\n';
+        section += '- IDENTIFY patterns, risks, and opportunities\n';
+        section += '- PRESENT insights that drive action\n';
+        section += '- RECOMMEND specific next steps\n\n';
+        section += 'Think like a consultant presenting to a senior executive.\n\n';
+        return section;
+    }
+
+    /**
+     * @description Section 2: DATA PAYLOAD - Multi-sample context and patterns
+     */
+    private String buildDataPayloadSection(
+            Object multiSampleProfileRaw,
+            String rootObject,
+            Map<String, Object> selectedFieldsRaw) {
+
+        String section = '=== DATA CONTEXT ===\n\n';
+
+        if (multiSampleProfileRaw != null) {
+            // Multi-sample: show patterns
+            Map<String, Object> profile = (Map<String, Object>) multiSampleProfileRaw;
+            Integer sampleCount = (Integer) profile.get('sampleCount');
+
+            section += 'Analyzed ' + sampleCount + ' ' + rootObject + ' records to understand data patterns.\n\n';
+
+            // Add patterns if available
+            List<Object> patterns = (List<Object>) profile.get('patterns');
+            if (patterns != null && !patterns.isEmpty()) {
+                section += 'KEY PATTERNS DETECTED:\n';
+                for (Object patternObj : patterns) {
+                    Map<String, Object> pattern = (Map<String, Object>) patternObj;
+                    String severity = (String) pattern.get('severity');
+                    String description = (String) pattern.get('description');
+                    section += '- [' + severity + '] ' + description + '\n';
+                }
+                section += '\n';
+            }
+
+            // Add object aggregations
+            Map<String, Object> aggregations = (Map<String, Object>) profile.get('objectAggregations');
+            if (aggregations != null && !aggregations.isEmpty()) {
+                section += 'OBJECT AVAILABILITY:\n';
+                for (String objName : aggregations.keySet()) {
+                    Map<String, Object> agg = (Map<String, Object>) aggregations.get(objName);
+                    Integer samplesWithData = (Integer) agg.get('samplesWithData');
+                    Decimal avgCount = (Decimal) agg.get('avgCount');
+                    section += '- ' + objName + ': Present in ' + samplesWithData + '/' + sampleCount +
+                              ' samples (avg ' + avgCount.setScale(1) + ' records)\n';
+                }
+                section += '\n';
+            }
+        } else {
+            // Single sample: simplified context
+            section += 'Analyzing ' + rootObject + ' record data.\n\n';
+        }
+
+        // Add available fields summary
+        if (selectedFieldsRaw != null && !selectedFieldsRaw.isEmpty()) {
+            section += 'DATA FIELDS AVAILABLE:\n';
+            for (String objName : selectedFieldsRaw.keySet()) {
+                List<Object> fields = (List<Object>) selectedFieldsRaw.get(objName);
+                if (fields != null && !fields.isEmpty()) {
+                    section += '- ' + objName + ': ' + fields.size() + ' fields\n';
+                }
+            }
+            section += '\n';
+        }
+
+        return section;
+    }
+
+    /**
+     * @description Section 3: ANALYSIS PRINCIPLES - Compressed builders
+     */
+    private String buildAnalysisPrinciplesSection(String rootObject, Id runId) {
+        String section = '=== ANALYSIS PRINCIPLES ===\n\n';
+        section += 'Apply these principles when analyzing the data:\n\n';
+
+        // Load compressed builders
+        String qualityRules = loadCompressedQualityRules(runId);
+        if (String.isNotBlank(qualityRules)) {
+            section += qualityRules + '\n\n';
+        }
+
+        String patterns = loadCompressedPatterns(rootObject, runId);
+        if (String.isNotBlank(patterns)) {
+            section += patterns + '\n\n';
+        }
+
+        return section;
+    }
+
+    /**
+     * @description Section 4: UI TOOLKIT - Available components
+     */
+    private String buildUIToolkitSection() {
+        String section = '=== UI TOOLKIT ===\n\n';
+        section += 'You have these components available. Use them strategically.\n\n';
+
+        section += 'LAYOUT COMPONENTS:\n';
+        section += '- Dashboard Container: Full-width responsive layout\n';
+        section += '- Section Card: White card with header and content area\n';
+        section += '- Stats Strip: Horizontal metrics display (3-5 key numbers)\n';
+        section += '- Two-Column Grid: Side-by-side content areas\n\n';
+
+        section += 'INSIGHT COMPONENTS:\n';
+        section += '- Alert Box: Highlight critical information (error/warning/info)\n';
+        section += '- Insight Card: Analysis finding with evidence citation\n';
+        section += '- Recommendation Card: Action item with rationale\n';
+        section += '- Health Score: Visual indicator (0-100 with color coding)\n\n';
+
+        section += 'DATA COMPONENTS:\n';
+        section += '- Data Table: For listing related records (use sparingly!)\n';
+        section += '- Metric Tile: Single KPI with label and trend indicator\n';
+        section += '- Status Badge: Inline status indicator with semantic color\n\n';
+
+        section += 'COMPONENT USAGE RULES:\n';
+        section += '- Lead with insights (Alert Boxes, Insight Cards) not tables\n';
+        section += '- Use Stats Strip for key metrics at the top\n';
+        section += '- Tables should be LAST, not first - and only if data warrants\n';
+        section += '- Every section should have analysis text, not just data\n\n';
+
+        return section;
+    }
+
+    /**
+     * @description Section 5: OUTPUT RULES - GPTfy compliance
+     */
+    private String buildOutputRulesSection() {
+        String section = '=== OUTPUT RULES ===\n\n';
+        section += 'CRITICAL GPTfy REQUIREMENTS:\n';
+        section += '1. Single line HTML - no newlines\n';
+        section += '2. Inline styles only - no CSS classes or style blocks\n';
+        section += '3. No scripts or event handlers\n';
+        section += '4. Start with <div style="..." and end with </div>\n';
+        section += '5. No emojis or special characters\n';
+        section += '6. No placeholders, TBD, TODO markers\n\n';
+
+        section += 'MERGE FIELD SYNTAX:\n';
+        section += '- Field values: {{{FieldName}}}\n';
+        section += '- Child iteration: {{#Collection}}...{{/Collection}}\n';
+        section += '- Empty check: {{^Collection}}No items{{/Collection}}\n\n';
+
+        section += 'STYLING:\n';
+        section += '- Font: Salesforce Sans, system fonts fallback\n';
+        section += '- Colors: Primary #0176D3, Success #2E844A, Warning #DD7A01, Error #BA0517\n';
+        section += '- Background: #F3F3F3, Cards: #FFFFFF, Border: #DDDBDA\n\n';
+
+        return section;
+    }
+
+    /**
+     * @description Section 6: DIRECTIVE - Analysis instructions
+     */
+    private String buildDirectiveSection(String rootObject, String businessContext) {
+        String section = '=== YOUR DIRECTIVE ===\n\n';
+        section += 'Analyze the ' + rootObject + ' data and generate an executive dashboard.\n\n';
+
+        if (String.isNotBlank(businessContext)) {
+            section += 'SPECIFIC REQUIREMENTS:\n' + businessContext + '\n\n';
+        }
+
+        section += 'STRUCTURE YOUR OUTPUT AS:\n';
+        section += '1. EXECUTIVE SUMMARY (2-3 sentences)\n';
+        section += '   - Overall health/status assessment\n';
+        section += '   - Biggest risk and biggest opportunity\n';
+        section += '   - Recommended immediate action\n\n';
+
+        section += '2. KEY INSIGHTS (3-5 findings)\n';
+        section += '   - Use Insight Cards with evidence citations\n';
+        section += '   - Prioritize by business impact\n';
+        section += '   - Include specific data points\n\n';
+
+        section += '3. RECOMMENDED ACTIONS (2-4 items)\n';
+        section += '   - Use Recommendation Cards\n';
+        section += '   - Be specific: "Schedule call with {{{Contact.Name}}}" not "Follow up"\n';
+        section += '   - Include urgency indicator\n\n';
+
+        section += '4. SUPPORTING DATA (if warranted)\n';
+        section += '   - Tables for detailed records ONLY if adds value\n';
+        section += '   - Keep tables compact (5-7 rows max)\n';
+        section += '   - Add context paragraph before each table\n\n';
+
+        section += 'QUALITY CHECKLIST:\n';
+        section += '[ ] Does the summary capture the key story?\n';
+        section += '[ ] Does every insight cite specific evidence?\n';
+        section += '[ ] Are recommendations specific and actionable?\n';
+        section += '[ ] Is the layout insight-first, not table-first?\n';
+        section += '[ ] Would an executive find this valuable?\n\n';
+
+        section += 'Generate the dashboard now. Output raw HTML only.\n\n';
+
+        return section;
+    }
+
+    /**
+     * @description Load compressed quality rules (principles only)
+     */
+    private String loadCompressedQualityRules(Id runId) {
+        // For MVP, look for compressed builders and prefer them over verbose ones
+        // Query all active quality rules, order by name so compressed versions appear first
+        List<ccai__AI_Prompt__c> builders = [
+            SELECT ccai__Prompt_Command__c, Name
+            FROM ccai__AI_Prompt__c
+            WHERE RecordType.DeveloperName = 'Builder'
+              AND Category__c = 'Quality Rule'
+              AND ccai__Status__c = 'Active'
+            ORDER BY Name ASC
+            LIMIT 10
+        ];
+
+        if (builders.isEmpty()) {
+            return '';
+        }
+
+        String content = 'QUALITY RULES:\n';
+        // Prefer compressed versions - use first one found with (Compressed) in name
+        for (ccai__AI_Prompt__c builder : builders) {
+            if (builder.Name.contains('Compressed')) {
+                content += builder.ccai__Prompt_Command__c + '\n\n';
+                return content; // Return early with compressed version
+            }
+        }
+
+        // No compressed version found - use first available
+        content += builders[0].ccai__Prompt_Command__c + '\n\n';
+        return content;
+    }
+
+    /**
+     * @description Load compressed patterns (principles only)
+     */
+    private String loadCompressedPatterns(String rootObject, Id runId) {
+        // For MVP, look for compressed patterns matching rootObject or global (null Object)
+        // Query all active patterns and filter in Apex for null handling
+        List<ccai__AI_Prompt__c> builders = [
+            SELECT ccai__Prompt_Command__c, Name, ccai__Object__c
+            FROM ccai__AI_Prompt__c
+            WHERE RecordType.DeveloperName = 'Builder'
+              AND Category__c = 'Pattern'
+              AND ccai__Status__c = 'Active'
+            ORDER BY Name ASC
+            LIMIT 10
+        ];
+
+        if (builders.isEmpty()) {
+            return '';
+        }
+
+        String content = '';
+        // First pass: look for compressed version matching rootObject or global
+        for (ccai__AI_Prompt__c builder : builders) {
+            Boolean isMatchingObject = (builder.ccai__Object__c == rootObject || builder.ccai__Object__c == null);
+            if (isMatchingObject && builder.Name.contains('Compressed')) {
+                content += builder.ccai__Prompt_Command__c + '\n\n';
+                return content; // Return early with first compressed match
+            }
+        }
+
+        // Second pass: if no compressed found, use first non-compressed matching object
+        for (ccai__AI_Prompt__c builder : builders) {
+            Boolean isMatchingObject = (builder.ccai__Object__c == rootObject || builder.ccai__Object__c == null);
+            if (isMatchingObject) {
+                content += builder.ccai__Prompt_Command__c + '\n\n';
+                return content;
+            }
+        }
+
+        return content;
     }
 
     /**

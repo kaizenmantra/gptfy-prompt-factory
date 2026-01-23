@@ -189,7 +189,7 @@ Analyze the data. Lead with insights. Let the data drive the structure.
 |---|------|-------|--------|-------|
 | 3.1 | Design meta-prompt structure | Opus | done | See docs/designs/META_PROMPT_DESIGN.md - 6 sections defined |
 | 3.2 | Modify Stage 7 to generate "analysis brief" not fixed template | Opus | done | Added USE_META_PROMPT flag, generateAnalysisBrief(), buildDataContext() |
-| 3.3 | Modify Stage 8 to assemble meta-prompt | Sonnet | not_started | After 3.1/3.2 designed |
+| 3.3 | Modify Stage 8 to assemble meta-prompt | Opus | blocked | Code complete, deployment blocked by CronTrigger 08eQH00000Qqsyr |
 | 3.4 | Create UI toolkit section for meta-prompt | Sonnet | done | Created docs/UI_TOOLKIT.md with layouts, insights, data components |
 
 ### Phase 4: Integration & Testing
