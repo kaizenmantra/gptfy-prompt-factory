@@ -271,6 +271,7 @@ public with sharing class Stage09_CreateAndDeploy implements IStage {
         config.name = (String) promptConfigMap.get('name');
         config.label = (String) promptConfigMap.get('label');
         config.description = (String) promptConfigMap.get('description');
+        config.howItWorks = (String) promptConfigMap.get('howItWorks'); // V2.0: End-user documentation
         config.dcmId = dcmId; // Link to newly created DCM
         config.aiConnectionId = aiModelId; // User-selected AI Model (if provided)
         config.promptCommand = (String) promptConfigMap.get('promptCommand');

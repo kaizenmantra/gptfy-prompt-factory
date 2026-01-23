@@ -52,16 +52,16 @@
                 </lightning-combobox>
             </div>
 
-            <!-- Row 3: Sample Record ID + Company URL -->
+            <!-- Row 3: Sample Record IDs (Multi-Sample) + Company URL -->
             <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2 field-col">
                 <lightning-input
-                    label="Sample Record ID"
+                    label="Sample Record IDs (Multi-Sample)"
                     type="text"
                     value={sampleRecordId}
                     onchange={handleSampleRecordIdChange}
-                    placeholder="e.g., 001XX000003DGb2"
+                    placeholder="e.g., 006ABC123, 006DEF456, 006GHI789"
                     disabled={disabled}
-                    field-level-help="Optional: Provide a record ID to help validate your prompt"
+                    field-level-help={sampleRecordHelp}
                     class="form-field">
                 </lightning-input>
             </div>

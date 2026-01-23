@@ -10,7 +10,8 @@ public with sharing class PromptBuilder {
     public class PromptConfig {
         @AuraEnabled public String name;
         @AuraEnabled public String label;
-        @AuraEnabled public String description;
+        @AuraEnabled public String description;      // Max 255 chars - short summary
+        @AuraEnabled public String howItWorks;       // Long text - end-user documentation
         @AuraEnabled public Id dcmId;
         @AuraEnabled public Id aiConnectionId; // User-selected AI Connection/Model ID
         @AuraEnabled public String promptCommand;
@@ -51,11 +52,18 @@ public with sharing class PromptBuilder {
             // Use user-selected AI Connection if provided, otherwise fall back to auto-detect
             Id aiConnectionId = config.aiConnectionId != null ? config.aiConnectionId : getAIConnection();
 
+            // Truncate description to max 255 characters (Salesforce limit)
+            String truncatedDescription = config.description;
+            if (String.isNotBlank(truncatedDescription) && truncatedDescription.length() > 255) {
+                truncatedDescription = truncatedDescription.substring(0, 252) + '...';
+            }
+
             // Create AI Prompt record
             // ccai__AI_Connection__c is CRITICAL - without it, prompt won't execute
             ccai__AI_Prompt__c prompt = new ccai__AI_Prompt__c(
                 Name = config.name,
-                ccai__Description__c = config.description,
+                ccai__Description__c = truncatedDescription,
+                ccai__How_It_Works__c = config.howItWorks,  // Long text field for end-user documentation
                 ccai__AI_Data_Extraction_Mapping__c = config.dcmId,
                 ccai__AI_Connection__c = aiConnectionId,
                 ccai__Prompt_Command__c = buildPromptCommandWithTemplate(config.promptCommand, config.htmlTemplate, config.groundingRules),
@@ -161,9 +169,9 @@ public with sharing class PromptBuilder {
             errors.add('Prompt command is required');
         }
 
-        if (String.isBlank(config.htmlTemplate)) {
-            errors.add('HTML template is required');
-        }
+        // HTML template is optional in V2.0 meta-prompt mode (LLM generates output at runtime)
+        // Only validate if both promptCommand AND htmlTemplate are blank
+        // V2.0: htmlTemplate can be empty because the meta-prompt handles structure
 
         if (String.isBlank(config.targetObject)) {
             errors.add('Target object is required');
@@ -186,6 +194,16 @@ public with sharing class PromptBuilder {
                 }
             } catch (Exception e) {
                 errors.add('Cannot verify DCM existence: ' + e.getMessage());
+            }
+        }
+
+        // Validate prompt command size against field limit
+        if (String.isNotBlank(config.promptCommand)) {
+            Integer maxPromptCommandLength = getFieldMaxLength('ccai__AI_Prompt__c', 'ccai__Prompt_Command__c');
+            Integer promptLength = config.promptCommand.length();
+            if (promptLength > maxPromptCommandLength) {
+                errors.add('Prompt command exceeds maximum length of ' + maxPromptCommandLength +
+                    ' characters (current: ' + promptLength + '). Please reduce prompt size.');
             }
         }
 
@@ -217,6 +235,30 @@ public with sharing class PromptBuilder {
         }
 
         return errors;
+    }
+
+    /**
+     * @description Gets the maximum character length for a field using Schema describe
+     * @param objectName API name of the object
+     * @param fieldName API name of the field
+     * @return Maximum field length, or 131072 (128KB) as default for long text areas
+     */
+    private static Integer getFieldMaxLength(String objectName, String fieldName) {
+        try {
+            Schema.SObjectType objType = Schema.getGlobalDescribe().get(objectName);
+            if (objType != null) {
+                Schema.DescribeSObjectResult objDescribe = objType.getDescribe();
+                Schema.SObjectField field = objDescribe.fields.getMap().get(fieldName);
+                if (field != null) {
+                    Schema.DescribeFieldResult fieldDescribe = field.getDescribe();
+                    return fieldDescribe.getLength();
+                }
+            }
+        } catch (Exception e) {
+            System.debug(LoggingLevel.WARN, 'Could not describe field ' + objectName + '.' + fieldName + ': ' + e.getMessage());
+        }
+        // Default to 131072 (128KB) for long text areas if describe fails
+        return 131072;
     }
 
     /**

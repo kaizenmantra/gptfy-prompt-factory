@@ -50,7 +50,20 @@ export default class PfInputForm extends LightningElement {
     }
 
     handleSampleRecordIdChange(event) {
-        this.dispatchInputChange('sampleRecordId', event.target.value);
+        const value = event.target.value;
+        // Basic validation: check if it looks like valid Salesforce IDs
+        if (value) {
+            const ids = value.split(',').map(id => id.trim()).filter(id => id.length > 0);
+            if (ids.length > 5) {
+                event.target.setCustomValidity('Maximum 5 sample records allowed');
+            } else if (ids.some(id => id.length < 15)) {
+                event.target.setCustomValidity('Each ID must be at least 15 characters');
+            } else {
+                event.target.setCustomValidity('');
+            }
+            event.target.reportValidity();
+        }
+        this.dispatchInputChange('sampleRecordId', value);
     }
 
     handleBusinessContextChange(event) {
@@ -160,5 +173,24 @@ export default class PfInputForm extends LightningElement {
         }
 
         return 'Describe the business use case, target audience, and desired insights. More context leads to better results.';
+    }
+
+    /**
+     * Helper text for sample record IDs (multi-sample feature)
+     */
+    @api
+    get sampleRecordHelp() {
+        return 'Optional: Provide 1-3 record IDs (comma-separated) for richer data pattern analysis. Example: 006ABC123, 006DEF456, 006GHI789';
+    }
+
+    /**
+     * Get count of sample IDs entered
+     */
+    @api
+    get sampleIdCount() {
+        if (!this.sampleRecordId) {
+            return 0;
+        }
+        return this.sampleRecordId.split(',').map(id => id.trim()).filter(id => id.length >= 15).length;
     }
 }

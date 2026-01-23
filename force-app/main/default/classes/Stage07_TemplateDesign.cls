@@ -3,10 +3,27 @@
  * Calls Claude AI to generate HTML template using inline styles (GPTfy compatible),
  * validates HTML safety (no script tags), and returns template string.
  * Uses UI patterns and styles from PF_UIPatterns static resource.
+ *
+ * V2.0: Meta-Prompt Architecture Support
+ * ======================================
+ * When USE_META_PROMPT is enabled, Stage 7 generates an "analysis brief" instead
+ * of a fixed HTML template. The analysis brief defines:
+ * - Analysis goals (what the output should achieve)
+ * - Data context summary (what objects/fields are available)
+ * - Output guidelines (structure suggestions, not rigid template)
+ *
+ * The actual prompt assembly happens in Stage 8 using the meta-prompt structure.
+ * See docs/designs/META_PROMPT_DESIGN.md for full architecture.
  */
 public with sharing class Stage07_TemplateDesign implements IStage {
 
     private static final Integer STAGE_NUMBER = 7;
+
+    // V2.0: Feature flag for meta-prompt architecture
+    // When true: generates analysis brief for meta-prompt approach (V2.0)
+    // When false: generates fixed HTML template (V1.1 behavior)
+    // ENABLED: Stage 8 meta-prompt assembly deployed and ready (2026-01-23)
+    private static final Boolean USE_META_PROMPT = true;
 
     // Cached UI patterns and styles
     private Map<String, Object> uiPatterns;
@@ -81,15 +98,56 @@ public with sharing class Stage07_TemplateDesign implements IStage {
                 'Built field whitelist with ' + fieldWhitelist.size() + ' allowed fields');
             result.queueDebug(runId, STAGE_NUMBER, 'Whitelist: ' + String.join(new List<String>(fieldWhitelist), ', '));
 
-            result.queueInfo(runId, STAGE_NUMBER, 'Generating HTML template for ' + rootObject);
+            // V2.0: Check for multi-sample profile from Stage 4/5
+            Stage04_DataProfiling.MultiSampleProfile multiSampleProfile = null;
+            Object multiSampleRaw = inputs.get('multiSampleProfile');
+            if (multiSampleRaw != null && multiSampleRaw instanceof Stage04_DataProfiling.MultiSampleProfile) {
+                multiSampleProfile = (Stage04_DataProfiling.MultiSampleProfile) multiSampleRaw;
+            }
 
-            // Call Claude AI to generate template with enriched context AND sample data
-            String htmlTemplate = generateTemplateWithAIDeferred(
-                selectedFieldsRaw, rootObject, businessContext, targetPersona, outputFormat,
-                companyIntelligence, industryContext, strategicInsightsStr, dataSummary, runId, result);
+            String htmlTemplate;
+            List<String> safetyIssues;
 
-            // Validate HTML safety
-            List<String> safetyIssues = validateHTMLSafety(htmlTemplate);
+            if (USE_META_PROMPT) {
+                // V2.0 META-PROMPT APPROACH
+                // Generate analysis brief instead of fixed template
+                result.queueInfo(runId, STAGE_NUMBER, 'Using meta-prompt approach (V2.0)');
+
+                Map<String, Object> analysisBrief = generateAnalysisBrief(
+                    selectedFieldsRaw, rootObject, businessContext, targetPersona, outputFormat,
+                    companyIntelligence, industryContext, strategicInsightsStr, dataSummary,
+                    multiSampleProfile, runId, result);
+
+                // V2.0: Generate prompt metadata (description, howItWorks) via LLM
+                // This is displayed in the Salesforce UI and helps users understand the prompt
+                Map<String, String> promptMetadata = generatePromptMetadataWithAI(
+                    rootObject, businessContext, targetPersona, strategicInsightsStr, runId, result);
+                analysisBrief.put('promptDescription', promptMetadata.get('description'));
+                analysisBrief.put('promptHowItWorks', promptMetadata.get('howItWorks'));
+
+                // Store analysis brief for Stage 8 meta-prompt assembly
+                result.outputs.put('analysisBrief', analysisBrief);
+                result.outputs.put('useMetaPrompt', true);
+
+                // Generate a minimal template structure for merge field validation
+                // The actual template generation happens at runtime via meta-prompt
+                htmlTemplate = generateMinimalTemplateForValidation(
+                    selectedFieldsRaw, rootObject, runId, result);
+
+                safetyIssues = new List<String>(); // Minimal template is safe by design
+
+            } else {
+                // V1.1 FIXED TEMPLATE APPROACH (backward compatible)
+                result.queueInfo(runId, STAGE_NUMBER, 'Generating HTML template for ' + rootObject);
+
+                // Call Claude AI to generate template with enriched context AND sample data
+                htmlTemplate = generateTemplateWithAIDeferred(
+                    selectedFieldsRaw, rootObject, businessContext, targetPersona, outputFormat,
+                    companyIntelligence, industryContext, strategicInsightsStr, dataSummary, runId, result);
+
+                // Validate HTML safety
+                safetyIssues = validateHTMLSafety(htmlTemplate);
+            }
 
             if (!safetyIssues.isEmpty()) {
                 result.queueError(runId, STAGE_NUMBER,
@@ -185,6 +243,15 @@ public with sharing class Stage07_TemplateDesign implements IStage {
             result.outputs.put('companyProfile', inputs.get('companyProfile'));
             result.outputs.put('strategicInsights', inputs.get('strategicInsights'));
             result.outputs.put('companyWebsite', inputs.get('companyWebsite'));
+
+            // V2.0: Pass through multi-sample data for Stage 8 meta-prompt assembly
+            if (multiSampleProfile != null) {
+                result.outputs.put('multiSampleProfile', multiSampleProfile);
+                result.outputs.put('sampleCount', multiSampleProfile.sampleCount);
+            }
+            result.outputs.put('sampleRecordIds', inputs.get('sampleRecordIds'));
+            // Flag to indicate whether Stage 8 should use meta-prompt approach
+            result.outputs.put('useMetaPrompt', USE_META_PROMPT);
 
             result.markCompleted();
             result.queueInfo(runId, STAGE_NUMBER, 'Template design completed successfully');
@@ -1387,6 +1454,396 @@ public with sharing class Stage07_TemplateDesign implements IStage {
 
         return 'Template: ' + lineCount + ' lines, ' + charCount + ' characters, ' +
                fieldCount + ' merge fields';
+    }
+
+    // ========================================================================
+    // V2.0: META-PROMPT ARCHITECTURE METHODS
+    // ========================================================================
+
+    /**
+     * @description Generates an analysis brief for the meta-prompt approach (V2.0)
+     * Unlike the fixed template approach, this generates guidance for the LLM
+     * to act as a business analyst rather than a template filler.
+     *
+     * @param selectedFieldsRaw Map of object to field list
+     * @param rootObject The root Salesforce object
+     * @param businessContext User-provided business requirements
+     * @param targetPersona Target user persona
+     * @param outputFormat Desired output format
+     * @param companyIntelligence AI-researched company information
+     * @param industryContext Industry-specific context
+     * @param strategicInsights Strategic insights from profiling
+     * @param dataSummary Sample data summary
+     * @param multiSampleProfile Multi-sample profile from Stage 4 (can be null)
+     * @param runId Run ID for logging
+     * @param result StageResult for deferred logging
+     * @return Map containing analysis brief components
+     */
+    private Map<String, Object> generateAnalysisBrief(
+            Map<String, Object> selectedFieldsRaw,
+            String rootObject,
+            String businessContext,
+            String targetPersona,
+            String outputFormat,
+            String companyIntelligence,
+            String industryContext,
+            String strategicInsights,
+            String dataSummary,
+            Stage04_DataProfiling.MultiSampleProfile multiSampleProfile,
+            Id runId,
+            StageResult result) {
+
+        Map<String, Object> brief = new Map<String, Object>();
+
+        // === ANALYSIS GOALS ===
+        String analysisGoals = buildAnalysisGoals(rootObject, businessContext, targetPersona);
+        brief.put('analysisGoals', analysisGoals);
+
+        // === DATA CONTEXT ===
+        Map<String, Object> dataContext = buildDataContext(
+            selectedFieldsRaw, rootObject, dataSummary, multiSampleProfile);
+        brief.put('dataContext', dataContext);
+
+        // === OUTPUT GUIDELINES ===
+        String outputGuidelines = buildOutputGuidelines(rootObject, outputFormat, targetPersona);
+        brief.put('outputGuidelines', outputGuidelines);
+
+        // === COMPANY/INDUSTRY CONTEXT ===
+        if (String.isNotBlank(companyIntelligence) || String.isNotBlank(industryContext)) {
+            Map<String, String> contextInfo = new Map<String, String>();
+            if (String.isNotBlank(companyIntelligence)) {
+                contextInfo.put('companyIntelligence', companyIntelligence);
+            }
+            if (String.isNotBlank(industryContext)) {
+                contextInfo.put('industryContext', industryContext);
+            }
+            if (String.isNotBlank(strategicInsights)) {
+                contextInfo.put('strategicInsights', strategicInsights);
+            }
+            brief.put('contextInfo', contextInfo);
+        }
+
+        // === MULTI-SAMPLE PATTERNS ===
+        if (multiSampleProfile != null && multiSampleProfile.sampleCount > 1) {
+            brief.put('multiSampleProfile', multiSampleProfile);
+            brief.put('sampleCount', multiSampleProfile.sampleCount);
+            result.queueInfo(runId, STAGE_NUMBER,
+                'Analysis brief includes multi-sample context (' + multiSampleProfile.sampleCount + ' samples)');
+        }
+
+        result.queueInfo(runId, STAGE_NUMBER, 'Generated analysis brief for meta-prompt');
+        return brief;
+    }
+
+    /**
+     * @description Builds the analysis goals section of the brief
+     */
+    private String buildAnalysisGoals(String rootObject, String businessContext, String targetPersona) {
+        List<String> goals = new List<String>();
+
+        goals.add('Analyze ' + rootObject + ' data to provide actionable business insights');
+        goals.add('Target audience: ' + targetPersona);
+
+        // Add root-object-specific goals
+        if (rootObject == 'Account') {
+            goals.add('Assess overall account health and relationship status');
+            goals.add('Identify revenue opportunities and risk factors');
+            goals.add('Recommend engagement priorities');
+        } else if (rootObject == 'Opportunity') {
+            goals.add('Evaluate deal health and close probability');
+            goals.add('Identify blockers and next steps');
+            goals.add('Assess stakeholder coverage and engagement');
+        } else if (rootObject == 'Case') {
+            goals.add('Assess support burden and customer satisfaction risk');
+            goals.add('Identify patterns in case types and resolutions');
+            goals.add('Recommend prioritization and escalation');
+        } else if (rootObject == 'Lead') {
+            goals.add('Evaluate lead quality and conversion likelihood');
+            goals.add('Identify engagement patterns');
+            goals.add('Recommend qualification actions');
+        }
+
+        // Include user-provided context
+        if (String.isNotBlank(businessContext)) {
+            goals.add('Specific requirements: ' + businessContext.left(500));
+        }
+
+        return String.join(goals, '\n');
+    }
+
+    /**
+     * @description Builds the data context section showing available objects and fields
+     */
+    private Map<String, Object> buildDataContext(
+            Map<String, Object> selectedFieldsRaw,
+            String rootObject,
+            String dataSummary,
+            Stage04_DataProfiling.MultiSampleProfile multiSampleProfile) {
+
+        Map<String, Object> context = new Map<String, Object>();
+        context.put('rootObject', rootObject);
+
+        // List available objects
+        List<String> availableObjects = new List<String>(selectedFieldsRaw.keySet());
+        context.put('availableObjects', availableObjects);
+
+        // List fields per object
+        Map<String, List<String>> fieldsByObject = new Map<String, List<String>>();
+        for (String objName : selectedFieldsRaw.keySet()) {
+            List<Object> fieldsRaw = (List<Object>) selectedFieldsRaw.get(objName);
+            List<String> fields = new List<String>();
+            for (Object f : fieldsRaw) {
+                fields.add(String.valueOf(f));
+            }
+            fieldsByObject.put(objName, fields);
+        }
+        context.put('fieldsByObject', fieldsByObject);
+
+        // Include data summary if available
+        if (String.isNotBlank(dataSummary)) {
+            context.put('dataSummary', dataSummary);
+        }
+
+        // Include multi-sample aggregations if available
+        if (multiSampleProfile != null) {
+            context.put('sampleCount', multiSampleProfile.sampleCount);
+            context.put('objectAggregations', multiSampleProfile.objectAggregations);
+            context.put('patterns', multiSampleProfile.patterns);
+            context.put('analysisSummary', multiSampleProfile.analysisSummary);
+        }
+
+        return context;
+    }
+
+    /**
+     * @description Builds output guidelines for the meta-prompt
+     */
+    private String buildOutputGuidelines(String rootObject, String outputFormat, String targetPersona) {
+        List<String> guidelines = new List<String>();
+
+        guidelines.add('=== OUTPUT GUIDELINES ===');
+        guidelines.add('');
+        guidelines.add('STRUCTURE RECOMMENDATIONS (not rigid requirements):');
+        guidelines.add('');
+        guidelines.add('1. EXECUTIVE SUMMARY');
+        guidelines.add('   - 2-3 sentence overview of key findings');
+        guidelines.add('   - Lead with the most important insight or risk');
+        guidelines.add('   - Include overall health/status assessment');
+        guidelines.add('');
+        guidelines.add('2. KEY INSIGHTS (prioritize these!)');
+        guidelines.add('   - 3-5 actionable findings with evidence');
+        guidelines.add('   - Each insight cites specific data (field:value)');
+        guidelines.add('   - Prioritize by business impact for ' + targetPersona);
+        guidelines.add('');
+        guidelines.add('3. RECOMMENDED ACTIONS');
+        guidelines.add('   - 2-4 specific, actionable next steps');
+        guidelines.add('   - Include urgency/priority indicators');
+        guidelines.add('   - Be specific: "Call John Smith" not "Follow up"');
+        guidelines.add('');
+        guidelines.add('4. SUPPORTING DATA (use sparingly)');
+        guidelines.add('   - Tables only when they add value');
+        guidelines.add('   - Max 5-7 rows per table');
+        guidelines.add('   - Add context paragraph before each table');
+        guidelines.add('');
+        guidelines.add('ANTI-PATTERNS TO AVOID:');
+        guidelines.add('- Do NOT lead with data tables');
+        guidelines.add('- Do NOT just list field values without analysis');
+        guidelines.add('- Do NOT include empty sections');
+        guidelines.add('- Do NOT use generic recommendations');
+
+        return String.join(guidelines, '\n');
+    }
+
+    /**
+     * @description Generates prompt metadata (description, howItWorks) using AI
+     * This content is displayed in the Salesforce UI to help users understand the prompt.
+     * - description: Concise summary (max 255 chars) for list views
+     * - howItWorks: Comprehensive explanation for end users on how to use/interpret the prompt
+     *
+     * @param rootObject The root Salesforce object
+     * @param businessContext User-provided business context
+     * @param targetPersona The target user persona
+     * @param strategicInsights Strategic insights from context analysis
+     * @param runId Run ID for logging
+     * @param result StageResult for deferred logging
+     * @return Map with 'description' and 'howItWorks' keys
+     */
+    private Map<String, String> generatePromptMetadataWithAI(
+            String rootObject,
+            String businessContext,
+            String targetPersona,
+            String strategicInsights,
+            Id runId,
+            StageResult result) {
+
+        result.queueInfo(runId, STAGE_NUMBER, 'Generating prompt metadata via AI');
+
+        // Build prompt for AI to generate metadata
+        String prompt = 'You are helping create a Salesforce AI prompt that analyzes ' + rootObject + ' records.\n\n';
+        prompt += '=== CONTEXT ===\n';
+        prompt += 'Target Object: ' + rootObject + '\n';
+        prompt += 'Target User: ' + (String.isNotBlank(targetPersona) ? targetPersona : 'Sales professional') + '\n';
+
+        if (String.isNotBlank(businessContext)) {
+            prompt += 'Business Context: ' + businessContext + '\n';
+        }
+
+        if (String.isNotBlank(strategicInsights)) {
+            prompt += 'Strategic Focus: ' + strategicInsights.left(500) + '\n';
+        }
+
+        prompt += '\n=== YOUR TASK ===\n';
+        prompt += 'Generate TWO pieces of content for this AI prompt:\n\n';
+
+        prompt += '1. DESCRIPTION (REQUIRED: exactly 200-250 characters, no more!):\n';
+        prompt += '   - A concise summary that appears in list views\n';
+        prompt += '   - Explains what this prompt does in one sentence\n';
+        prompt += '   - Format: "Analyzes [object] to [benefit] for [user type]"\n';
+        prompt += '   - Must be compelling and professional\n\n';
+
+        prompt += '2. HOW_IT_WORKS (500-1000 characters):\n';
+        prompt += '   - Detailed explanation for end users\n';
+        prompt += '   - What data is analyzed\n';
+        prompt += '   - What insights are provided\n';
+        prompt += '   - How to interpret the output\n';
+        prompt += '   - When to use this prompt\n\n';
+
+        prompt += '=== OUTPUT FORMAT ===\n';
+        prompt += 'Return ONLY a JSON object with these exact keys:\n';
+        prompt += '{\n';
+        prompt += '  "description": "Your 200-250 character description here",\n';
+        prompt += '  "howItWorks": "Your 500-1000 character explanation here"\n';
+        prompt += '}\n\n';
+        prompt += 'CRITICAL: Return ONLY the JSON object, no other text.';
+
+        Map<String, String> metadata = new Map<String, String>();
+
+        try {
+            // Call AI with low temperature for consistent output
+            AIServiceClient.AIResponse aiResponse = AIServiceClient.callAI(null, prompt, 1024, 0.3);
+
+            if (aiResponse.success && String.isNotBlank(aiResponse.content)) {
+                // Parse JSON response
+                String jsonContent = aiResponse.content.trim();
+
+                // Handle markdown code blocks if present
+                if (jsonContent.startsWith('```')) {
+                    Integer start = jsonContent.indexOf('{');
+                    Integer endBrace = jsonContent.lastIndexOf('}');
+                    if (start >= 0 && endBrace > start) {
+                        jsonContent = jsonContent.substring(start, endBrace + 1);
+                    }
+                }
+
+                Map<String, Object> parsed = (Map<String, Object>) JSON.deserializeUntyped(jsonContent);
+
+                String description = (String) parsed.get('description');
+                String howItWorks = (String) parsed.get('howItWorks');
+
+                // Ensure description fits in 255 chars
+                if (String.isNotBlank(description)) {
+                    if (description.length() > 255) {
+                        description = description.substring(0, 252) + '...';
+                    }
+                    metadata.put('description', description);
+                }
+
+                if (String.isNotBlank(howItWorks)) {
+                    metadata.put('howItWorks', howItWorks);
+                }
+
+                result.queueInfo(runId, STAGE_NUMBER, 'Generated prompt metadata: description=' +
+                    (description != null ? description.length() : 0) + ' chars, howItWorks=' +
+                    (howItWorks != null ? howItWorks.length() : 0) + ' chars');
+            }
+        } catch (Exception e) {
+            result.queueError(runId, STAGE_NUMBER, 'AI metadata generation failed: ' + e.getMessage());
+        }
+
+        // Fallback if AI failed
+        if (!metadata.containsKey('description')) {
+            String fallback = 'AI-powered ' + rootObject + ' analysis providing actionable insights for ' +
+                (String.isNotBlank(targetPersona) ? targetPersona : 'business users') + '.';
+            if (fallback.length() > 255) {
+                fallback = fallback.substring(0, 252) + '...';
+            }
+            metadata.put('description', fallback);
+        }
+
+        if (!metadata.containsKey('howItWorks')) {
+            metadata.put('howItWorks',
+                'This AI prompt analyzes ' + rootObject + ' records to provide actionable business insights.\n\n' +
+                'How to use:\n' +
+                '1. Navigate to an ' + rootObject + ' record\n' +
+                '2. Click the AI Assistant button\n' +
+                '3. Review the generated insights and recommendations\n\n' +
+                'The analysis includes key metrics, identified risks, and prioritized next steps ' +
+                'tailored for ' + (String.isNotBlank(targetPersona) ? targetPersona : 'your role') + '.');
+        }
+
+        return metadata;
+    }
+
+    /**
+     * @description Generates a minimal template for merge field validation in meta-prompt mode
+     * This template is used ONLY for validation purposes - the actual output is generated
+     * at runtime by the LLM using the meta-prompt structure.
+     *
+     * @param selectedFieldsRaw Map of object to field list
+     * @param rootObject The root Salesforce object
+     * @param runId Run ID for logging
+     * @param result StageResult for deferred logging
+     * @return Minimal HTML template with all necessary merge fields
+     */
+    private String generateMinimalTemplateForValidation(
+            Map<String, Object> selectedFieldsRaw,
+            String rootObject,
+            Id runId,
+            StageResult result) {
+
+        // Build a minimal template that includes all merge fields
+        // This is used for validation and DCM configuration only
+        List<String> templateParts = new List<String>();
+
+        templateParts.add('<div style="font-family:\'Salesforce Sans\',Arial,sans-serif;padding:16px;">');
+
+        // Root object fields
+        if (selectedFieldsRaw.containsKey(rootObject)) {
+            List<Object> rootFields = (List<Object>) selectedFieldsRaw.get(rootObject);
+            templateParts.add('<div style="margin-bottom:16px;">');
+            for (Object field : rootFields) {
+                String fieldName = String.valueOf(field);
+                templateParts.add('<span>{{{' + fieldName + '}}}</span>');
+            }
+            templateParts.add('</div>');
+        }
+
+        // Child object fields with iteration
+        for (String objectName : selectedFieldsRaw.keySet()) {
+            if (objectName != rootObject) {
+                List<Object> childFields = (List<Object>) selectedFieldsRaw.get(objectName);
+                String relationshipName = getRelationshipNameFromSchema(rootObject, objectName);
+
+                templateParts.add('{{#' + relationshipName + '}}');
+                templateParts.add('<div>');
+                for (Object field : childFields) {
+                    String fieldName = String.valueOf(field);
+                    templateParts.add('<span>{{{' + fieldName + '}}}</span>');
+                }
+                templateParts.add('</div>');
+                templateParts.add('{{/' + relationshipName + '}}');
+                templateParts.add('{{^' + relationshipName + '}}No ' + objectName + '{{/' + relationshipName + '}}');
+            }
+        }
+
+        templateParts.add('</div>');
+
+        String minimalTemplate = String.join(templateParts, '');
+
+        result.queueDebug(runId, STAGE_NUMBER,
+            'Generated minimal template for validation (' + minimalTemplate.length() + ' chars)');
+
+        return minimalTemplate;
     }
 
     /**
