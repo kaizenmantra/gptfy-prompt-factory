@@ -543,6 +543,19 @@ public with sharing class PromptBuilderController {
                 'Generate an analysis following the structure below:\n\n' +
                 session.Current_Draft__c;
 
+            // Set HTML template for rendering the AI response
+            // This template displays the AI response with proper formatting
+            promptConfig.htmlTemplate = '<div class="ai-analysis-output">\n' +
+                '  <style>\n' +
+                '    .ai-analysis-output { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.6; }\n' +
+                '    .ai-analysis-output h1, .ai-analysis-output h2, .ai-analysis-output h3 { margin-top: 1em; margin-bottom: 0.5em; }\n' +
+                '    .ai-analysis-output ul, .ai-analysis-output ol { margin: 0.5em 0; padding-left: 1.5em; }\n' +
+                '    .ai-analysis-output li { margin: 0.25em 0; }\n' +
+                '    .ai-analysis-output strong { font-weight: 600; }\n' +
+                '  </style>\n' +
+                '  {!response}\n' +
+                '</div>';
+
             // Create Prompt
             Id promptId = PromptBuilder.createPrompt(promptConfig);
 
