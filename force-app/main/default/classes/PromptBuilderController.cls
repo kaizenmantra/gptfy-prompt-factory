@@ -865,8 +865,9 @@ public with sharing class PromptBuilderController {
 
             // Only add if relationship name exists
             if (String.isNotBlank(rel.relationshipName)) {
-                // Query Id and Name (or other key fields) from child objects
-                baseQuery += ', (SELECT Id, Name FROM ' + rel.relationshipName + ' LIMIT 10)';
+                // Query Id and appropriate name field from child objects
+                String nameField = getNameFieldForObject(rel.childObject);
+                baseQuery += ', (SELECT Id, ' + nameField + ' FROM ' + rel.relationshipName + ' LIMIT 10)';
                 subqueryCount++;
             }
         }
@@ -899,7 +900,8 @@ public with sharing class PromptBuilderController {
             }
 
             try {
-                String childSOQL = 'SELECT Id, Name, ' + rel.field +
+                String nameField = getNameFieldForObject(rel.childObject);
+                String childSOQL = 'SELECT Id, ' + nameField + ', ' + rel.field +
                                   ' FROM ' + rel.childObject +
                                   ' WHERE ' + rel.field + ' IN :sampleRecordIds' +
                                   ' LIMIT 50';

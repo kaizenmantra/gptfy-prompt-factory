@@ -955,9 +955,9 @@ WHERE Id IN :sampleRecordIds
 | 19 | Format relationship data for LLM context | Sonnet | done | 18 | Markdown lists for child objects in prompt |
 | 20 | **Design HTML template generation strategy** | Opus | done | 16 | Merged into Task 16 - see conversion prompt approach |
 | 21 | Update system prompt for HTML output | Sonnet | done | 16 | Added `convertToHTML()` method with GPTfy conversion prompt |
-| 22 | Create HTML exemplars (Deal Coach, Account 360) | Sonnet | not_started | 16 | Convert markdown exemplars to HTML with merge fields |
+| 22 | Create HTML exemplars (Deal Coach, Account 360) | Sonnet | done | 16 | HTML templates with merge fields in PromptExemplars |
 | 23 | Update deployPrompt to handle HTML output | Sonnet | not_started | 21,22 | Call conversion, validate, create DCM+Prompt |
-| 24 | Add HTML preview in chat UI | Sonnet | not_started | 21 | Render HTML safely in LWC |
+| 24 | Add HTML preview in chat UI | Sonnet | done | 21 | Toggle button to preview HTML output |
 | 25 | Deploy V2 to Salesforce and test | Sonnet | not_started | 17-24 | End-to-end GPTfy execution test |
 | 26 | **V2 Quality Review** | Opus | not_started | 25 | Verify GPTfy renders output correctly |
 

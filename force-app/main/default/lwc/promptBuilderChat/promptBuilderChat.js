@@ -34,6 +34,7 @@ export default class PromptBuilderChat extends LightningElement {
     // UI State
     @track isLoading = false;
     @track errorMessage = '';
+    @track showHTMLPreview = false;  // Toggle for HTML vs Markdown preview
 
     // Object Options (Common Salesforce Objects)
     objectOptions = [
@@ -338,6 +339,49 @@ export default class PromptBuilderChat extends LightningElement {
             return aiMessages[aiMessages.length - 1].content;
         }
         return '';
+    }
+
+    /**
+     * Get raw markdown content (for HTML conversion)
+     */
+    get latestMarkdown() {
+        const aiMessages = this.messages.filter(msg => msg.sender === 'AI Assistant');
+        if (aiMessages.length > 0) {
+            // Get the original message content before formatting
+            // Find the corresponding message in history
+            const lastMsg = aiMessages[aiMessages.length - 1];
+            // Remove HTML tags to get back to raw content
+            return lastMsg.content.replace(/<[^>]*>/g, '').replace(/<br\/>/g, '\n');
+        }
+        return '';
+    }
+
+    /**
+     * Handle HTML preview toggle
+     */
+    handleTogglePreview() {
+        this.showHTMLPreview = !this.showHTMLPreview;
+    }
+
+    /**
+     * Check if HTML preview should be shown
+     */
+    get isHTMLPreview() {
+        return this.showHTMLPreview;
+    }
+
+    /**
+     * Get preview mode label
+     */
+    get previewModeLabel() {
+        return this.showHTMLPreview ? 'Show Markdown' : 'Show HTML Preview';
+    }
+
+    /**
+     * Get preview mode icon
+     */
+    get previewModeIcon() {
+        return this.showHTMLPreview ? 'utility:text' : 'utility:preview';
     }
 
     /**
