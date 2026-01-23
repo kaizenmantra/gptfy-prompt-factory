@@ -5,6 +5,16 @@ All architecture, decisions, tasks, and progress tracked here.
 
 ---
 
+## CURRENTLY ACTIVE WORK (Check Before Starting)
+
+| Model | Task | File Being Modified | Started |
+|-------|------|---------------------|---------|
+| **Sonnet** | V2.1 Phase 1A/1B/1C (1.1-1.5, 1.7, 1.9-1.10) | `Stage08_PromptAssembly.cls`, builder prompts | 2026-01-23 18:30 |
+
+**Status:** V2.0 tested successfully (Run ID: a0gQH000005GJILYA4). Opus completed Phase 1B. Sonnet working overnight on visual diversity, personalization, and output quality fixes.
+
+---
+
 ## Release Strategy
 
 ### Current Branch: `feature/builder-improvements`
@@ -109,7 +119,7 @@ sf project deploy start -o agentictso -d force-app/main/default/classes/ClassNam
 | 1.5 | Add "use names not titles" instruction to meta-prompt | Sonnet | not_started | "Say 'Sarah Johnson' not 'the CFO'" |
 | 1.6 | Add remaining traversal builders to insert script | Opus | done | Expanded from 8 to 25 traversals in insert_builder_prompts.apex |
 | 1.7 | Deploy traversal builders to org | Sonnet | not_started | Run insert_builder_prompts.apex to create Traversal builder records |
-| 1.8 | Update Stage 5 to suggest parent fields | Opus | not_started | When OCR selected, suggest Contact.Name |
+| 1.8 | Update Stage 5 to suggest parent fields | Opus | done | Deployed: loads traversals, adds to LLM prompt, parses selectedParentFields |
 
 ### Phase 1C: Output Quality
 
@@ -393,6 +403,7 @@ Stage 5: Field Selection (Enhanced)
 | 2026-01-23 | Task 4.3: V2.1 priorities | Opus | Identified visual diversity, parent traversal, builder library expansion |
 | 2026-01-23 | V2.1 Planning | Opus | Documented traversal catalog, builder library, phased task queue |
 | 2026-01-23 | Task 1.6: Traversal builders | Opus | Added 17 new traversals to insert_builder_prompts.apex (now 25 total, 50 builders overall) |
+| 2026-01-23 | Task 1.8: Stage 5 parent traversals | Opus | Wired traversal builders into field selection: loadTraversalsForObjects(), prompt section, selectedParentFields output |
 
 ---
 
