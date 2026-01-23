@@ -190,7 +190,7 @@ Analyze the data. Lead with insights. Let the data drive the structure.
 | 3.1 | Design meta-prompt structure | Opus | done | See docs/designs/META_PROMPT_DESIGN.md - 6 sections defined |
 | 3.2 | Modify Stage 7 to generate "analysis brief" not fixed template | Opus | done | Added USE_META_PROMPT flag, generateAnalysisBrief(), buildDataContext() |
 | 3.3 | Modify Stage 8 to assemble meta-prompt | Sonnet | not_started | After 3.1/3.2 designed |
-| 3.4 | Create UI toolkit section for meta-prompt | Sonnet | not_started | Document available components |
+| 3.4 | Create UI toolkit section for meta-prompt | Sonnet | done | Created docs/UI_TOOLKIT.md with layouts, insights, data components |
 
 ### Phase 4: Integration & Testing
 
@@ -223,6 +223,7 @@ Analyze the data. Lead with insights. Let the data drive the structure.
 | 2026-01-23 | Task 2.2: Update pfInputForm for multi-sample | Sonnet | Updated LWC to accept 1-5 comma-separated IDs with validation |
 | 2026-01-23 | Task 2.3: Update PromptFactoryController for multi-sample | Sonnet | Added Sample_Record_Ids__c field, parsing logic, deployed controller |
 | 2026-01-23 | Task 2.4: Update Stage 4 for multi-sample profiling | Sonnet | Implemented MultiSampleProfile classes, profileMultipleSamples(), aggregation, pattern detection |
+| 2026-01-23 | Task 3.4: Create UI toolkit documentation | Sonnet | Created comprehensive component library: layouts, insights, data components, usage rules |
 | 2026-01-23 | Task 2.1: Design multi-sample data structure | Opus | Created MULTI_SAMPLE_DESIGN.md with full architecture for N-sample profiling |
 | 2026-01-23 | Task 2.5: Update Stage 5 for multi-sample | Opus | Enhanced AI prompt with data availability across samples, detected patterns, field selection guidance |
 | 2026-01-23 | Task 3.1: Design meta-prompt structure | Opus | Created META_PROMPT_DESIGN.md with 6-section architecture: Role, Data Payload, Analysis Principles, UI Toolkit, Output Rules, Directive |
