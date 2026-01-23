@@ -195,6 +195,7 @@ public with sharing class Stage03_SchemaDiscovery implements IStage {
                '3. Parent-child relationships that provide context\n' +
                '4. Objects that enable the desired insights\n\n' +
                'ALWAYS include the root object: ' + rootObject + '\n\n' +
+               getKeyObjectGuidance(rootObject) +
                'Return ONLY valid JSON in this exact format:\n' +
                '{\n' +
                '  "selectedObjects": ["Object1__c", "Object2__c", ...],\n' +
@@ -381,6 +382,49 @@ public with sharing class Stage03_SchemaDiscovery implements IStage {
         }
 
         return result;
+    }
+
+    /**
+     * @description Provides object-specific guidance for key child objects
+     * Ensures critical junction and activity objects are prioritized in selection
+     * @param rootObject The root object API name
+     * @return Guidance string to include in the prompt
+     */
+    private String getKeyObjectGuidance(String rootObject) {
+        Map<String, String> guidanceByRoot = new Map<String, String>{
+            'Opportunity' =>
+                'CRITICAL OBJECTS FOR OPPORTUNITY:\n' +
+                '- OpportunityContactRole: MUST INCLUDE - shows stakeholders, decision makers, roles in deal\n' +
+                '- OpportunityLineItem: Include if products/pricing matter\n' +
+                '- Task: Include for activity history and follow-ups\n' +
+                '- Event: Include for meeting history\n' +
+                '- Note: Include for deal notes and context\n\n',
+            'Account' =>
+                'CRITICAL OBJECTS FOR ACCOUNT:\n' +
+                '- Contact: MUST INCLUDE - primary contacts and stakeholders\n' +
+                '- Opportunity: Include for pipeline and revenue context\n' +
+                '- Case: Include for support and satisfaction insights\n' +
+                '- Task: Include for activity history\n' +
+                '- Contract: Include for contract/subscription context\n\n',
+            'Contact' =>
+                'CRITICAL OBJECTS FOR CONTACT:\n' +
+                '- OpportunityContactRole: Include to show opportunities contact is involved in\n' +
+                '- Task: Include for activity history\n' +
+                '- Case: Include if contact submits cases\n\n',
+            'Case' =>
+                'CRITICAL OBJECTS FOR CASE:\n' +
+                '- CaseComment: MUST INCLUDE - shows conversation history\n' +
+                '- EmailMessage: Include for email thread context\n' +
+                '- Task: Include for follow-up activities\n\n',
+            'Lead' =>
+                'CRITICAL OBJECTS FOR LEAD:\n' +
+                '- Task: Include for activity and follow-up history\n' +
+                '- CampaignMember: Include for marketing campaign context\n\n'
+        };
+
+        return guidanceByRoot.containsKey(rootObject)
+            ? guidanceByRoot.get(rootObject)
+            : '';
     }
 
     /**
