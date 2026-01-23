@@ -7,6 +7,9 @@
  * - Business context and target persona
  * - Object relevance and data availability
  * - Field information value for AI-generated output
+ *
+ * V2.0: Enhanced with multi-sample awareness - uses cross-sample data patterns from Stage 4
+ * to inform field selection. Objects with consistent data across samples are prioritized.
  */
 public with sharing class Stage05_FieldSelection implements IStage {
 
@@ -32,6 +35,15 @@ public with sharing class Stage05_FieldSelection implements IStage {
             String rootObject = (String) inputs.get('rootObject');
             String businessContext = (String) inputs.get('businessContext');
             String targetPersona = (String) inputs.get('targetPersona');
+
+            // V2.0: Check for multi-sample profile from Stage 4
+            Stage04_DataProfiling.MultiSampleProfile multiSampleProfile = null;
+            Object multiSampleRaw = inputs.get('multiSampleProfile');
+            if (multiSampleRaw != null && multiSampleRaw instanceof Stage04_DataProfiling.MultiSampleProfile) {
+                multiSampleProfile = (Stage04_DataProfiling.MultiSampleProfile) multiSampleRaw;
+                result.queueInfo(runId, STAGE_NUMBER,
+                    'Multi-sample mode: Using data from ' + multiSampleProfile.sampleCount + ' samples');
+            }
 
             // Get objects that have data from Stage 4
             List<Object> rawObjectsWithData = (List<Object>) inputs.get('objectsWithData');
@@ -59,8 +71,10 @@ public with sharing class Stage05_FieldSelection implements IStage {
                     getFieldsForObjectsDeferred(objectsWithData, runId, result);
 
                 // Step 2: Use Claude to select relevant fields based on context
+                // V2.0: Pass multi-sample profile if available for enhanced field selection
                 selectedFields = selectFieldsWithAIDeferred(
-                    fieldsByObject, rootObject, businessContext, targetPersona, runId, result);
+                    fieldsByObject, rootObject, businessContext, targetPersona,
+                    multiSampleProfile, runId, result);
 
                 // Step 3: Validate AI-selected fields against schema
                 Map<String, List<String>> validatedFields = new Map<String, List<String>>();
@@ -185,12 +199,19 @@ public with sharing class Stage05_FieldSelection implements IStage {
             result.outputs.put('companyProfile', inputs.get('companyProfile'));
             result.outputs.put('strategicInsights', inputs.get('strategicInsights'));
             result.outputs.put('companyWebsite', inputs.get('companyWebsite'));
-            
+
             // CRITICAL: Pass through data summary for template design
             result.outputs.put('dataSummary', inputs.get('dataSummary'));
             result.outputs.put('dataAvailability', inputs.get('dataAvailability'));
             // Don't pass dataAvailability - it can be large and causes stack overflow
             // Downstream stages can re-query if needed
+
+            // V2.0: Pass through multi-sample data for downstream stages (Stage 7/8 meta-prompt)
+            if (multiSampleProfile != null) {
+                result.outputs.put('multiSampleProfile', multiSampleProfile);
+                result.outputs.put('sampleCount', multiSampleProfile.sampleCount);
+            }
+            result.outputs.put('sampleRecordIds', inputs.get('sampleRecordIds'));
 
             result.markCompleted();
 
@@ -369,6 +390,7 @@ public with sharing class Stage05_FieldSelection implements IStage {
      * @param rootObject The root Salesforce object
      * @param businessContext User-provided business requirements
      * @param targetPersona Target user persona
+     * @param multiSampleProfile V2.0: Multi-sample profile from Stage 4 (can be null for single-sample)
      * @param runId Run ID for logging
      * @param result StageResult for deferred logging
      * @return Map of object name to selected field list
@@ -378,12 +400,13 @@ public with sharing class Stage05_FieldSelection implements IStage {
             String rootObject,
             String businessContext,
             String targetPersona,
+            Stage04_DataProfiling.MultiSampleProfile multiSampleProfile,
             Id runId,
             StageResult result) {
 
-        // Build prompt for field selection
+        // Build prompt for field selection (V2.0: includes multi-sample context if available)
         String prompt = buildFieldSelectionPrompt(fieldsByObject, rootObject,
-                                                  businessContext, targetPersona);
+                                                  businessContext, targetPersona, multiSampleProfile);
 
         result.queueDebug(runId, STAGE_NUMBER, 'Calling Claude AI for field selection');
 
@@ -428,17 +451,20 @@ public with sharing class Stage05_FieldSelection implements IStage {
      * @description Builds the prompt for Claude AI to select relevant fields
      * Uses List<String> and String.join() to avoid stack overflow from string concatenation
      * CRITICAL: Emphasizes selecting meaningful data fields, not just ID fields
+     * V2.0: Enhanced with multi-sample context to inform field selection priorities
      * @param fieldsByObject Map of object to available fields
      * @param rootObject The root Salesforce object
      * @param businessContext User-provided business requirements
      * @param targetPersona Target user persona
+     * @param multiSampleProfile V2.0: Multi-sample profile (can be null for single-sample)
      * @return Formatted prompt string
      */
     private String buildFieldSelectionPrompt(
             Map<String, List<SchemaHelper.FieldMetadata>> fieldsByObject,
             String rootObject,
             String businessContext,
-            String targetPersona) {
+            String targetPersona,
+            Stage04_DataProfiling.MultiSampleProfile multiSampleProfile) {
 
         // Use List<String> to avoid stack overflow from repeated string concatenation
         List<String> promptParts = new List<String>();
@@ -450,6 +476,48 @@ public with sharing class Stage05_FieldSelection implements IStage {
         promptParts.add('');
         promptParts.add('TARGET PERSONA: ' + targetPersona);
         promptParts.add('ROOT OBJECT: ' + rootObject);
+
+        // V2.0: Add multi-sample context if available
+        if (multiSampleProfile != null && multiSampleProfile.sampleCount > 1) {
+            promptParts.add('');
+            promptParts.add('=== MULTI-SAMPLE DATA ANALYSIS ===');
+            promptParts.add('Analyzed ' + multiSampleProfile.sampleCount + ' ' + rootObject + ' records to understand data patterns.');
+            promptParts.add('');
+
+            // Add object availability summary
+            promptParts.add('DATA AVAILABILITY ACROSS SAMPLES:');
+            for (String objName : multiSampleProfile.objectAggregations.keySet()) {
+                Stage04_DataProfiling.ObjectAggregation agg = multiSampleProfile.objectAggregations.get(objName);
+                if (agg.samplesWithData > 0) {
+                    String availabilityNote = objName + ': Present in ' + agg.samplesWithData + '/' +
+                        multiSampleProfile.sampleCount + ' samples';
+                    if (agg.avgCount > 0) {
+                        availabilityNote += ' (avg ' + agg.avgCount.setScale(1) + ' records)';
+                    }
+                    if (agg.isConsistent) {
+                        availabilityNote += ' [CONSISTENT]';
+                    }
+                    promptParts.add('- ' + availabilityNote);
+                }
+            }
+
+            // Add detected patterns
+            if (multiSampleProfile.patterns != null && !multiSampleProfile.patterns.isEmpty()) {
+                promptParts.add('');
+                promptParts.add('DETECTED DATA PATTERNS:');
+                for (Stage04_DataProfiling.DataPattern pattern : multiSampleProfile.patterns) {
+                    promptParts.add('- [' + pattern.severity + '] ' + pattern.description);
+                }
+            }
+
+            promptParts.add('');
+            promptParts.add('MULTI-SAMPLE FIELD SELECTION GUIDANCE:');
+            promptParts.add('- PRIORITIZE objects with high availability (present in all samples)');
+            promptParts.add('- Objects marked [CONSISTENT] have predictable data - excellent for analysis');
+            promptParts.add('- Objects with [WARNING] patterns may have missing data - include defensive fields');
+            promptParts.add('- Focus on fields that can reveal the patterns detected above');
+        }
+
         promptParts.add('');
         promptParts.add('AVAILABLE FIELDS BY OBJECT:');
 

@@ -181,7 +181,7 @@ Analyze the data. Lead with insights. Let the data drive the structure.
 | 2.2 | Update `pfInputForm` LWC to accept comma-separated IDs | Sonnet | done | Deployed - supports 1-5 IDs with validation |
 | 2.3 | Update `PromptFactoryController.startPipelineRun` for multi-sample | Sonnet | done | Deployed - parses IDs, stores in Sample_Record_Ids__c |
 | 2.4 | Update Stage 4 to query multiple records | Sonnet | done | Deployed - profiles multiple samples, aggregates data, detects patterns |
-| 2.5 | Update Stage 5 field scoring for multi-sample relevance | Opus | not_started | Score by cross-sample patterns |
+| 2.5 | Update Stage 5 field scoring for multi-sample relevance | Opus | done | AI prompt enhanced with data availability + patterns |
 
 ### Phase 3: Meta-Prompt Architecture
 
@@ -224,6 +224,7 @@ Analyze the data. Lead with insights. Let the data drive the structure.
 | 2026-01-23 | Task 2.3: Update PromptFactoryController for multi-sample | Sonnet | Added Sample_Record_Ids__c field, parsing logic, deployed controller |
 | 2026-01-23 | Task 2.4: Update Stage 4 for multi-sample profiling | Sonnet | Implemented MultiSampleProfile classes, profileMultipleSamples(), aggregation, pattern detection |
 | 2026-01-23 | Task 2.1: Design multi-sample data structure | Opus | Created MULTI_SAMPLE_DESIGN.md with full architecture for N-sample profiling |
+| 2026-01-23 | Task 2.5: Update Stage 5 for multi-sample | Opus | Enhanced AI prompt with data availability across samples, detected patterns, field selection guidance |
 
 ---
 
