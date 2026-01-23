@@ -296,7 +296,7 @@ public with sharing class PromptBuilderController {
 
             // Check for errors
             if (!aiResponse.success) {
-                throw new AuraHandledException('AI service error: ' + aiResponse.error);
+                throw new AuraHandledException('AI service error: ' + aiResponse.errorMessage);
             }
 
             // Build response
