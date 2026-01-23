@@ -10,7 +10,8 @@ All architecture, decisions, tasks, and progress tracked here.
 | Version | Status | Description |
 |---------|--------|-------------|
 | V1.1 | ✅ Complete | Builder prompt injection working (verified Run ID a0gQH000005GHurYAG) |
-| V2.0 | 🔴 Not Started | Prompt optimization + multi-sample + meta-prompt architecture |
+| V2.0 | ✅ Complete | Meta-prompt architecture, LLM-generated metadata, field validation (verified 2026-01-23) |
+| V2.1 | 🔴 Not Started | Single-line HTML, emoji cleanup, multi-sample testing |
 
 ### V1.1 Limitations (discovered during analysis):
 
@@ -196,9 +197,9 @@ Analyze the data. Lead with insights. Let the data drive the structure.
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 4.1 | End-to-end test with 3 sample Opportunities | Sonnet | in_progress | Testing V2.0 multi-sample + meta-prompt flow |
-| 4.2 | Compare output quality: V1.1 vs V2.0 | Opus | not_started | Qualitative analysis |
-| 4.3 | Document findings and next iteration priorities | Opus | not_started | What worked, what needs more |
+| 4.1 | End-to-end test with 3 sample Opportunities | Opus | done | Fixed howItWorks bug, duplicate grounding rules. Pipeline working. |
+| 4.2 | Compare output quality: V1.1 vs V2.0 | Opus | done | See analysis below |
+| 4.3 | Document findings and next iteration priorities | Opus | done | See V2.1 priorities below |
 
 ---
 
@@ -230,6 +231,53 @@ Analyze the data. Lead with insights. Let the data drive the structure.
 | 2026-01-23 | Task 3.2: Modify Stage 7 for analysis brief | Opus | Added USE_META_PROMPT flag, generateAnalysisBrief() with analysis goals, data context, output guidelines |
 | 2026-01-23 | Task 3.3: Modify Stage 8 for meta-prompt assembly | Sonnet | Implemented 6-section meta-prompt: buildMetaPrompt(), buildRoleSection(), buildDataPayloadSection(), buildAnalysisPrinciplesSection(), buildUIToolkitSection(), buildOutputRulesSection(), buildDirectiveSection(). Fixed SOQL errors in builder loading. Deployed successfully. |
 | 2026-01-23 | Task 4.1: Fix metadata and field validation | Opus | Added LLM-generated prompt metadata (description ≤255 chars, howItWorks long text), field size validation for Prompt_Command__c. Stage 7 generates via AI, Stage 8 passes through, PromptBuilder validates sizes. |
+| 2026-01-23 | Task 4.1: Bug fixes from testing | Opus | Fixed howItWorks not saving (Stage 9 missing extraction), fixed duplicate grounding rules (Stage 8 was passing separately when already in promptCommand) |
+| 2026-01-23 | Task 4.2: V1.1 vs V2.0 comparison | Opus | Documented quality improvements: evidence-cited insights, specific actions with deadlines, insight-first structure, token efficiency |
+| 2026-01-23 | Task 4.3: V2.1 priorities | Opus | Identified: single-line HTML, emoji cleanup, multi-sample testing, token budget tracking |
+
+---
+
+## V1.1 vs V2.0 Quality Comparison (Task 4.2)
+
+| Aspect | V1.1 (Fixed Template) | V2.0 (Meta-Prompt) | Winner |
+|--------|----------------------|-------------------|--------|
+| **Output Structure** | Rigid template with placeholders | LLM decides structure based on data | V2.0 |
+| **Insight Quality** | "Fill in the blanks" approach | Evidence-cited insights with (Source:) annotations | V2.0 |
+| **Action Items** | Generic recommendations | Specific: WHO, WHAT, WHEN, WHY with deadlines | V2.0 |
+| **Data Tables** | Table-first approach | Tables last, insights first | V2.0 |
+| **Token Efficiency** | ~6,500 char builders injected verbatim | ~450 char compressed principles | V2.0 |
+| **Prompt Size** | Variable, no validation | Validated against field limit, % shown | V2.0 |
+| **Metadata** | Manual description | LLM-generated description + howItWorks | V2.0 |
+
+### Key Improvements Observed:
+1. **Evidence Binding**: Output follows the rules - insights lead with analysis, citations follow
+2. **Executive Summary**: Concise health assessment with risks and opportunities
+3. **Actionable Recommendations**: Specific actions with owners and deadlines
+4. **No Table-First**: Output structure is insight-driven
+
+### Remaining Gaps for V2.1:
+1. Multi-sample not tested (single sample used in test run)
+2. HTML still has newlines (should be single-line for GPTfy)
+3. Some emojis in builder prompts (✅ ❌) - should be removed
+
+---
+
+## V2.1 Priorities (Task 4.3)
+
+### High Priority:
+1. **Single-line HTML enforcement** - LLM output has newlines, GPTfy requires single-line
+2. **Remove emojis from builder prompts** - Clean up Evidence Binding Rules
+3. **Test multi-sample flow** - Verify 3-record pattern detection works
+
+### Medium Priority:
+4. **Token budget tracking** - Show prompt tokens used vs available
+5. **Smarter builder selection** - Use Weight__c and relevance scoring
+6. **Configurable sample count** - Let user choose 1-5 samples
+
+### Future Considerations:
+- Apex Service injection (Picklist Intelligence, Topic Service)
+- A/B testing framework for prompt variations
+- Output caching for similar record patterns
 
 ---
 
