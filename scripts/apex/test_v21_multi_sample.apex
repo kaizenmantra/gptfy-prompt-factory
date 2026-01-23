@@ -29,33 +29,33 @@ if (opps.size() < 3) {
     System.debug('');
     System.debug('Sample Record IDs: ' + sampleRecordIds);
 
-    // Create PF_Run record
-    PF_Run__c run = new PF_Run__c();
-    run.Name = 'V2.1 Multi-Sample Test - ' + DateTime.now().format('yyyy-MM-dd HH:mm');
-    run.Status__c = 'Not Started';
-    run.Root_Object__c = 'Opportunity';
-    run.Sample_Record_Id__c = oppIds[0]; // Primary sample ID
-    run.Sample_Record_Ids__c = sampleRecordIds; // All sample IDs
-    run.Target_Persona__c = 'Sales Manager';
-    run.Business_Context__c = 'Generate a sales manager dashboard for pipeline review. Focus on deal health, stakeholder engagement, and next steps.';
-    run.Prompt_Name__c = 'V2.1 Test - Sales Pipeline Dashboard';
-
-    insert run;
-    System.debug('');
-    System.debug('===== PF_RUN CREATED =====');
-    System.debug('Run ID: ' + run.Id);
-    System.debug('Name: ' + run.Name);
-
-    // Enqueue the pipeline
-    System.enqueueJob(new PromptFactoryPipeline(run.Id, 1));
+    // Use the controller method which handles multi-sample properly
+    String runId;
+    try {
+        runId = PromptFactoryController.startPipelineRun(
+            'V2.1 Multi-Sample Test',                    // promptName
+            'Opportunity',                               // rootObject
+            sampleRecordIds,                             // sampleRecordId (comma-separated)
+            'Generate a sales manager dashboard for pipeline review. Focus on deal health and next steps.', // businessContext
+            'Visual Dashboard with KPIs',                // outputFormat
+            null,                                        // aiModelId
+            null                                         // companyUrl
+        );
+        System.debug('');
+        System.debug('===== PF_RUN CREATED =====');
+        System.debug('Run ID: ' + runId);
+    } catch (Exception e) {
+        System.debug('ERROR creating run: ' + e.getMessage());
+        return;
+    }
 
     System.debug('');
     System.debug('===== PIPELINE STARTED =====');
     System.debug('Monitor progress:');
-    System.debug('sf data query -o agentictso -q "SELECT Status__c, Current_Stage__c, Error_Message__c FROM PF_Run__c WHERE Id = \'' + run.Id + '\'"');
+    System.debug('sf data query -o agentictso -q "SELECT Status__c, Current_Stage__c, Error_Message__c FROM PF_Run__c WHERE Id = \'' + runId + '\'"');
     System.debug('');
     System.debug('Check Stage 5 output for traversal suggestions:');
-    System.debug('sf data query -o agentictso -q "SELECT Stage05_Output__c FROM PF_Run__c WHERE Id = \'' + run.Id + '\'"');
+    System.debug('sf data query -o agentictso -q "SELECT Stage05_Output__c FROM PF_Run__c WHERE Id = \'' + runId + '\'"');
     System.debug('');
     System.debug('===== EXPECTED V2.1 BEHAVIOR =====');
     System.debug('1. Stage 4: Multi-sample profiling with 3 Opportunities');
@@ -63,5 +63,5 @@ if (opps.size() < 3) {
     System.debug('3. Stage 5 output: selectedParentFields should contain Owner.Name, Account.Name, etc.');
     System.debug('4. Stage 8: Parent fields should appear in final prompt');
     System.debug('');
-    System.debug('Run ID: ' + run.Id);
+    System.debug('Run ID: ' + runId);
 }

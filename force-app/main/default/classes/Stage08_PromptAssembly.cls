@@ -1511,12 +1511,17 @@ public without sharing class Stage08_PromptAssembly implements IStage {
     private String buildOutputRulesSection() {
         String section = '=== OUTPUT RULES ===\n\n';
         section += 'CRITICAL GPTfy REQUIREMENTS:\n';
-        section += '1. Single line HTML - no newlines\n';
+        section += '1. **SINGLE-LINE HTML ONLY** - Your ENTIRE output must be ONE continuous line with NO newlines, line breaks, or \\n characters. Compress all HTML into a single line.\n';
         section += '2. Inline styles only - no CSS classes or style blocks\n';
         section += '3. No scripts or event handlers\n';
         section += '4. Start with <div style="..." and end with </div>\n';
         section += '5. No emojis or special characters\n';
         section += '6. No placeholders, TBD, TODO markers\n\n';
+        section += 'SINGLE-LINE HTML ENFORCEMENT:\n';
+        section += '- Remove ALL newlines and line breaks from your HTML\n';
+        section += '- Use single spaces between tags: </div><div> NOT </div>\\n<div>\n';
+        section += '- Do NOT format for readability - format for GPTfy compliance\n';
+        section += '- Example: <div style="padding:20px;"><h2>Title</h2><p>Content</p></div>\n\n';
 
         section += 'MERGE FIELD SYNTAX:\n';
         section += '- Field values: {{{FieldName}}}\n';
