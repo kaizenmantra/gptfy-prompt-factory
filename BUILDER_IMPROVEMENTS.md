@@ -11,7 +11,7 @@ All architecture, decisions, tasks, and progress tracked here.
 |-------|------|---------------------|---------|
 | - | - | - | - |
 
-**Status:** V2.1 COMPLETE. V2.2 planned (20 tasks) - Schema intelligence, field density, parent traversal resolution.
+**Status:** V2.1 COMPLETE. V2.2 in progress (12/20 tasks done) - Opus tasks complete, Sonnet tasks remaining.
 
 ---
 
@@ -160,7 +160,7 @@ Query actual records to determine which fields are populated. Port from discover
 |---|------|-------|--------|-------|
 | 2.5 | Design density profiling approach | Opus | done | New `calculateFieldDensity()` method in SchemaHelper. See docs/design/V2.2_DESIGN_SPECS.md |
 | 2.6 | Implement field density calculation | Sonnet | not_started | Query N records (configurable, default 100), count non-null values per field. Port from discover-fields.sh lines 251-275 |
-| 2.7 | Add usagePercent to FieldMetadata | Sonnet | not_started | Store calculated density %. Fields with 0% usage deprioritized |
+| 2.7 | Add usagePercent to FieldMetadata | Opus | done | Already added in Phase 2A (Task 2.1) - field exists, needs 2.6 to populate it |
 | 2.8 | Integrate density into Stage 4 or Stage 5 | Sonnet | not_started | Call density calculation, merge into field metadata before LLM selection |
 
 ### Phase 2C: Parent Traversal Resolution (Core Feature)
