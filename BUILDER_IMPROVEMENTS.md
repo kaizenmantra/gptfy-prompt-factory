@@ -170,9 +170,9 @@ Make parent fields actually work in DCM and final output. V2.1 added suggestions
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
 | 2.9 | Design parent field resolution architecture | Opus | done | Dot notation in DCM fields (Owner.Name). See docs/design/V2.2_DESIGN_SPECS.md |
-| 2.10 | Update DCMBuilder for parent field syntax | Sonnet | not_started | Support `Account.Name` via `AccountId` lookup. Investigate GPTfy DCM parent field format |
-| 2.11 | Update Stage 8 to include parent fields in DCM config | Sonnet | not_started | Pass selectedParentFields from Stage 5 through to DCM creation |
-| 2.12 | Update merge field reference for parent fields | Sonnet | not_started | Show `{{{Account.Name}}}` syntax in available merge fields section |
+| 2.10 | Update DCMBuilder for parent field syntax | Sonnet | done | Added createParentFieldRecord() and getParentObjectFromLookup() methods. Creates DCM field records with dot notation (e.g., "Owner.Name") |
+| 2.11 | Update Stage 9 to include parent fields in DCM creation | Sonnet | done | DCMBuilder.createDCMWithGrandchildren() now processes selectedParentFields and creates parent field records for root, children, and grandchildren |
+| 2.12 | Update merge field reference for parent fields | Sonnet | done | Stage08 buildMergeFieldReference() now shows parent field syntax: {{{Owner.Name}}} (from OwnerId.Name) for root and child objects |
 | 2.13 | Test parent traversal end-to-end | Manual | not_started | Verify `{{{Owner.Name}}}` resolves to actual user name in output |
 
 ### Phase 2D: LLM-Enhanced Field Selection
