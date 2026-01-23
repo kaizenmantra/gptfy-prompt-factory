@@ -177,7 +177,7 @@ Analyze the data. Lead with insights. Let the data drive the structure.
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 2.1 | Design multi-sample data structure for Stage 4 | Opus | not_started | How to aggregate patterns across N records |
+| 2.1 | Design multi-sample data structure for Stage 4 | Opus | done | See docs/designs/MULTI_SAMPLE_DESIGN.md |
 | 2.2 | Update `pfInputForm` LWC to accept comma-separated IDs | Sonnet | not_started | Simple input change |
 | 2.3 | Update `PromptFactoryController.startPipelineRun` for multi-sample | Sonnet | not_started | Parse comma-separated, store in PF_Run__c |
 | 2.4 | Update Stage 4 to query multiple records | Sonnet | not_started | Loop through IDs, aggregate results |
@@ -220,6 +220,7 @@ Analyze the data. Lead with insights. Let the data drive the structure.
 | 2026-01-23 | Initial setup | Opus | Created BUILDER_IMPROVEMENTS.md |
 | 2026-01-23 | Task 1.1: Compress Next Best Action Pattern | Sonnet | Created compressed version: 444 chars (was 6,500) - 93% reduction |
 | 2026-01-23 | Task 1.2: Test compressed prompt quality | Sonnet | Deployed compressed builder (a0DQH00000KZJXJ2A5), created test procedure |
+| 2026-01-23 | Task 2.1: Design multi-sample data structure | Opus | Created MULTI_SAMPLE_DESIGN.md with full architecture for N-sample profiling |
 
 ---
 
