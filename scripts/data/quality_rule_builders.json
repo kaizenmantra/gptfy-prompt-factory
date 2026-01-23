@@ -1,0 +1,62 @@
+[
+  {
+    "name": "Evidence Citation",
+    "category": "Quality Rule",
+    "promptCommand": "Always cite specific field:value pairs as evidence when making claims or observations. Format as \"FieldName=$value\" or \"FieldName=value\". Example: \"Amount=$500K, CloseDate=2024-03-15, Stage=Negotiation\". Never make statements without backing them up with actual data field references.",
+    "description": "Ensures all insights are grounded in verifiable data, making outputs trustworthy and auditable. Prevents hallucination and unsupported claims."
+  },
+  {
+    "name": "Name Personalization",
+    "category": "Quality Rule",
+    "promptCommand": "Use actual names from data records, never generic titles or roles. Say \"Sarah Johnson\" not \"the CFO\", \"Mike Chen\" not \"the account owner\". Extract names from fields like Owner.Name, Contact.Name, Account.Name, or User.Name. Personalization creates engagement and clarity.",
+    "description": "Makes insights relatable and actionable by referencing real people. Increases engagement and makes recommendations feel tailored rather than generic."
+  },
+  {
+    "name": "Specific Dates",
+    "category": "Quality Rule",
+    "promptCommand": "Include actual dates, not relative terms. Say \"March 15, 2024\" or \"March 15\" not \"next week\" or \"soon\". Use date fields like CloseDate, CreatedDate, LastModifiedDate. If showing relative timing, include both: \"March 15 (3 days from now)\". Precision builds trust.",
+    "description": "Provides concrete timing information that doesn't decay or become ambiguous. Users can act on specific dates without having to calculate or guess."
+  },
+  {
+    "name": "Numeric Precision",
+    "category": "Quality Rule",
+    "promptCommand": "Show exact numbers with appropriate formatting. Currency: $1.2M, $450K, $3,250. Percentages: 85%, 12.5%. Duration: 7 days, 3 weeks. Counts: 23 opportunities, 156 leads. Never round to vague terms like \"several\" or \"many\". Precision demonstrates data-driven analysis.",
+    "description": "Enables accurate decision-making by providing precise quantitative information. Properly formatted numbers are easier to scan and compare."
+  },
+  {
+    "name": "Action Specificity",
+    "category": "Quality Rule",
+    "promptCommand": "Recommendations must be specific and immediately actionable. Include WHO should do WHAT by WHEN. Good: \"Schedule call with Gene Simmons by Friday to discuss $500K renewal\". Bad: \"Follow up soon\" or \"Review account\". Every action needs clear ownership, task, and timeframe.",
+    "description": "Transforms vague suggestions into executable tasks. Specific actions are more likely to be completed and drive real business outcomes."
+  },
+  {
+    "name": "Visual Diversity",
+    "category": "Quality Rule",
+    "promptCommand": "Use at least 3 different component types per dashboard. Choose from: KPI cards, charts (bar, line, pie, funnel), tables, progress bars, timelines, alerts. Never lead with tables - start with visual components. Match component type to data: trends→line charts, comparisons→bar charts, parts of whole→pie.",
+    "description": "Creates engaging, scannable dashboards that communicate insights visually. Different component types serve different cognitive purposes and prevent dashboard fatigue."
+  },
+  {
+    "name": "Executive Summary",
+    "category": "Quality Rule",
+    "promptCommand": "Always start with a 2-3 sentence executive summary of key findings. Cover: (1) Overall situation/context, (2) Most important insight or trend, (3) Primary recommended action or outcome. Use concise language. This should be readable in under 15 seconds and give complete context.",
+    "description": "Provides immediate value for time-constrained executives. Users can understand the main points before diving into details, or decide if deeper review is needed."
+  },
+  {
+    "name": "Insight Depth",
+    "category": "Quality Rule",
+    "promptCommand": "Each insight must include four elements: (1) FINDING: What the data shows, (2) EVIDENCE: Specific field:value pairs supporting it, (3) IMPLICATION: Why it matters to business goals, (4) ACTION: Specific recommended next step. Never present findings without interpretation and action.",
+    "description": "Transforms raw observations into business intelligence. Complete insights help users understand not just what happened, but why it matters and what to do about it."
+  },
+  {
+    "name": "Recommendation Urgency",
+    "category": "Quality Rule",
+    "promptCommand": "Tag every recommendation with urgency level: URGENT (within 24 hours), HIGH (within 3 days), NORMAL (within 2 weeks). Base urgency on time-sensitivity indicators: close dates approaching, at-risk renewals, stalled deals, high-value opportunities. Format: \"[URGENT] Schedule call with...\" or use color-coded alert components.",
+    "description": "Helps users prioritize actions in busy schedules. Urgency tagging ensures critical items get immediate attention while preventing false alarm fatigue."
+  },
+  {
+    "name": "Data Completeness Warning",
+    "category": "Quality Rule",
+    "promptCommand": "If key data is missing or incomplete, show an Info-level alert explaining: (1) What data is unavailable (specific fields/objects), (2) Why it matters (what insights are limited), (3) How to fix it (populate fields, adjust permissions). Example: \"Owner name unavailable - limits personalization. Ensure field-level security allows access.\"",
+    "description": "Builds trust by being transparent about data limitations. Users understand why outputs may be incomplete and can take action to improve data quality for future analysis."
+  }
+]

@@ -1,0 +1,62 @@
+[
+  {
+    "name": "Alert Box - Error",
+    "category": "UI Component",
+    "promptCommand": "<div style=\"background:#FED7D7;border-left:4px solid #BA0517;padding:12px 16px;border-radius:4px;margin-bottom:12px;\">\n  <div style=\"font-weight:600;color:#BA0517;margin-bottom:4px;\">{{{title}}}</div>\n  <div style=\"color:#54514C;\">{{{description}}}</div>\n</div>",
+    "description": "Use for critical issues requiring immediate attention. Highlights errors, blockers, or failures with red semantic color. Always include specific evidence in the description."
+  },
+  {
+    "name": "Alert Box - Warning",
+    "category": "UI Component",
+    "promptCommand": "<div style=\"background:#FEF3CD;border-left:4px solid #DD7A01;padding:12px 16px;border-radius:4px;margin-bottom:12px;\">\n  <div style=\"font-weight:600;color:#DD7A01;margin-bottom:4px;\">{{{title}}}</div>\n  <div style=\"color:#54514C;\">{{{description}}}</div>\n</div>",
+    "description": "Use for warnings about data gaps, at-risk items, or potential issues. Highlights concerns with orange semantic color. Include specific field values or conditions."
+  },
+  {
+    "name": "Alert Box - Info",
+    "category": "UI Component",
+    "promptCommand": "<div style=\"background:#D7E9FC;border-left:4px solid #0176D3;padding:12px 16px;border-radius:4px;margin-bottom:12px;\">\n  <div style=\"font-weight:600;color:#0176D3;margin-bottom:4px;\">{{{title}}}</div>\n  <div style=\"color:#54514C;\">{{{description}}}</div>\n</div>",
+    "description": "Use for informational messages, context, or success confirmations. Highlights general information with blue semantic color. Keep message clear and actionable."
+  },
+  {
+    "name": "Stats Strip",
+    "category": "UI Component",
+    "promptCommand": "<div style=\"display:flex;gap:16px;margin-bottom:20px;\">\n  <div style=\"flex:1;background:white;border-radius:6px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,0.1);\">\n    <div style=\"font-size:28px;font-weight:700;color:#0176D3;margin-bottom:4px;\">{{{stat1_value}}}</div>\n    <div style=\"font-size:13px;color:#706E6B;\">{{{stat1_label}}}</div>\n  </div>\n  <div style=\"flex:1;background:white;border-radius:6px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,0.1);\">\n    <div style=\"font-size:28px;font-weight:700;color:#0176D3;margin-bottom:4px;\">{{{stat2_value}}}</div>\n    <div style=\"font-size:13px;color:#706E6B;\">{{{stat2_label}}}</div>\n  </div>\n  <div style=\"flex:1;background:white;border-radius:6px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,0.1);\">\n    <div style=\"font-size:28px;font-weight:700;color:#0176D3;margin-bottom:4px;\">{{{stat3_value}}}</div>\n    <div style=\"font-size:13px;color:#706E6B;\">{{{stat3_label}}}</div>\n  </div>\n</div>",
+    "description": "Use for horizontal display of 3-5 key metrics. Place second in dashboard after insights. Values should be high-level KPIs like totals, averages, or percentages. Add stat4 and stat5 divs as needed."
+  },
+  {
+    "name": "Insight Card",
+    "category": "UI Component",
+    "promptCommand": "<div style=\"background:white;border-radius:6px;padding:16px;margin-bottom:12px;border:1px solid #DDDBDA;\">\n  <div style=\"font-weight:600;color:#181818;margin-bottom:8px;\">{{{insight_title}}}</div>\n  <div style=\"color:#706E6B;margin-bottom:12px;line-height:1.5;\">\n    {{{analysis_text}}}\n  </div>\n  <div style=\"font-size:12px;color:#706E6B;\">\n    <strong>Evidence:</strong> {{{evidence}}}\n  </div>\n</div>",
+    "description": "Use for analysis findings with supporting evidence. Include specific field:value citations in the evidence section. Great for pattern observations, comparative insights, or data-driven discoveries."
+  },
+  {
+    "name": "Recommendation Card",
+    "category": "UI Component",
+    "promptCommand": "<div style=\"background:#FFFFFF;border-left:4px solid #2E844A;border-radius:6px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.1);\">\n  <div style=\"display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;\">\n    <div style=\"font-weight:600;color:#181818;\">{{{action_title}}}</div>\n    <div style=\"background:{{{urgency_color}}};color:white;padding:4px 12px;border-radius:12px;font-size:11px;font-weight:600;\">{{{urgency_label}}}</div>\n  </div>\n  <div style=\"color:#706E6B;margin-bottom:12px;line-height:1.5;\">\n    {{{action_description}}}\n  </div>\n  <div style=\"font-size:12px;color:#706E6B;\">\n    <strong>Why:</strong> {{{rationale}}}\n  </div>\n</div>",
+    "description": "Use for specific action items with rationale and urgency. Urgency colors: URGENT=#DD7A01 (orange), HIGH=#BA0517 (red), NORMAL=#706E6B (gray). Always include clear why statement with data evidence."
+  },
+  {
+    "name": "Health Score",
+    "category": "UI Component",
+    "promptCommand": "<div style=\"display:flex;align-items:center;gap:12px;\">\n  <div style=\"font-size:36px;font-weight:700;color:{{{score_color}}};\">{{{score_value}}}</div>\n  <div>\n    <div style=\"font-size:14px;font-weight:600;color:#181818;\">{{{score_label}}}</div>\n    <div style=\"width:200px;height:8px;background:#E0E0E0;border-radius:4px;overflow:hidden;\">\n      <div style=\"width:{{{score_percentage}}}%;height:100%;background:{{{score_color}}}\"></div>\n    </div>\n  </div>\n</div>",
+    "description": "Use for visual indicator of health, quality, or completion (0-100 scale). Color coding: 0-40=#BA0517 (red), 41-70=#DD7A01 (orange), 71-100=#2E844A (green). Score percentage should match score value."
+  },
+  {
+    "name": "Data Table",
+    "category": "UI Component",
+    "promptCommand": "<table style=\"width:100%;border-collapse:collapse;margin-bottom:16px;\">\n  <thead>\n    <tr style=\"background:#F3F3F3;border-bottom:2px solid #DDDBDA;\">\n      <th style=\"padding:8px;text-align:left;font-size:12px;color:#706E6B;font-weight:600;\">{{{column1_header}}}</th>\n      <th style=\"padding:8px;text-align:left;font-size:12px;color:#706E6B;font-weight:600;\">{{{column2_header}}}</th>\n      <th style=\"padding:8px;text-align:left;font-size:12px;color:#706E6B;font-weight:600;\">{{{column3_header}}}</th>\n    </tr>\n  </thead>\n  <tbody>\n    {{#records}}\n    <tr style=\"border-bottom:1px solid #DDDBDA;\">\n      <td style=\"padding:8px;font-size:13px;color:#181818;\">{{{field1}}}</td>\n      <td style=\"padding:8px;font-size:13px;color:#181818;\">{{{field2}}}</td>\n      <td style=\"padding:8px;font-size:13px;color:#181818;\">{{{field3}}}</td>\n    </tr>\n    {{/records}}\n  </tbody>\n</table>",
+    "description": "Use SPARINGLY for listing related records. Maximum 7 rows. NEVER lead a dashboard with a table. Always add context paragraph BEFORE the table explaining what the data shows. Add more columns as needed but keep readable."
+  },
+  {
+    "name": "Metric Tile",
+    "category": "UI Component",
+    "promptCommand": "<div style=\"background:white;border-radius:6px;padding:16px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.1);\">\n  <div style=\"font-size:32px;font-weight:700;color:#0176D3;margin-bottom:4px;\">{{{value}}}</div>\n  <div style=\"font-size:13px;color:#706E6B;margin-bottom:4px;\">{{{label}}}</div>\n  <div style=\"font-size:12px;color:{{{trend_color}}};\">{{{trend_indicator}}} {{{trend_text}}}</div>\n</div>",
+    "description": "Use for single KPI with label and trend indicator. Trend colors: positive=#2E844A (green), negative=#BA0517 (red), neutral=#706E6B (gray). Trend indicators: ▲ (up), ▼ (down), ● (stable)."
+  },
+  {
+    "name": "Status Badge",
+    "category": "UI Component",
+    "promptCommand": "<span style=\"background:{{{badge_bg}}};color:{{{badge_color}}};padding:4px 8px;border-radius:4px;font-size:11px;font-weight:600;\">{{{status_text}}}</span>",
+    "description": "Use for inline status indicators with semantic color. Preset combinations: Success (bg=#D4EDDA, color=#2E844A), Warning (bg=#FEF3CD, color=#DD7A01), Error (bg=#FED7D7, color=#BA0517). Common labels: ACTIVE, AT RISK, CRITICAL, COMPLETED, PENDING."
+  }
+]

@@ -1,0 +1,275 @@
+[
+  {
+    "name": "Account Owner Traversal",
+    "category": "Traversal",
+    "promptCommand": {
+      "sourceObject": "Account",
+      "sourceField": "OwnerId",
+      "targetObject": "User",
+      "fields": [
+        {"path": "Name", "alias": "OwnerName"},
+        {"path": "Email", "alias": "OwnerEmail"}
+      ]
+    },
+    "description": "Retrieve Account owner's name and email for contact information and assignment tracking"
+  },
+  {
+    "name": "Account Parent Traversal",
+    "category": "Traversal",
+    "promptCommand": {
+      "sourceObject": "Account",
+      "sourceField": "ParentId",
+      "targetObject": "Account",
+      "fields": [
+        {"path": "Name", "alias": "ParentAccountName"},
+        {"path": "Industry", "alias": "ParentIndustry"}
+      ]
+    },
+    "description": "Access parent Account information for hierarchical account structures and corporate relationships"
+  },
+  {
+    "name": "Contact Account Traversal",
+    "category": "Traversal",
+    "promptCommand": {
+      "sourceObject": "Contact",
+      "sourceField": "AccountId",
+      "targetObject": "Account",
+      "fields": [
+        {"path": "Name", "alias": "AccountName"},
+        {"path": "Industry", "alias": "AccountIndustry"}
+      ]
+    },
+    "description": "Retrieve Contact's associated Account name and industry for context in customer communications"
+  },
+  {
+    "name": "Contact Owner Traversal",
+    "category": "Traversal",
+    "promptCommand": {
+      "sourceObject": "Contact",
+      "sourceField": "OwnerId",
+      "targetObject": "User",
+      "fields": [
+        {"path": "Name", "alias": "OwnerName"}
+      ]
+    },
+    "description": "Get Contact owner's name for assignment tracking and territory management"
+  },
+  {
+    "name": "Contact ReportsTo Traversal",
+    "category": "Traversal",
+    "promptCommand": {
+      "sourceObject": "Contact",
+      "sourceField": "ReportsToId",
+      "targetObject": "Contact",
+      "fields": [
+        {"path": "Name", "alias": "ManagerName"}
+      ]
+    },
+    "description": "Access Contact's manager information for organizational hierarchy and approval chains"
+  },
+  {
+    "name": "Opportunity Account Traversal",
+    "category": "Traversal",
+    "promptCommand": {
+      "sourceObject": "Opportunity",
+      "sourceField": "AccountId",
+      "targetObject": "Account",
+      "fields": [
+        {"path": "Name", "alias": "AccountName"},
+        {"path": "Industry", "alias": "AccountIndustry"},
+        {"path": "AnnualRevenue", "alias": "AccountRevenue"}
+      ]
+    },
+    "description": "Retrieve Opportunity's Account details including revenue for deal qualification and forecasting"
+  },
+  {
+    "name": "Opportunity Owner Traversal",
+    "category": "Traversal",
+    "promptCommand": {
+      "sourceObject": "Opportunity",
+      "sourceField": "OwnerId",
+      "targetObject": "User",
+      "fields": [
+        {"path": "Name", "alias": "OwnerName"},
+        {"path": "Email", "alias": "OwnerEmail"}
+      ]
+    },
+    "description": "Get Opportunity owner's contact information for sales team coordination and commission tracking"
+  },
+  {
+    "name": "Opportunity Primary Contact Traversal",
+    "category": "Traversal",
+    "promptCommand": {
+      "sourceObject": "Opportunity",
+      "sourceField": "ContactId",
+      "targetObject": "Contact",
+      "fields": [
+        {"path": "Name", "alias": "PrimaryContactName"},
+        {"path": "Title", "alias": "PrimaryContactTitle"}
+      ]
+    },
+    "description": "Access primary Contact information for deal stakeholder identification and communication"
+  },
+  {
+    "name": "Opportunity Campaign Traversal",
+    "category": "Traversal",
+    "promptCommand": {
+      "sourceObject": "Opportunity",
+      "sourceField": "CampaignId",
+      "targetObject": "Campaign",
+      "fields": [
+        {"path": "Name", "alias": "CampaignName"}
+      ]
+    },
+    "description": "Link Opportunity to source Campaign for marketing ROI analysis and lead source tracking"
+  },
+  {
+    "name": "OpportunityContactRole Contact Traversal",
+    "category": "Traversal",
+    "promptCommand": {
+      "sourceObject": "OpportunityContactRole",
+      "sourceField": "ContactId",
+      "targetObject": "Contact",
+      "fields": [
+        {"path": "Name", "alias": "ContactName"},
+        {"path": "Title", "alias": "ContactTitle"},
+        {"path": "Email", "alias": "ContactEmail"},
+        {"path": "Phone", "alias": "ContactPhone"}
+      ]
+    },
+    "description": "Retrieve detailed Contact information from OpportunityContactRole for stakeholder engagement"
+  },
+  {
+    "name": "OpportunityContactRole Opportunity Traversal",
+    "category": "Traversal",
+    "promptCommand": {
+      "sourceObject": "OpportunityContactRole",
+      "sourceField": "OpportunityId",
+      "targetObject": "Opportunity",
+      "fields": [
+        {"path": "Name", "alias": "OpportunityName"},
+        {"path": "Amount", "alias": "OpportunityAmount"}
+      ]
+    },
+    "description": "Access Opportunity details from OpportunityContactRole for deal context in multi-stakeholder analysis"
+  },
+  {
+    "name": "Task WhoId Contact Traversal",
+    "category": "Traversal",
+    "promptCommand": {
+      "sourceObject": "Task",
+      "sourceField": "WhoId",
+      "targetObject": "Contact",
+      "fields": [
+        {"path": "Name", "alias": "ContactName"}
+      ]
+    },
+    "description": "Retrieve Contact name from Task's WhoId field (polymorphic - Contact or Lead) for activity tracking"
+  },
+  {
+    "name": "Task WhatId Account Traversal",
+    "category": "Traversal",
+    "promptCommand": {
+      "sourceObject": "Task",
+      "sourceField": "WhatId",
+      "targetObject": "Account",
+      "fields": [
+        {"path": "Name", "alias": "AccountName"}
+      ]
+    },
+    "description": "Access Account name from Task's WhatId field (polymorphic) for account-level activity reporting"
+  },
+  {
+    "name": "Task Owner Traversal",
+    "category": "Traversal",
+    "promptCommand": {
+      "sourceObject": "Task",
+      "sourceField": "OwnerId",
+      "targetObject": "User",
+      "fields": [
+        {"path": "Name", "alias": "OwnerName"}
+      ]
+    },
+    "description": "Get Task owner's name for workload distribution and productivity tracking"
+  },
+  {
+    "name": "Event WhoId Contact Traversal",
+    "category": "Traversal",
+    "promptCommand": {
+      "sourceObject": "Event",
+      "sourceField": "WhoId",
+      "targetObject": "Contact",
+      "fields": [
+        {"path": "Name", "alias": "ContactName"},
+        {"path": "Title", "alias": "ContactTitle"}
+      ]
+    },
+    "description": "Retrieve Contact details from Event's WhoId field for meeting participant identification"
+  },
+  {
+    "name": "Event WhatId Account Traversal",
+    "category": "Traversal",
+    "promptCommand": {
+      "sourceObject": "Event",
+      "sourceField": "WhatId",
+      "targetObject": "Account",
+      "fields": [
+        {"path": "Name", "alias": "AccountName"}
+      ]
+    },
+    "description": "Access Account name from Event's WhatId field for account-level calendar activity tracking"
+  },
+  {
+    "name": "Event Owner Traversal",
+    "category": "Traversal",
+    "promptCommand": {
+      "sourceObject": "Event",
+      "sourceField": "OwnerId",
+      "targetObject": "User",
+      "fields": [
+        {"path": "Name", "alias": "OwnerName"}
+      ]
+    },
+    "description": "Get Event owner's name for calendar management and meeting organizer identification"
+  },
+  {
+    "name": "Case Contact Traversal",
+    "category": "Traversal",
+    "promptCommand": {
+      "sourceObject": "Case",
+      "sourceField": "ContactId",
+      "targetObject": "Contact",
+      "fields": [
+        {"path": "Name", "alias": "ContactName"},
+        {"path": "Email", "alias": "ContactEmail"}
+      ]
+    },
+    "description": "Retrieve Case Contact information for customer support communication and case routing"
+  },
+  {
+    "name": "Case Account Traversal",
+    "category": "Traversal",
+    "promptCommand": {
+      "sourceObject": "Case",
+      "sourceField": "AccountId",
+      "targetObject": "Account",
+      "fields": [
+        {"path": "Name", "alias": "AccountName"}
+      ]
+    },
+    "description": "Access Case Account name for enterprise support tracking and SLA management"
+  },
+  {
+    "name": "Lead Owner Traversal",
+    "category": "Traversal",
+    "promptCommand": {
+      "sourceObject": "Lead",
+      "sourceField": "OwnerId",
+      "targetObject": "User",
+      "fields": [
+        {"path": "Name", "alias": "OwnerName"}
+      ]
+    },
+    "description": "Get Lead owner's name for lead assignment tracking and conversion rate analysis by rep"
+  }
+]

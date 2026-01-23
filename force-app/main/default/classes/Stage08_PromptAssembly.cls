@@ -9,10 +9,11 @@
  * with RecordType.DeveloperName = 'Builder'. Builder prompts are queried by
  * Category__c field and injected into the final prompt:
  *
- *   - Quality Rules   (Category__c = 'Quality Rule')
- *   - Patterns        (Category__c = 'Pattern')
- *   - UI Components   (Category__c = 'UI Component')
+ *   - Quality Rules     (Category__c = 'Quality Rule')
+ *   - Patterns          (Category__c = 'Pattern')
+ *   - UI Components     (Category__c = 'UI Component')
  *   - Context Templates (Category__c = 'Context Template')
+ *   - Traversals        (Category__c = 'Traversal') - V2.1: Parent field mappings
  *
  * Requirements for Builder Prompts to be injected:
  *   1. RecordType must be 'Builder' (not 'Execution')
@@ -674,6 +675,54 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             String errorMsg = 'Failed to load Context Templates: ' + e.getMessage() + ' | Stack: ' + e.getStackTraceString();
             System.debug(LoggingLevel.ERROR, errorMsg);
             throw new StageException(errorMsg);
+        }
+    }
+
+    /**
+     * @description Load active Traversals from Builder Prompts (V2.1)
+     * Traversals define parent field mappings (e.g., ContactId → Contact.Name)
+     * @param runId PF_Run__c ID for logging
+     * @param rootObject The root object to filter traversals (optional)
+     * @return Combined traversal definitions as JSON array
+     */
+    private String loadTraversals(Id runId, String rootObject) {
+        try {
+            PromptFactoryLogger.info(runId, 8, '🔍 loadTraversals() called for ' + rootObject);
+
+            Id builderRtId = Schema.SObjectType.ccai__AI_Prompt__c.getRecordTypeInfosByDeveloperName().get('Builder').getRecordTypeId();
+
+            List<ccai__AI_Prompt__c> traversals = [
+                SELECT Id, Name, ccai__Prompt_Command__c, ccai__Object__c
+                FROM ccai__AI_Prompt__c
+                WHERE RecordTypeId = :builderRtId
+                  AND Category__c = 'Traversal'
+                  AND ccai__Status__c = 'Active'
+                  AND (ccai__Object__c = :rootObject OR ccai__Object__c = null)
+                ORDER BY Name
+            ];
+
+            PromptFactoryLogger.info(runId, 8, '📊 Query returned: ' + traversals.size() + ' Traversals');
+
+            if (traversals.isEmpty()) {
+                PromptFactoryLogger.warning(runId, 8, '⚠️ No Traversals found for ' + rootObject);
+                return '[]';
+            }
+
+            // Build JSON array of traversal definitions
+            List<String> traversalJsons = new List<String>();
+            for (ccai__AI_Prompt__c traversal : traversals) {
+                PromptFactoryLogger.info(runId, 8, '✅ Loading: ' + traversal.Name);
+                traversalJsons.add(traversal.ccai__Prompt_Command__c);
+            }
+
+            PromptFactoryLogger.info(runId, 8, '✅ Loaded ' + traversals.size() + ' Traversals');
+            return '[' + String.join(traversalJsons, ',') + ']';
+
+        } catch (Exception e) {
+            String errorMsg = 'Failed to load Traversals: ' + e.getMessage() + ' | Stack: ' + e.getStackTraceString();
+            System.debug(LoggingLevel.ERROR, errorMsg);
+            // Return empty array on error (non-critical)
+            return '[]';
         }
     }
 
@@ -1373,27 +1422,45 @@ public without sharing class Stage08_PromptAssembly implements IStage {
 
     /**
      * @description Section 4: UI TOOLKIT - Available components
+     * V2.1: Now queries UI Component builders for actual HTML snippets
      */
     private String buildUIToolkitSection() {
         String section = '=== UI TOOLKIT ===\n\n';
         section += 'You have these components available. Use them strategically.\n\n';
 
-        section += 'LAYOUT COMPONENTS:\n';
-        section += '- Dashboard Container: Full-width responsive layout\n';
-        section += '- Section Card: White card with header and content area\n';
-        section += '- Stats Strip: Horizontal metrics display (3-5 key numbers)\n';
-        section += '- Two-Column Grid: Side-by-side content areas\n\n';
+        // V2.1: Query UI Component builders for actual HTML templates
+        List<ccai__AI_Prompt__c> uiComponents = queryUIComponentBuilders();
 
-        section += 'INSIGHT COMPONENTS:\n';
-        section += '- Alert Box: Highlight critical information (error/warning/info)\n';
-        section += '- Insight Card: Analysis finding with evidence citation\n';
-        section += '- Recommendation Card: Action item with rationale\n';
-        section += '- Health Score: Visual indicator (0-100 with color coding)\n\n';
+        if (!uiComponents.isEmpty()) {
+            // Use dynamic components from database
+            section += 'AVAILABLE COMPONENTS (use these HTML patterns):\n\n';
+            for (ccai__AI_Prompt__c component : uiComponents) {
+                section += '--- ' + component.Name + ' ---\n';
+                if (String.isNotBlank(component.ccai__Description__c)) {
+                    section += 'When to use: ' + component.ccai__Description__c + '\n';
+                }
+                section += 'HTML Pattern:\n';
+                section += component.ccai__Prompt_Command__c + '\n\n';
+            }
+        } else {
+            // Fallback to static descriptions if no components in database
+            section += 'LAYOUT COMPONENTS:\n';
+            section += '- Dashboard Container: Full-width responsive layout\n';
+            section += '- Section Card: White card with header and content area\n';
+            section += '- Stats Strip: Horizontal metrics display (3-5 key numbers)\n';
+            section += '- Two-Column Grid: Side-by-side content areas\n\n';
 
-        section += 'DATA COMPONENTS:\n';
-        section += '- Data Table: For listing related records (use sparingly!)\n';
-        section += '- Metric Tile: Single KPI with label and trend indicator\n';
-        section += '- Status Badge: Inline status indicator with semantic color\n\n';
+            section += 'INSIGHT COMPONENTS:\n';
+            section += '- Alert Box: Highlight critical information (error/warning/info)\n';
+            section += '- Insight Card: Analysis finding with evidence citation\n';
+            section += '- Recommendation Card: Action item with rationale\n';
+            section += '- Health Score: Visual indicator (0-100 with color coding)\n\n';
+
+            section += 'DATA COMPONENTS:\n';
+            section += '- Data Table: For listing related records (use sparingly!)\n';
+            section += '- Metric Tile: Single KPI with label and trend indicator\n';
+            section += '- Status Badge: Inline status indicator with semantic color\n\n';
+        }
 
         section += 'COMPONENT USAGE RULES:\n';
         section += '- Lead with insights (Alert Boxes, Insight Cards) not tables\n';
@@ -1402,6 +1469,29 @@ public without sharing class Stage08_PromptAssembly implements IStage {
         section += '- Every section should have analysis text, not just data\n\n';
 
         return section;
+    }
+
+    /**
+     * @description Query UI Component builders from database
+     * @return List of active UI Component builder prompts with HTML templates
+     */
+    private List<ccai__AI_Prompt__c> queryUIComponentBuilders() {
+        try {
+            Id builderRtId = Schema.SObjectType.ccai__AI_Prompt__c.getRecordTypeInfosByDeveloperName().get('Builder').getRecordTypeId();
+
+            return [
+                SELECT Id, Name, ccai__Prompt_Command__c, ccai__Description__c
+                FROM ccai__AI_Prompt__c
+                WHERE RecordTypeId = :builderRtId
+                  AND Category__c = 'UI Component'
+                  AND ccai__Status__c = 'Active'
+                ORDER BY Name
+                LIMIT 20
+            ];
+        } catch (Exception e) {
+            System.debug(LoggingLevel.WARN, 'Failed to query UI Component builders: ' + e.getMessage());
+            return new List<ccai__AI_Prompt__c>();
+        }
     }
 
     /**
