@@ -200,7 +200,7 @@ public with sharing class Stage09_CreateAndDeploy implements IStage {
      * @param dcmConfigMap Map representation of DCM configuration
      * @return DCMBuilder.DCMConfig object
      */
-    private DCMBuilder.DCMConfig buildDCMConfig(Map<String, Object> dcmConfigMap) {
+    public static DCMBuilder.DCMConfig buildDCMConfig(Map<String, Object> dcmConfigMap) {
         DCMBuilder.DCMConfig config = new DCMBuilder.DCMConfig();
 
         config.name = (String) dcmConfigMap.get('name');
@@ -265,7 +265,7 @@ public with sharing class Stage09_CreateAndDeploy implements IStage {
      * @param aiModelId User-selected AI Connection/Model ID (can be null)
      * @return PromptBuilder.PromptConfig object
      */
-    private PromptBuilder.PromptConfig buildPromptConfig(Map<String, Object> promptConfigMap, Id dcmId, Id aiModelId) {
+    public static PromptBuilder.PromptConfig buildPromptConfig(Map<String, Object> promptConfigMap, Id dcmId, Id aiModelId) {
         PromptBuilder.PromptConfig config = new PromptBuilder.PromptConfig();
 
         config.name = (String) promptConfigMap.get('name');

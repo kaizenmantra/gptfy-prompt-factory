@@ -641,77 +641,86 @@ public with sharing class PromptBuilderController {
                 throw new AuraHandledException('No draft available to deploy. Please generate analysis first.');
             }
 
-            // Get sample record IDs to determine which fields were used
+            // Get sample record IDs
             List<String> recordIds = session.Sample_Record_Id__c.split(',');
             List<Id> sampleRecordIds = new List<Id>();
             for (String recordId : recordIds) {
                 sampleRecordIds.add((Id)recordId.trim());
             }
 
-            // Query fields again to build DCM
+            // Query fields and child relationships to build selectedFields map
             List<SchemaHelper.FieldMetadata> fields = SchemaHelper.getFields(session.Root_Object__c);
             List<String> fieldNames = getQueryableFieldNames(fields);
+            List<SchemaHelper.ChildRelationship> childRelationships =
+                SchemaHelper.getChildRelationships(session.Root_Object__c);
+            List<SchemaHelper.ChildRelationship> prioritizedRelationships =
+                prioritizeRelationships(childRelationships, session.Root_Object__c);
 
-            // Build DCM Config
-            DCMBuilder.DCMConfig dcmConfig = new DCMBuilder.DCMConfig();
-            dcmConfig.name = promptName + ' - Data Mapping';
-            dcmConfig.rootObject = session.Root_Object__c;
+            // Build selectedFields map (Map<String, List<String>> by object)
+            Map<String, Object> selectedFields = new Map<String, Object>();
 
-            // Add root object fields (limit to key fields to keep it manageable)
-            List<String> keyFields = getKeyFields(session.Root_Object__c, fieldNames);
-            dcmConfig.fieldsByObject.put(session.Root_Object__c, keyFields);
+            // Add root object fields
+            List<String> rootFields = getKeyFields(session.Root_Object__c, fieldNames);
+            selectedFields.put(session.Root_Object__c, rootFields);
 
-            // Create DCM
+            // Add child object fields
+            for (SchemaHelper.ChildRelationship rel : prioritizedRelationships) {
+                if (String.isNotBlank(rel.objectName)) {
+                    // Get fields for child object
+                    List<SchemaHelper.FieldMetadata> childFields =
+                        SchemaHelper.getFields(rel.objectName);
+                    List<String> childFieldNames = getQueryableFieldNames(childFields);
+                    List<String> childKeyFields = getKeyFields(rel.objectName, childFieldNames);
+                    selectedFields.put(rel.objectName, childKeyFields);
+                }
+            }
+
+            // Build inputs map
+            Map<String, Object> inputs = new Map<String, Object>{
+                'promptName' => promptName,
+                'businessContext' => session.Business_Context__c,
+                'rootObject' => session.Root_Object__c
+            };
+
+            // Build simplified AI instructions for Interactive Builder
+            // (Interactive Builder doesn't have the full Stage 1-7 context)
+            String aiInstructions = buildSimplifiedAIInstructions(
+                session.Business_Context__c,
+                session.Root_Object__c
+            );
+
+            // Use approved markdown as HTML template (Interactive Builder uses markdown output)
+            String htmlTemplate = session.Current_Draft__c;
+
+            // Build simplified grounding rules
+            String groundingRules = buildSimplifiedGroundingRules(session.Root_Object__c);
+
+            // Call Stage08 methods to build configuration Maps
+            Map<String, Object> dcmConfigMap = Stage08_PromptAssembly.buildDCMConfigForStage9(
+                session.Root_Object__c,
+                selectedFields,
+                inputs
+            );
+
+            Map<String, Object> promptConfigMap = Stage08_PromptAssembly.buildPromptConfigForStage9(
+                session.Root_Object__c,
+                aiInstructions,
+                htmlTemplate,
+                groundingRules,
+                inputs
+            );
+
+            // Convert Maps to Config objects using Stage09 methods
+            DCMBuilder.DCMConfig dcmConfig = Stage09_CreateAndDeploy.buildDCMConfig(dcmConfigMap);
+
+            // Create DCM using existing builder
             Id dcmId = DCMBuilder.createDCM(dcmConfig);
 
-            // Build Prompt Config
-            PromptBuilder.PromptConfig promptConfig = new PromptBuilder.PromptConfig();
-            promptConfig.name = promptName;
-            promptConfig.label = promptName;
+            // Convert prompt config Map and create Prompt
+            PromptBuilder.PromptConfig promptConfig =
+                Stage09_CreateAndDeploy.buildPromptConfig(promptConfigMap, dcmId, null);
 
-            // Generate description and how-it-works using LLM
-            Map<String, String> promptMetadata = generatePromptMetadata(
-                promptName,
-                session.Business_Context__c,
-                session.Root_Object__c,
-                session.Current_Draft__c
-            );
-            promptConfig.description = promptMetadata.get('description');
-            promptConfig.howItWorks = promptMetadata.get('howItWorks');
-            promptConfig.dcmId = dcmId;
-            promptConfig.targetObject = session.Root_Object__c;
-            promptConfig.promptType = 'Text';
-            promptConfig.maxTokens = 4096;
-            promptConfig.temperature = 1.0;
-            promptConfig.autoActivate = false;
-
-            // Build prompt command - use system prompt + analysis instructions
-            // Note: Current_Draft__c was used for interactive iteration but should NOT be
-            // included in the deployed prompt (it contains sample-specific analysis)
-            Map<String, String> exemplars = loadExemplars();
-            String systemPrompt = exemplars.get('SYSTEM_PROMPT');
-
-            // Build clean prompt command with just instructions
-            promptConfig.promptCommand = systemPrompt + '\n\n---\n\n' +
-                '## CONTEXT\n\n' +
-                'Business Objective: ' + session.Business_Context__c + '\n\n' +
-                '## INSTRUCTIONS\n\n' +
-                'Analyze the ' + session.Root_Object__c + ' record data provided below. ' +
-                'Apply the quality rubric above, perform your self-evaluation, and generate ' +
-                'an executive-ready analysis with actionable insights.\n\n' +
-                'Focus on:\n' +
-                '- Deal/account health assessment with specific scores\n' +
-                '- Key risks with severity ratings and mitigation actions\n' +
-                '- Stakeholder analysis and engagement gaps\n' +
-                '- Prioritized next steps with specific dates and owners\n\n' +
-                'Remember: Every insight must be grounded in the actual data provided.';
-
-            // For text/markdown analysis prompts, we don't need an HTML template
-            // GPTfy will display the AI's markdown response directly
-            // HTML templates with {{{MergeField}}} syntax are used for visual dashboards, not text analysis
-            promptConfig.htmlTemplate = null;
-
-            // Create Prompt
+            // Create Prompt using existing builder
             Id promptId = PromptBuilder.createPrompt(promptConfig);
 
             // Update session status
@@ -733,6 +742,56 @@ public with sharing class PromptBuilderController {
         } catch (Exception e) {
             throw new AuraHandledException('Error deploying prompt: ' + e.getMessage());
         }
+    }
+
+    /**
+     * @description Builds simplified AI instructions for Interactive Builder
+     * (Simplified version for Interactive Builder - full version is in Stage08)
+     * @param businessContext User's business requirements
+     * @param rootObject The root Salesforce object
+     * @return Simplified AI instructions
+     */
+    private static String buildSimplifiedAIInstructions(String businessContext, String rootObject) {
+        List<String> parts = new List<String>();
+
+        parts.add('You are a Salesforce AI assistant generating analysis for GPTfy.\n\n');
+
+        // Output format instructions
+        parts.add('OUTPUT FORMAT: Respond with markdown-formatted analysis.\n\n');
+
+        // Business context
+        if (String.isNotBlank(businessContext)) {
+            parts.add('BUSINESS OBJECTIVE:\n' + businessContext + '\n\n');
+        }
+
+        // Analysis requirements
+        parts.add('ANALYSIS REQUIREMENTS:\n' +
+            '- Provide intelligent business analysis, not just data display\n' +
+            '- Identify health status, risks, and opportunities\n' +
+            '- Include specific, actionable recommendations\n' +
+            '- Ground all insights in the provided data\n' +
+            '- Use executive-ready tone\n\n');
+
+        // Data handling
+        parts.add('DATA HANDLING:\n' +
+            '- Analyze the ' + rootObject + ' record and related data\n' +
+            '- If fields are empty/null, omit those sections\n' +
+            '- Focus on meaningful insights, not comprehensive data display\n');
+
+        return String.join(parts, '');
+    }
+
+    /**
+     * @description Builds simplified grounding rules for Interactive Builder
+     * @param rootObject The root Salesforce object
+     * @return Simplified grounding rules
+     */
+    private static String buildSimplifiedGroundingRules(String rootObject) {
+        return 'GROUNDING RULES:\n' +
+            '1. Base all analysis on actual field values from the ' + rootObject + ' record\n' +
+            '2. Never invent or assume data not present in the context\n' +
+            '3. If critical information is missing, explicitly note what\'s unavailable\n' +
+            '4. Cite specific values when making recommendations (e.g., "Amount: $400K")\n';
     }
 
     /**
@@ -865,9 +924,8 @@ public with sharing class PromptBuilderController {
 
             // Only add if relationship name exists
             if (String.isNotBlank(rel.relationshipName)) {
-                // Query Id and appropriate name field from child objects
-                String nameField = getNameFieldForObject(rel.childObject);
-                baseQuery += ', (SELECT Id, ' + nameField + ' FROM ' + rel.relationshipName + ' LIMIT 10)';
+                // Query only Id from child objects - always safe
+                baseQuery += ', (SELECT Id FROM ' + rel.relationshipName + ' LIMIT 10)';
                 subqueryCount++;
             }
         }
@@ -900,8 +958,8 @@ public with sharing class PromptBuilderController {
             }
 
             try {
-                String nameField = getNameFieldForObject(rel.childObject);
-                String childSOQL = 'SELECT Id, ' + nameField + ', ' + rel.field +
+                // Query only Id and relationship field - always safe
+                String childSOQL = 'SELECT Id, ' + rel.field +
                                   ' FROM ' + rel.childObject +
                                   ' WHERE ' + rel.field + ' IN :sampleRecordIds' +
                                   ' LIMIT 50';
@@ -911,7 +969,7 @@ public with sharing class PromptBuilderController {
                     childDataMap.put(rel.relationshipName, childRecords);
                 }
             } catch (Exception e) {
-                // Skip if query fails (field might not be accessible)
+                // Skip if query fails
                 System.debug('Error querying child object ' + rel.childObject + ': ' + e.getMessage());
             }
 

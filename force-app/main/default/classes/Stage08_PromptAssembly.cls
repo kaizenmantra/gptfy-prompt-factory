@@ -234,7 +234,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
      * @param rootObject The root Salesforce object
      * @return Formatted AI instructions string
      */
-    private String buildAIInstructions(
+    public static String buildAIInstructions(
             String businessContext,
             String targetPersona,
             List<Object> businessObjectivesRaw,
@@ -789,7 +789,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
      * @param inputs Full inputs for additional context
      * @return Map with DCM configuration
      */
-    private Map<String, Object> buildDCMConfigForStage9(
+    public static Map<String, Object> buildDCMConfigForStage9(
             String rootObject,
             Map<String, Object> selectedFieldsRaw,
             Map<String, Object> inputs) {
@@ -1013,7 +1013,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
      * @param inputs Full inputs for additional context
      * @return Map with Prompt configuration
      */
-    private Map<String, Object> buildPromptConfigForStage9(
+    public static Map<String, Object> buildPromptConfigForStage9(
             String rootObject,
             String aiInstructions,
             String htmlTemplate,

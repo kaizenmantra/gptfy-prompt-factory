@@ -954,9 +954,9 @@ WHERE Id IN :sampleRecordIds
 | 18 | Build SOQL query with parent/child relationships | Sonnet | done | 17 | Query 2nd/3rd level data with subqueries + separate queries |
 | 19 | Format relationship data for LLM context | Sonnet | done | 18 | Markdown lists for child objects in prompt |
 | 20 | **Design HTML template generation strategy** | Opus | done | 16 | Merged into Task 16 - see conversion prompt approach |
-| 21 | Update system prompt for HTML output | Sonnet | done | 16 | Added `convertToHTML()` method with GPTfy conversion prompt |
-| 22 | Create HTML exemplars (Deal Coach, Account 360) | Sonnet | done | 16 | HTML templates with merge fields in PromptExemplars |
-| 23 | Update deployPrompt to handle HTML output | Sonnet | not_started | 21,22 | Call conversion, validate, create DCM+Prompt |
+| 21 | Update system prompt for HTML output | Sonnet | **REVIEW** | 16 | ⚠️ May have written new code - should REUSE Stage08.buildAIInstructions() |
+| 22 | Create HTML exemplars (Deal Coach, Account 360) | Sonnet | **REVIEW** | 16 | ⚠️ May duplicate Builder Prompts - Stage08 already loads patterns |
+| 23 | Update deployPrompt to REUSE existing infrastructure | Sonnet | in_progress | 16 | MUST call Stage08 methods, DCMBuilder, PromptBuilder - NO reinvention |
 | 24 | Add HTML preview in chat UI | Sonnet | done | 21 | Toggle button to preview HTML output |
 | 25 | Deploy V2 to Salesforce and test | Sonnet | not_started | 17-24 | End-to-end GPTfy execution test |
 | 26 | **V2 Quality Review** | Opus | not_started | 25 | Verify GPTfy renders output correctly |
@@ -1096,35 +1096,68 @@ Use the style patterns and colors provided.
 Output ONLY raw HTML starting with <div - no explanation:
 ```
 
-**Implementation Notes for Sonnet (Tasks 21-23):**
+**CRITICAL: REUSE EXISTING INFRASTRUCTURE (Tasks 21-23)**
 
-1. **Task 21 (Update system prompt):**
-   - No changes needed to chat phase prompts
-   - Add new `convertToHTML()` method to controller
-   - Use conversion prompt template above
+> **DO NOT write new code for HTML generation or prompt assembly.**
+> **Stage07 and Stage08 already have ALL of this. REUSE THEM.**
 
-2. **Task 22 (Create HTML exemplars):**
-   - Convert existing markdown exemplars to HTML format
-   - These are used as examples in conversion prompt
-   - Include merge field examples
+**Existing Code That Already Works:**
 
-3. **Task 23 (Update deployPrompt):**
-   - Add HTML conversion step before DCM/Prompt creation
-   - Call conversion LLM with approved markdown
-   - Validate output with `validateHTMLSafety()`
-   - Store HTML template in `ccai__Prompt_Command__c`
+| Class | Method | What It Does |
+|-------|--------|--------------|
+| `Stage07_TemplateDesign` | `execute()` | Generates GPTfy-compliant HTML with merge fields |
+| `Stage07_TemplateDesign` | `buildFieldWhitelist()` | Validates fields against schema |
+| `Stage07_TemplateDesign` | `getColorSchemePrompt()` | Salesforce brand colors |
+| `Stage07_TemplateDesign` | `getStylePatternsPrompt()` | Inline style patterns |
+| `Stage07_TemplateDesign` | `validateHTMLSafety()` | Checks scripts, classes, line breaks |
+| `Stage08_PromptAssembly` | `buildAIInstructions()` | ALL 10 GPTfy rules + styling + analysis requirements |
+| `Stage08_PromptAssembly` | `buildGroundingRules()` | Grounding rules for AI |
+| `Stage08_PromptAssembly` | `assemblePromptConfiguration()` | AI Instructions + Grounding Rules + HTML Template |
+| `Stage08_PromptAssembly` | `buildDCMConfigForStage9()` | DCM config with relationship detection |
+| `Stage08_PromptAssembly` | `buildPromptConfigForStage9()` | Prompt configuration |
+| `Stage08_PromptAssembly` | `loadPatterns()`, `loadUIComponents()` | Loads Builder Prompts |
+| `MergeFieldValidator` | `validateAgainstDCM()` | Validates merge fields |
+| `DCMBuilder` | `detectRelationshipField()` | Auto-detects join fields |
+| `DCMBuilder` | `createDCM()` | Creates DCM records |
+| `PromptBuilder` | `createPrompt()` | Creates Prompt records |
 
-#### Task 20: HTML Template Generation - MERGED INTO TASK 16
+**Corrected Task 21:** DO NOT write `convertToHTML()`. Instead:
+- If HTML template is needed, call `Stage07_TemplateDesign` patterns
+- `Stage08_PromptAssembly.buildAIInstructions()` already has ALL GPTfy rules
 
-This was merged into the comprehensive architecture above. The "conversion prompt" approach (Phase 3b) handles template generation.
+**Corrected Task 22:** DO NOT create new HTML exemplars. The existing:
+- Builder Prompts (Category = 'Pattern', 'UI Component') already have patterns
+- `Stage08` loads these via `loadPatterns()`, `loadUIComponents()`
+- `PF_UIPatterns__c` records have UI component patterns
 
-**Key Decision:** LLM-to-LLM conversion rather than JSON intermediate format.
+**Corrected Task 23:** Update `deployPrompt()` to CALL existing infrastructure:
+```apex
+// In PromptBuilderController.deployPrompt():
 
-Why not JSON intermediate?
-- Markdown → JSON → HTML adds complexity
-- LLM can directly understand markdown structure
-- Stage07 already proves LLM can output valid HTML
-- Simpler debugging (can see markdown and final HTML)
+// 1. Build selected fields map from session data
+Map<String, Object> selectedFields = buildSelectedFieldsFromSession(session);
+
+// 2. Build DCM config USING Stage08 pattern (or call directly)
+Map<String, Object> dcmConfig = Stage08_PromptAssembly.buildDCMConfigForStage9(
+    session.Root_Object__c, selectedFields, inputs);
+
+// 3. Build Prompt config USING Stage08 pattern
+Map<String, Object> promptConfig = Stage08_PromptAssembly.buildPromptConfigForStage9(
+    session.Root_Object__c, aiInstructions, htmlTemplate, groundingRules, inputs);
+
+// 4. Create DCM using EXISTING DCMBuilder
+Id dcmId = DCMBuilder.createDCM(dcmConfig);
+
+// 5. Create Prompt using EXISTING PromptBuilder
+PromptBuilder.PromptConfig config = new PromptBuilder.PromptConfig();
+config.dcmId = dcmId;
+// ... populate from promptConfig ...
+Id promptId = PromptBuilder.createPrompt(config);
+```
+
+**The key insight:** Stage08_PromptAssembly already does everything correctly.
+Extract the relevant methods or make them public and call them directly.
+DO NOT REINVENT.
 
 ---
 
