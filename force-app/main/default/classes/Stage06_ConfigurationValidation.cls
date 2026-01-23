@@ -115,6 +115,9 @@ public with sharing class Stage06_ConfigurationValidation implements IStage {
             // CRITICAL: Pass through data summary for template design
             result.outputs.put('dataSummary', inputs.get('dataSummary'));
 
+            // CRITICAL: Pass through fieldMetadata for Apex Services optimization (Sprint 2)
+            result.outputs.put('fieldMetadata', inputs.get('fieldMetadata'));
+
             // Mark as completed (with warning if there are failures)
             if (failedChecks > 0) {
                 result.markWarning(failedChecks + ' validation checks failed');

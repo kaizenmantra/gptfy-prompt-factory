@@ -192,6 +192,23 @@ public with sharing class Stage05_FieldSelection implements IStage {
             // Don't pass dataAvailability - it can be large and causes stack overflow
             // Downstream stages can re-query if needed
 
+            // CRITICAL: Generate Field Metadata Map (Name -> Type) for downstream optimization
+            // This is used by Stage 8 Apex Services (e.g. Picklist Intelligence) to avoid redundant Describes
+            Map<String, String> fieldMetadata = new Map<String, String>();
+            for (String objectName : selectedFields.keySet()) {
+                List<String> fields = selectedFields.get(objectName);
+                if (fields != null) {
+                    for (String fieldName : fields) {
+                        Schema.DescribeFieldResult dfr = SchemaHelper.getFieldDescribe(objectName, fieldName);
+                        if (dfr != null) {
+                            // Store as "FieldName": "PICKLIST"
+                            fieldMetadata.put(fieldName, String.valueOf(dfr.getType()));
+                        }
+                    }
+                }
+            }
+            result.outputs.put('fieldMetadata', fieldMetadata);
+
             result.markCompleted();
 
         } catch (Exception e) {

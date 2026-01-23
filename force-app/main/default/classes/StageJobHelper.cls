@@ -12,8 +12,8 @@ public class StageJobHelper {
     // Constants for sanitization limits
     private static final Integer MAX_SANITIZE_DEPTH = 5;
     private static final Integer MAX_LIST_ITEMS = 200;
-    private static final Integer MAX_STRING_LEN = 5000;
-    private static final Integer MAX_OUTPUT_JSON_SIZE = 130000;
+    private static final Integer MAX_STRING_LEN = 65000; // Increased from 5000 to allow large prompts
+    private static final Integer MAX_OUTPUT_JSON_SIZE = 131072; // Salesforce Long Text Area limit
 
     // Keys that should be omitted to prevent stack overflow
     private static final Set<String> KEY_DENYLIST = new Set<String>{
@@ -110,6 +110,9 @@ public class StageJobHelper {
         // Preserve primitives with size limits
         if (value instanceof String) {
             String s = (String) value;
+            if (s.length() > 5000) {
+                 System.debug('StageJobHelper: Sanitizing string length: ' + s.length() + ', MAX: ' + MAX_STRING_LEN);
+            }
             return s.length() > MAX_STRING_LEN
                 ? s.substring(0, MAX_STRING_LEN - 3) + '...'
                 : s;

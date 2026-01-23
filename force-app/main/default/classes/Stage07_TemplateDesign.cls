@@ -186,6 +186,9 @@ public with sharing class Stage07_TemplateDesign implements IStage {
             result.outputs.put('strategicInsights', inputs.get('strategicInsights'));
             result.outputs.put('companyWebsite', inputs.get('companyWebsite'));
 
+            // CRITICAL FIX: Pass through fieldMetadata from inputs to outputs for Stage 8 Apex Services optimization
+            result.outputs.put('fieldMetadata', inputs.get('fieldMetadata'));
+
             result.markCompleted();
             result.queueInfo(runId, STAGE_NUMBER, 'Template design completed successfully');
 

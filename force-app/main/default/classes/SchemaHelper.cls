@@ -101,6 +101,26 @@ public with sharing class SchemaHelper {
     }
 
     /**
+     * @description Gets field describe result for a specific field
+     * @param objectName API name of the object
+     * @param fieldName API name of the field
+     * @return DescribeFieldResult or null if not found
+     */
+    public static Schema.DescribeFieldResult getFieldDescribe(String objectName, String fieldName) {
+        Schema.DescribeSObjectResult objDescribe = getObjectDescribe(objectName);
+        if (objDescribe == null) {
+            return null;
+        }
+        
+        Schema.SObjectField field = objDescribe.fields.getMap().get(fieldName);
+        if (field == null) {
+            return null;
+        }
+        
+        return field.getDescribe();
+    }
+
+    /**
      * @description Gets field metadata for an object
      * @param objectName API name of the object
      * @return List of FieldMetadata wrapper objects

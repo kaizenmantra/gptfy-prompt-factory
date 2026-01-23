@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<RecordType xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Builder</fullName>
+    <active>true</active>
+    <description>For building Prompts with GPTfy AI Prompt Factory</description>
+    <label>Builder</label>
+    <picklistValues>
+        <picklist>Category__c</picklist>
+        <values>
+            <fullName>Apex Service</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Context Template</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Pattern</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>Quality Rule</fullName>
+            <default>false</default>
+        </values>
+        <values>
+            <fullName>UI Component</fullName>
+            <default>false</default>
+        </values>
+    </picklistValues>
+</RecordType>

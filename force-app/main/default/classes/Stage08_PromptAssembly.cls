@@ -79,7 +79,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             // Build AI instructions with REAL company research
             String aiInstructions = buildAIInstructions(
                 businessContext, targetPersona, businessObjectivesRaw, rootObject,
-                effectiveCompanyContext, strategicInsights, industryContext, runId);
+                effectiveCompanyContext, strategicInsights, industryContext, runId, inputs);
 
             // Build grounding rules
             String groundingRules = buildGroundingRules(rootObject, targetPersona);
@@ -104,26 +104,36 @@ public without sharing class Stage08_PromptAssembly implements IStage {
 
             // Build outputs - include dcmConfig and promptConfig for Stage 9
             result.outputs.put('dcmConfig', dcmConfig);
-            result.outputs.put('promptConfig', promptConfigForStage9);
-            result.outputs.put('promptConfiguration', promptConfig);
-            result.outputs.put('aiInstructions', aiInstructions);
-            result.outputs.put('groundingRules', groundingRules);
-            result.outputs.put('validatedFields', validatedFields);
+            result.outputs.put('promptConfig', promptConfigForStage9); // CAUTION: Contains large string data
+            
+            // REDUNDANT DATA REMOVAL
+            // The following fields are duplicates of data already inside promptConfig/dcmConfig
+            // or are not used by downstream stages. Removing them prevents StageJobHelper
+            // from truncating the output JSON (limit 130k chars).
+            
+            // result.outputs.put('promptConfiguration', promptConfig); // DUPLICATE of promptText
+            // result.outputs.put('aiInstructions', aiInstructions); // DUPLICATE in promptConfig
+            // result.outputs.put('groundingRules', groundingRules); // DUPLICATE in promptConfig
+            // result.outputs.put('htmlTemplate', htmlTemplate); // DUPLICATE in promptConfig
+            
+            // Validation info - keep small summary only
+            // result.outputs.put('validatedFields', validatedFields);
             result.outputs.put('invalidFieldCount', invalidFieldCount);
             result.outputs.put('validationErrors', validationErrors);
-            result.outputs.put('assemblySummary', assemblySummary);
+            // result.outputs.put('assemblySummary', assemblySummary); // Large string
 
-            // Pass through critical inputs for downstream stages
+            // Pass through ONLY critical inputs for downstream stages
             result.outputs.put('rootObject', rootObject);
-            result.outputs.put('businessContext', businessContext);
-            result.outputs.put('targetPersona', targetPersona);
-            result.outputs.put('businessObjectives', businessObjectivesRaw);
-            result.outputs.put('htmlTemplate', htmlTemplate);
-            result.outputs.put('selectedFields', selectedFieldsRaw);
             result.outputs.put('promptName', inputs.get('promptName'));
             result.outputs.put('sampleRecordId', inputs.get('sampleRecordId'));
-            // Pass through selectedGrandchildren - already used in buildDCMConfigForStage9
-            result.outputs.put('selectedGrandchildren', inputs.get('selectedGrandchildren'));
+            
+            // REDUNDANT INPUT PASSTHROUGH REMOVAL
+            // Stage 9/10/11 do not need these raw inputs
+            // result.outputs.put('businessContext', businessContext);
+            // result.outputs.put('targetPersona', targetPersona);
+            // result.outputs.put('businessObjectives', businessObjectivesRaw);
+            // result.outputs.put('selectedFields', selectedFieldsRaw);
+            // result.outputs.put('selectedGrandchildren', inputs.get('selectedGrandchildren'));
 
             // CRITICAL: Fail if ANY invalid merge fields detected
             // This prevents creating DCM/Prompt with mismatched field references
@@ -232,156 +242,146 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             String companyProfile,
             String strategicInsights,
             String industryContext,
-            Id runId) {
+            Id runId,
+            Map<String, Object> inputs) {
 
-        String instructions = 'You are a Salesforce AI assistant generating HTML content for GPTfy.\n\n';
+        // Use a List approach to avoid potential string concatenation limits or silent failures
+        List<String> promptParts = new List<String>();
+
+        promptParts.add('You are a Salesforce AI assistant generating HTML content for GPTfy.\n\n');
 
         // === CRITICAL OUTPUT RULES ===
-        instructions += '=== CRITICAL OUTPUT RULES (GPTfy Runtime Validation) ===\n\n';
-
-        instructions += 'Rule 1 - SINGLE LINE: Output MUST be a single line with NO newline characters.\n';
-        instructions += '  WHY: GPTfy stores output as a single field value. Line breaks cause parsing issues.\n\n';
-
-        instructions += 'Rule 2 - NO STYLE BLOCKS: Do NOT include any style tags.\n';
-        instructions += '  WHY: GPTfy renders in Salesforce Lightning which strips style blocks. Only inline styles work.\n\n';
-
-        instructions += 'Rule 3 - NO CSS CLASSES: Do NOT use class attributes.\n';
-        instructions += '  WHY: Without style blocks, CSS classes have no definitions and elements remain unstyled.\n\n';
-
-        instructions += 'Rule 4 - NO SCRIPT TAGS: Do NOT include any JavaScript.\n';
-        instructions += '  WHY: Scripts are a security risk and are stripped by Salesforce Lightning.\n\n';
-
-        instructions += 'Rule 5 - NO MARKDOWN: Do NOT wrap output in code blocks or use markdown formatting.\n';
-        instructions += '  WHY: Output must be raw HTML, not markdown.\n\n';
-
-        instructions += 'Rule 6 - START WITH DIV STYLE: Output MUST begin with a div element with inline style attribute.\n';
-        instructions += '  WHY: Ensures proper container structure with inline styles.\n\n';
-
-        instructions += 'Rule 7 - END WITH DIV: Output MUST end with a closing div tag.\n';
-        instructions += '  WHY: Ensures HTML structure is complete and properly closed.\n\n';
-
-        instructions += 'Rule 8 - NO PLACEHOLDERS: Never output bracket-X patterns, placeholder text, TBD, TODO, or similar.\n';
-        instructions += '  WHY: Indicates the prompt didn\'t properly integrate real data.\n\n';
-
-        instructions += 'Rule 9 - NO NULL VALUES: Never output null, undefined, or Not Available in visible text.\n';
-        instructions += '  WHY: Missing data should be handled gracefully by omitting the section.\n\n';
-
-        instructions += 'Rule 10 - NO EMOJIS: Do NOT use any emoji characters.\n';
-        instructions += '  WHY: Professional business content should not contain emojis.\n\n';
+        String rules = '=== CRITICAL OUTPUT RULES (GPTfy Runtime Validation) ===\n\n' +
+            'Rule 1 - SINGLE LINE: Output MUST be a single line with NO newline characters.\n' +
+            '  WHY: GPTfy stores output as a single field value. Line breaks cause parsing issues.\n\n' +
+            'Rule 2 - NO STYLE BLOCKS: Do NOT include any style tags.\n' +
+            '  WHY: GPTfy renders in Salesforce Lightning which strips style blocks. Only inline styles work.\n\n' +
+            'Rule 3 - NO CSS CLASSES: Do NOT use class attributes.\n' +
+            '  WHY: Without style blocks, CSS classes have no definitions and elements remain unstyled.\n\n' +
+            'Rule 4 - NO SCRIPT TAGS: Do NOT include any JavaScript.\n' +
+            '  WHY: Scripts are a security risk and are stripped by Salesforce Lightning.\n\n' +
+            'Rule 5 - NO MARKDOWN: Do NOT wrap output in code blocks or use markdown formatting.\n' +
+            '  WHY: Output must be raw HTML, not markdown.\n\n' +
+            'Rule 6 - START WITH DIV STYLE: Output MUST begin with a div element with inline style attribute.\n' +
+            '  WHY: Ensures proper container structure with inline styles.\n\n' +
+            'Rule 7 - END WITH DIV: Output MUST end with a closing div tag.\n' +
+            '  WHY: Ensures HTML structure is complete and properly closed.\n\n' +
+            'Rule 8 - NO PLACEHOLDERS: Never output bracket-X patterns, placeholder text, TBD, TODO, or similar.\n' +
+            '  WHY: Indicates the prompt didn\'t properly integrate real data.\n\n' +
+            'Rule 9 - NO NULL VALUES: Never output null, undefined, or Not Available in visible text.\n' +
+            '  WHY: Missing data should be handled gracefully by omitting the section.\n\n' +
+            'Rule 10 - NO EMOJIS: Do NOT use any emoji characters.\n' +
+            '  WHY: Professional business content should not contain emojis.\n\n';
+        promptParts.add(rules);
 
         // === STYLING REQUIREMENTS ===
-        instructions += '=== STYLING REQUIREMENTS (Salesforce Brand) ===\n\n';
-
-        instructions += 'Font: \'Salesforce Sans\', -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Arial, sans-serif\n';
-        instructions += 'Base Size: 14px\n\n';
-
-        instructions += 'Colors:\n';
-        instructions += '- Primary Blue: #0176D3\n';
-        instructions += '- Dark Blue: #014486\n';
-        instructions += '- Success Green: #2E844A\n';
-        instructions += '- Warning Orange: #DD7A01\n';
-        instructions += '- Error Red: #BA0517\n';
-        instructions += '- Text Primary: #181818\n';
-        instructions += '- Text Secondary: #706E6B\n';
-        instructions += '- Background: #F3F3F3\n';
-        instructions += '- Card Background: #FFFFFF\n';
-        instructions += '- Border: #DDDBDA\n\n';
-
-        instructions += 'Components:\n';
-        instructions += '- Cards: white background, 8px border-radius, 1px solid border in DDDBDA color, 16px padding\n';
-        instructions += '- Headers: linear gradient from Primary Blue to Dark Blue, white text, 16px padding\n';
-        instructions += '- Progress bars: 8px height, DDDBDA background, colored fill based on score\n';
-        instructions += '- Status badges: 4px 12px padding, 4px border-radius, semantic color background\n';
-        instructions += '- Tables: border-collapse, F3F3F3 header background, 10px 12px cell padding\n\n';
+        String styling = '=== STYLING REQUIREMENTS (Salesforce Brand) ===\n\n' +
+            'Font: \'Salesforce Sans\', -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, Arial, sans-serif\n' +
+            'Base Size: 14px\n\n' +
+            'Colors:\n' +
+            '- Primary Blue: #0176D3\n' +
+            '- Dark Blue: #014486\n' +
+            '- Success Green: #2E844A\n' +
+            '- Warning Orange: #DD7A01\n' +
+            '- Error Red: #BA0517\n' +
+            '- Text Primary: #181818\n' +
+            '- Text Secondary: #706E6B\n' +
+            '- Background: #F3F3F3\n' +
+            '- Card Background: #FFFFFF\n' +
+            '- Border: #DDDBDA\n\n' +
+            'Components:\n' +
+            '- Cards: white background, 8px border-radius, 1px solid border in DDDBDA color, 16px padding\n' +
+            '- Headers: linear gradient from Primary Blue to Dark Blue, white text, 16px padding\n' +
+            '- Progress bars: 8px height, DDDBDA background, colored fill based on score\n' +
+            '- Status badges: 4px 12px padding, 4px border-radius, semantic color background\n' +
+            '- Tables: border-collapse, F3F3F3 header background, 10px 12px cell padding\n\n';
+        promptParts.add(styling);
 
         // === DATA HANDLING ===
-        instructions += '=== DATA HANDLING ===\n\n';
-        instructions += '- If a merge field returns empty or null, OMIT that section entirely - do not show empty labels\n';
-        instructions += '- Use relative timeframes in recommendations (this week, within 3 days) not absolute dates\n';
-        instructions += '- All merge fields are provided using triple-brace syntax and will be substituted by GPTfy at runtime\n';
+        String dataHandling = '=== DATA HANDLING ===\n\n' +
+            '- If a merge field returns empty or null, OMIT that section entirely - do not show empty labels\n' +
+            '- Use relative timeframes in recommendations (this week, within 3 days) not absolute dates\n' +
+            '- All merge fields are provided using triple-brace syntax and will be substituted by GPTfy at runtime\n';
+        promptParts.add(dataHandling);
 
         // === BUSINESS CONTEXT ===
-        instructions += 'Generate a premium, executive-style dashboard for: ' + targetPersona + '\n\n';
+        promptParts.add('Generate a premium, executive-style dashboard for: ' + targetPersona + '\n\n');
 
         // === STRATEGIC CONTEXT (Account 360) ===
         if (String.isNotBlank(companyProfile) || String.isNotBlank(strategicInsights) || String.isNotBlank(industryContext)) {
-             instructions += '=== STRATEGIC CONTEXT (Account 360) ===\n';
-             instructions += 'Use this intelligence to make the content highly relevant and personalized.\n\n';
+             String strategy = '=== STRATEGIC CONTEXT (Account 360) ===\n' +
+                 'Use this intelligence to make the content highly relevant and personalized.\n\n';
              
              if (String.isNotBlank(companyProfile)) {
-                 instructions += 'COMPANY PROFILE:\n' + companyProfile + '\n\n';
+                 strategy += 'COMPANY PROFILE:\n' + companyProfile + '\n\n';
              }
              if (String.isNotBlank(industryContext)) {
-                 instructions += 'INDUSTRY CONTEXT:\n' + industryContext + '\n\n';
+                 strategy += 'INDUSTRY CONTEXT:\n' + industryContext + '\n\n';
              }
              if (String.isNotBlank(strategicInsights)) {
-                 instructions += 'STRATEGIC INSIGHTS:\n' + strategicInsights + '\n\n';
+                 strategy += 'STRATEGIC INSIGHTS:\n' + strategicInsights + '\n\n';
              }
+             promptParts.add(strategy);
+             PromptFactoryLogger.info(runId, 8, '✅ Added Strategic Context section');
         }
 
         // Include full business context from user input
         if (String.isNotBlank(businessContext)) {
-            instructions += 'SPECIFIC REQUIREMENTS:\n' + businessContext + '\n\n';
+            promptParts.add('SPECIFIC REQUIREMENTS:\n' + businessContext + '\n\n');
         }
 
         if (businessObjectivesRaw != null && !businessObjectivesRaw.isEmpty()) {
-            instructions += 'Business Goals: ';
             List<String> objectives = new List<String>();
             for (Object obj : businessObjectivesRaw) {
                 objectives.add(String.valueOf(obj));
             }
-            instructions += String.join(objectives, ', ') + '\n\n';
+            promptParts.add('Business Goals: ' + String.join(objectives, ', ') + '\n\n');
         }
 
         // === CRITICAL: ANALYSIS REQUIREMENTS ===
-        instructions += '=== CRITICAL: ANALYSIS REQUIREMENTS ===\n\n';
-        instructions += 'You are NOT just displaying data - you are providing INTELLIGENT BUSINESS ANALYSIS.\n';
-        instructions += 'The template below contains merge fields that will be replaced with real Salesforce data.\n';
-        instructions += 'Your job is to ANALYZE this data and provide ACTIONABLE INSIGHTS.\n\n';
-        
-        instructions += 'ANALYSIS YOU MUST PERFORM:\n\n';
-        
-        instructions += '1. OPPORTUNITY HEALTH ANALYSIS:\n';
-        instructions += '   - Identify stale opportunities (close dates in the past or soon)\n';
-        instructions += '   - Flag deals stuck in early stages for too long\n';
-        instructions += '   - Calculate total pipeline value and weighted pipeline\n';
-        instructions += '   - Recommend next steps for each opportunity\n\n';
-        
-        instructions += '2. CASE/SUPPORT RISK ANALYSIS:\n';
-        instructions += '   - Flag high-priority open cases that need attention\n';
-        instructions += '   - Identify aging cases (open for extended periods)\n';
-        instructions += '   - Calculate customer satisfaction risk based on case patterns\n';
-        instructions += '   - Recommend resolution priorities\n\n';
-        
-        instructions += '3. ENGAGEMENT PATTERN ANALYSIS:\n';
-        instructions += '   - Identify last contact date and engagement gaps\n';
-        instructions += '   - Flag accounts with no recent activity (going cold)\n';
-        instructions += '   - Analyze contact coverage (do we have the right stakeholders?)\n';
-        instructions += '   - Recommend engagement actions\n\n';
-        
-        instructions += '4. EXECUTIVE SUMMARY:\n';
-        instructions += '   - Provide an overall account health score or assessment\n';
-        instructions += '   - List top 3 priorities for this account\n';
-        instructions += '   - Identify the biggest risk and biggest opportunity\n';
-        instructions += '   - Recommend immediate actions\n\n';
-        
-        instructions += 'OUTPUT STRUCTURE:\n';
-        instructions += 'Your output should include BOTH the templated data AND your analytical sections.\n';
-        instructions += 'Add analysis sections with headers like "Executive Summary", "Key Risks", "Recommended Actions".\n';
-        instructions += 'Do NOT just render tables - add CONTEXT and INTERPRETATION before/after data sections.\n\n';
-        
-        instructions += 'The output should be visually stunning, data-rich, and immediately actionable.\n';
-        instructions += 'Use ONLY the merge field embeddings provided in the template below. Do not add or modify merge fields.\n';
-        instructions += 'Merge fields use triple-brace syntax and will be substituted by GPTfy at runtime.\n\n';
+        // Explicitly ensuring this block is added regardless of previous concatenation
+        String analysisReqs = '=== CRITICAL: ANALYSIS REQUIREMENTS ===\n\n' +
+            'You are NOT just displaying data - you are providing INTELLIGENT BUSINESS ANALYSIS.\n' +
+            'The template below contains merge fields that will be replaced with real Salesforce data.\n' +
+            'Your job is to ANALYZE this data and provide ACTIONABLE INSIGHTS.\n\n' +
+            'ANALYSIS YOU MUST PERFORM:\n\n' +
+            '1. OPPORTUNITY HEALTH ANALYSIS:\n' +
+            '   - Identify stale opportunities (close dates in the past or soon)\n' +
+            '   - Flag deals stuck in early stages for too long\n' +
+            '   - Calculate total pipeline value and weighted pipeline\n' +
+            '   - Recommend next steps for each opportunity\n\n' +
+            '2. CASE/SUPPORT RISK ANALYSIS:\n' +
+            '   - Flag high-priority open cases that need attention\n' +
+            '   - Identify aging cases (open for extended periods)\n' +
+            '   - Calculate customer satisfaction risk based on case patterns\n' +
+            '   - Recommend resolution priorities\n\n' +
+            '3. ENGAGEMENT PATTERN ANALYSIS:\n' +
+            '   - Identify last contact date and engagement gaps\n' +
+            '   - Flag accounts with no recent activity (going cold)\n' +
+            '   - Analyze contact coverage (do we have the right stakeholders?)\n' +
+            '   - Recommend engagement actions\n\n' +
+            '4. EXECUTIVE SUMMARY:\n' +
+            '   - Provide an overall account health score or assessment\n' +
+            '   - List top 3 priorities for this account\n' +
+            '   - Identify the biggest risk and biggest opportunity\n' +
+            '   - Recommend immediate actions\n\n' +
+            'OUTPUT STRUCTURE:\n' +
+            'Your output should include BOTH the templated data AND your analytical sections.\n' +
+            'Add analysis sections with headers like "Executive Summary", "Key Risks", "Recommended Actions".\n' +
+            'Do NOT just render tables - add CONTEXT and INTERPRETATION before/after data sections.\n\n' +
+            'The output should be visually stunning, data-rich, and immediately actionable.\n' +
+            'Use ONLY the merge field embeddings provided in the template below. Do not add or modify merge fields.\n' +
+            'Merge fields use triple-brace syntax and will be substituted by GPTfy at runtime.\n\n';
+        promptParts.add(analysisReqs);
 
         PromptFactoryLogger.info(runId, 8, '🏗️ BUILD AI INSTRUCTIONS: Starting builder injection');
-        Integer initialLength = instructions.length();
+        // Initial length calc is tricky with List, we will sum at end
         
         // NEW: Load and inject Builder Prompts
         PromptFactoryLogger.info(runId, 8, '📋 Step 1: Loading Quality Rules');
         String qualityRules = loadQualityRules(runId);
         if (String.isNotBlank(qualityRules)) {
-            instructions += qualityRules + '\n\n';
+            promptParts.add(qualityRules + '\n\n');
             PromptFactoryLogger.info(runId, 8, '✅ Injected Quality Rules: +' + qualityRules.length() + ' chars');
         } else {
             PromptFactoryLogger.warning(runId, 8, '⚠️ No Quality Rules to inject');
@@ -390,7 +390,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
         PromptFactoryLogger.info(runId, 8, '📋 Step 2: Loading Patterns');
         String patterns = loadPatterns(rootObject, runId);
         if (String.isNotBlank(patterns)) {
-            instructions += patterns + '\n\n';
+            promptParts.add(patterns + '\n\n');
             PromptFactoryLogger.info(runId, 8, '✅ Injected Patterns: +' + patterns.length() + ' chars');
         } else {
             PromptFactoryLogger.warning(runId, 8, '⚠️ No Patterns to inject');
@@ -400,7 +400,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
         PromptFactoryLogger.info(runId, 8, '📋 Step 3: Loading UI Components');
         String uiComponents = loadUIComponents(runId);
         if (String.isNotBlank(uiComponents)) {
-            instructions += uiComponents + '\n\n';
+            promptParts.add(uiComponents + '\n\n');
             PromptFactoryLogger.info(runId, 8, '✅ Injected UI Components: +' + uiComponents.length() + ' chars');
         } else {
             PromptFactoryLogger.warning(runId, 8, '⚠️ No UI Components to inject');
@@ -410,16 +410,26 @@ public without sharing class Stage08_PromptAssembly implements IStage {
         PromptFactoryLogger.info(runId, 8, '📋 Step 4: Loading Context Templates');
         String contextTemplates = loadContextTemplates(runId);
         if (String.isNotBlank(contextTemplates)) {
-            instructions += contextTemplates + '\n\n';
+            promptParts.add(contextTemplates + '\n\n');
             PromptFactoryLogger.info(runId, 8, '✅ Injected Context Templates: +' + contextTemplates.length() + ' chars');
         } else {
             PromptFactoryLogger.warning(runId, 8, '⚠️ No Context Templates to inject');
         }
         
-        Integer finalLength = instructions.length();
-        Integer addedContent = finalLength - initialLength;
-        PromptFactoryLogger.info(runId, 8, '📊 BUILDER INJECTION COMPLETE: Added ' + addedContent + ' chars from builders');
-        PromptFactoryLogger.info(runId, 8, '📊 Total instruction length: ' + finalLength + ' chars');
+        // NEW: Load and execute Apex Services (Sprint 2)
+        PromptFactoryLogger.info(runId, 8, '📋 Step 5: Loading Apex Services');
+        String apexServiceOutput = loadApexServices(inputs, runId);
+        if (String.isNotBlank(apexServiceOutput)) {
+            // Ensure this block is added as a distinct part
+            promptParts.add('\n\n=== AUTOMATED DATA ANALYSIS ===\n' + apexServiceOutput + '\n\n');
+            PromptFactoryLogger.info(runId, 8, '✅ Injected Apex Service Output: +' + apexServiceOutput.length() + ' chars');
+        } else {
+            PromptFactoryLogger.info(runId, 8, 'ℹ️ No Apex Service output generated');
+        }
+        
+        // Combine all parts
+        String instructions = String.join(promptParts, '');
+        PromptFactoryLogger.info(runId, 8, '📊 BUILDER INJECTION COMPLETE. Total instruction length: ' + instructions.length() + ' chars');
 
         return instructions;
     }
@@ -607,6 +617,67 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             String errorMsg = 'Failed to load Context Templates: ' + e.getMessage() + ' | Stack: ' + e.getStackTraceString();
             System.debug(LoggingLevel.ERROR, errorMsg);
             throw new StageException(errorMsg);
+        }
+    }
+
+    /**
+     * @description Load and execute active Apex Services
+     * @param inputs Full stage inputs including fieldMetadata
+     * @param runId PF_Run__c ID for logging
+     * @return Combined output from all Apex Services
+     */
+    private String loadApexServices(Map<String, Object> inputs, Id runId) {
+        try {
+            PromptFactoryLogger.info(runId, 8, '🔍 loadApexServices() called');
+            
+            Id builderRtId = Schema.SObjectType.ccai__AI_Prompt__c.getRecordTypeInfosByDeveloperName().get('Builder').getRecordTypeId();
+            
+            List<ccai__AI_Prompt__c> services = [
+                SELECT Id, Name, ccai__Prompt_Command__c
+                FROM ccai__AI_Prompt__c
+                WHERE RecordTypeId = :builderRtId
+                  AND Category__c = 'Apex Service'
+                  AND ccai__Status__c = 'Active'
+                ORDER BY Name ASC
+            ];
+            
+            if (services.isEmpty()) {
+                PromptFactoryLogger.info(runId, 8, 'ℹ️ No Apex Services found');
+                return '';
+            }
+            
+            String combinedOutput = '';
+            for (ccai__AI_Prompt__c service : services) {
+                String className = service.ccai__Prompt_Command__c;
+                if (String.isBlank(className)) continue;
+
+                try {
+                    Type t = Type.forName(className);
+                    if (t != null) {
+                        Object instance = t.newInstance();
+                        if (instance instanceof IApexService) {
+                            PromptFactoryLogger.info(runId, 8, '⚙️ Executing Apex Service: ' + service.Name + ' (' + className + ')');
+                            String result = ((IApexService)instance).execute(inputs);
+                            if (String.isNotBlank(result)) {
+                                combinedOutput += result + '\n\n';
+                            }
+                        } else {
+                            PromptFactoryLogger.warning(runId, 8, '⚠️ Class ' + className + ' does not implement IApexService');
+                        }
+                    } else {
+                        PromptFactoryLogger.warning(runId, 8, '⚠️ Apex Class not found: ' + className);
+                    }
+                } catch (Exception e) {
+                    PromptFactoryLogger.error(runId, 8, '❌ Error executing service ' + service.Name + ': ' + e.getMessage());
+                }
+            }
+            
+            return combinedOutput;
+            
+        } catch (Exception e) {
+            String errorMsg = 'Failed to load Apex Services: ' + e.getMessage();
+            System.debug(LoggingLevel.ERROR, errorMsg);
+            return ''; // Don't fail the pipeline for service errors
         }
     }
 
