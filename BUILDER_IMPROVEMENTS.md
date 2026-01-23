@@ -187,7 +187,7 @@ Analyze the data. Lead with insights. Let the data drive the structure.
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 3.1 | Design meta-prompt structure | Opus | not_started | Define sections, flow, LLM instructions |
+| 3.1 | Design meta-prompt structure | Opus | done | See docs/designs/META_PROMPT_DESIGN.md - 6 sections defined |
 | 3.2 | Modify Stage 7 to generate "analysis brief" not fixed template | Opus | not_started | Significant change to template approach |
 | 3.3 | Modify Stage 8 to assemble meta-prompt | Sonnet | not_started | After 3.1/3.2 designed |
 | 3.4 | Create UI toolkit section for meta-prompt | Sonnet | not_started | Document available components |
@@ -225,6 +225,7 @@ Analyze the data. Lead with insights. Let the data drive the structure.
 | 2026-01-23 | Task 2.4: Update Stage 4 for multi-sample profiling | Sonnet | Implemented MultiSampleProfile classes, profileMultipleSamples(), aggregation, pattern detection |
 | 2026-01-23 | Task 2.1: Design multi-sample data structure | Opus | Created MULTI_SAMPLE_DESIGN.md with full architecture for N-sample profiling |
 | 2026-01-23 | Task 2.5: Update Stage 5 for multi-sample | Opus | Enhanced AI prompt with data availability across samples, detected patterns, field selection guidance |
+| 2026-01-23 | Task 3.1: Design meta-prompt structure | Opus | Created META_PROMPT_DESIGN.md with 6-section architecture: Role, Data Payload, Analysis Principles, UI Toolkit, Output Rules, Directive |
 
 ---
 
