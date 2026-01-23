@@ -36,7 +36,12 @@
                 <default>false</default>
                 <label>Apex Service</label>
             </value>
+            <value>
+                <fullName>Traversal</fullName>
+                <default>false</default>
+                <label>Traversal</label>
+            </value>
         </valueSetDefinition>
     </valueSet>
-    <inlineHelpText>Classification for builder prompts: Quality Rule (evidence binding, hierarchy rules), Pattern (risk assessment, timeline), UI Component (stat cards, alerts), Context Template (industry heuristics, client context), Apex Service (Apex code for live metadata extraction)</inlineHelpText>
+    <inlineHelpText>Classification for builder prompts: Quality Rule (evidence binding, hierarchy rules), Pattern (risk assessment, timeline), UI Component (stat cards, alerts), Context Template (industry heuristics, client context), Apex Service (Apex code for live metadata extraction), Traversal (parent field mappings for relationship navigation)</inlineHelpText>
 </CustomField>

@@ -1443,23 +1443,34 @@ public without sharing class Stage08_PromptAssembly implements IStage {
                 section += component.ccai__Prompt_Command__c + '\n\n';
             }
         } else {
-            // Fallback to static descriptions if no components in database
-            section += 'LAYOUT COMPONENTS:\n';
-            section += '- Dashboard Container: Full-width responsive layout\n';
-            section += '- Section Card: White card with header and content area\n';
-            section += '- Stats Strip: Horizontal metrics display (3-5 key numbers)\n';
-            section += '- Two-Column Grid: Side-by-side content areas\n\n';
+            // Fallback to actual HTML patterns if no components in database
+            section += 'LAYOUT COMPONENTS:\n\n';
 
-            section += 'INSIGHT COMPONENTS:\n';
-            section += '- Alert Box: Highlight critical information (error/warning/info)\n';
-            section += '- Insight Card: Analysis finding with evidence citation\n';
-            section += '- Recommendation Card: Action item with rationale\n';
-            section += '- Health Score: Visual indicator (0-100 with color coding)\n\n';
+            section += '--- Stats Strip (use at top for key metrics) ---\n';
+            section += '<div style="display:flex;gap:16px;margin-bottom:20px;"><div style="flex:1;background:white;border-radius:6px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,0.1);"><div style="font-size:28px;font-weight:700;color:#0176D3;margin-bottom:4px;">{{{Value}}}</div><div style="font-size:13px;color:#706E6B;">Label</div></div></div>\n\n';
 
-            section += 'DATA COMPONENTS:\n';
-            section += '- Data Table: For listing related records (use sparingly!)\n';
-            section += '- Metric Tile: Single KPI with label and trend indicator\n';
-            section += '- Status Badge: Inline status indicator with semantic color\n\n';
+            section += '--- Section Card ---\n';
+            section += '<div style="background:white;border-radius:8px;padding:20px;margin-bottom:16px;box-shadow:0 2px 4px rgba(0,0,0,0.1);"><h2 style="margin:0 0 16px 0;font-size:18px;font-weight:600;color:#181818;">Section Title</h2><!-- Content here --></div>\n\n';
+
+            section += 'INSIGHT COMPONENTS:\n\n';
+
+            section += '--- Critical Alert (RED) ---\n';
+            section += '<div style="background:#FED7D7;border-left:4px solid #BA0517;padding:12px 16px;border-radius:4px;margin-bottom:12px;"><div style="font-weight:600;color:#BA0517;margin-bottom:4px;">Critical Issue</div><div style="color:#54514C;">Description with evidence</div></div>\n\n';
+
+            section += '--- Warning Alert (ORANGE) ---\n';
+            section += '<div style="background:#FEF3CD;border-left:4px solid #DD7A01;padding:12px 16px;border-radius:4px;margin-bottom:12px;"><div style="font-weight:600;color:#DD7A01;margin-bottom:4px;">Warning</div><div style="color:#54514C;">Description with evidence</div></div>\n\n';
+
+            section += '--- Info Alert (BLUE) ---\n';
+            section += '<div style="background:#D7E9FC;border-left:4px solid #0176D3;padding:12px 16px;border-radius:4px;margin-bottom:12px;"><div style="font-weight:600;color:#0176D3;margin-bottom:4px;">Information</div><div style="color:#54514C;">Description with evidence</div></div>\n\n';
+
+            section += '--- Insight Card ---\n';
+            section += '<div style="background:white;border-radius:6px;padding:16px;margin-bottom:12px;border:1px solid #DDDBDA;"><div style="font-weight:600;color:#181818;margin-bottom:8px;">Finding Title</div><div style="color:#706E6B;margin-bottom:12px;line-height:1.5;">Analysis with evidence</div><div style="font-size:12px;color:#706E6B;"><strong>Evidence:</strong> specific data points</div></div>\n\n';
+
+            section += '--- Recommendation Card ---\n';
+            section += '<div style="background:#FFFFFF;border-left:4px solid #2E844A;border-radius:6px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.1);"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><div style="font-weight:600;color:#181818;">Action</div><div style="background:#DD7A01;color:white;padding:4px 12px;border-radius:12px;font-size:11px;font-weight:600;">URGENT</div></div><div style="color:#706E6B;margin-bottom:12px;line-height:1.5;">Specific action description</div><div style="font-size:12px;color:#706E6B;"><strong>Why:</strong> Rationale</div></div>\n\n';
+
+            section += '--- Health Score ---\n';
+            section += '<div style="display:flex;align-items:center;gap:12px;"><div style="font-size:36px;font-weight:700;color:#2E844A;">85</div><div><div style="font-size:14px;font-weight:600;color:#181818;">Health Score</div><div style="width:200px;height:8px;background:#E0E0E0;border-radius:4px;overflow:hidden;"><div style="width:85%;height:100%;background:#2E844A;"></div></div></div></div>\n\n';
         }
 
         section += 'COMPONENT USAGE RULES:\n';
@@ -1552,11 +1563,25 @@ public without sharing class Stage08_PromptAssembly implements IStage {
         section += '   - Keep tables compact (5-7 rows max)\n';
         section += '   - Add context paragraph before each table\n\n';
 
+        section += 'VISUAL DIVERSITY REQUIREMENT:\n';
+        section += '- MUST use colored components (red/orange/blue alerts, colored borders)\n';
+        section += '- MUST use Stats Strip at the top for key metrics\n';
+        section += '- MUST vary component types (mix alerts, insight cards, recommendation cards)\n';
+        section += '- Avoid repetitive layouts - use visual hierarchy\n\n';
+
+        section += 'PERSONALIZATION REQUIREMENT:\n';
+        section += '- Always use actual names, not titles or roles\n';
+        section += '- Say "Sarah Johnson" not "the CFO"\n';
+        section += '- Say "John Smith at Acme Corp" not "the customer"\n';
+        section += '- Use merge fields: {{{Contact.Name}}}, {{{Account.Name}}}, {{{Owner.Name}}}\n\n';
+
         section += 'QUALITY CHECKLIST:\n';
         section += '[ ] Does the summary capture the key story?\n';
         section += '[ ] Does every insight cite specific evidence?\n';
         section += '[ ] Are recommendations specific and actionable?\n';
         section += '[ ] Is the layout insight-first, not table-first?\n';
+        section += '[ ] Did I use colored alerts and stats strip?\n';
+        section += '[ ] Did I use actual names instead of titles?\n';
         section += '[ ] Would an executive find this valuable?\n\n';
 
         section += 'Generate the dashboard now. Output raw HTML only.\n\n';
