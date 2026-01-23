@@ -229,6 +229,7 @@ Analyze the data. Lead with insights. Let the data drive the structure.
 | 2026-01-23 | Task 3.1: Design meta-prompt structure | Opus | Created META_PROMPT_DESIGN.md with 6-section architecture: Role, Data Payload, Analysis Principles, UI Toolkit, Output Rules, Directive |
 | 2026-01-23 | Task 3.2: Modify Stage 7 for analysis brief | Opus | Added USE_META_PROMPT flag, generateAnalysisBrief() with analysis goals, data context, output guidelines |
 | 2026-01-23 | Task 3.3: Modify Stage 8 for meta-prompt assembly | Sonnet | Implemented 6-section meta-prompt: buildMetaPrompt(), buildRoleSection(), buildDataPayloadSection(), buildAnalysisPrinciplesSection(), buildUIToolkitSection(), buildOutputRulesSection(), buildDirectiveSection(). Fixed SOQL errors in builder loading. Deployed successfully. |
+| 2026-01-23 | Task 4.1: Fix metadata and field validation | Opus | Added LLM-generated prompt metadata (description ≤255 chars, howItWorks long text), field size validation for Prompt_Command__c. Stage 7 generates via AI, Stage 8 passes through, PromptBuilder validates sizes. |
 
 ---
 

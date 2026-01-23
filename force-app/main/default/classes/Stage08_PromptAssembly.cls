@@ -1205,7 +1205,9 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             'description' => promptDescription,
             'promptCommand' => finalPromptCommand,
             'htmlTemplate' => finalHtmlTemplate,
-            'groundingRules' => groundingRules,
+            // V2.0: In meta-prompt mode, grounding rules are already embedded in promptCommand
+            // Don't pass separately to avoid duplication in PromptBuilder
+            'groundingRules' => useMetaPrompt ? '' : groundingRules,
             'targetObject' => rootObject,
             'promptType' => 'Text',
             'modelName' => 'claude-sonnet-4.5',
