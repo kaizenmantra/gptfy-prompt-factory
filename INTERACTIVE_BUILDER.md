@@ -54,7 +54,7 @@ Wait for deployment to complete and check for errors before marking task as done
 | 3 | Create `promptBuilderChat.js` - wire up controller | Sonnet | done | 1,2 | Call initializeSession, handle responses |
 | 4 | Create `promptBuilderChat.css` - basic styling | Sonnet | done | 2 | Keep it simple, Salesforce-like |
 | 5 | Deploy Phase 1 to Salesforce and test | Sonnet | done | 1,2,3,4 | `sf project deploy start -o agentictso`, then test in org |
-| 6 | **Design self-evaluating prompt template** | Opus | not_started | 5 | NEEDS THINKING - quality rubric, exemplar integration |
+| 6 | **Design self-evaluating prompt template** | Opus | done | 5 | See [Prompt Template Design](#prompt-template-design-task-6) section |
 | 7 | Create `PromptExemplars` static resource | Sonnet | not_started | 6 | Store Deal Coach + Account 360 exemplars |
 | 8 | Add `chat` method to controller | Sonnet | not_started | 6,7 | Build prompt, call AIServiceClient, return response |
 | 9 | Add chat UI to LWC (message list, input, send) | Sonnet | not_started | 8 | Render markdown responses |
@@ -231,32 +231,9 @@ public static Map<String, Object> chat(
 ```
 
 **Self-Evaluating Prompt Structure:**
-```
-## Context
-[Business context from user]
 
-## Data
-[Actual data from 3-5 sample records]
-
-## Examples of Excellent Output
-[Exemplars from static resource]
-
-## Quality Rubric
-| Criterion | Score 1-10 | What "10" Looks Like |
-|-----------|------------|----------------------|
-| Actionable Insights | | Every section has "so what" and "now what" |
-| Data Grounding | | Every claim references specific data |
-| Risk Identification | | Proactively flags issues user might miss |
-| Specificity | | Recommendations are concrete, not generic |
-| Executive Tone | | Appropriate for VP/C-level audience |
-| Completeness | | Covers all relevant dimensions |
-
-## Instructions
-1. Generate a draft analysis
-2. Score against rubric (be critical)
-3. If any score < 7, revise and re-score
-4. Present final output with scores
-```
+The prompt is split into **System Prompt** (static) and **User Prompt** (dynamic).
+This design is documented in detail in the [Prompt Template Design](#prompt-template-design-task-6) section below.
 
 ---
 
@@ -444,6 +421,239 @@ Escalate to Support Manager immediately.
 
 ---
 
+## Prompt Template Design (Task 6)
+
+> **Designed by Opus** - This is the core intellectual work that makes output quality excellent.
+
+### Design Principles
+
+1. **System prompt = Persona + Rules + Rubric + Exemplar** (static, reusable)
+2. **User prompt = Context + Data + Conversation** (dynamic, per-request)
+3. **Self-evaluation happens internally** - LLM iterates before presenting
+4. **Scores shown for transparency** - User sees confidence level
+5. **One relevant exemplar** - Don't overwhelm with all examples
+
+### System Prompt Template
+
+```
+You are an expert Salesforce business analyst creating insightful analysis for sales and customer success teams. Your outputs should be immediately actionable, data-grounded, and executive-ready.
+
+## YOUR PROCESS (Internal - Do Not Show To User)
+
+Before presenting ANY output, you MUST:
+
+1. Generate an initial draft analysis
+2. Score your draft against EACH criterion in the rubric below (be brutally honest)
+3. If ANY score is below 7:
+   - Identify specifically what's weak
+   - Revise that section
+   - Re-score
+4. Repeat until ALL scores are 7 or higher
+5. Only then present your final output
+
+This self-evaluation is MANDATORY. Mediocre output is unacceptable.
+
+## QUALITY RUBRIC
+
+Score each criterion 1-10. Minimum acceptable: 7 for each.
+
+### 1. Actionable Insights (Not Data Regurgitation)
+- 1-3: Just displays data ("Revenue: $5M", "Stage: Negotiation")
+- 4-6: Basic interpretation ("Revenue is high", "Deal is progressing")
+- 7-8: Insight + implication ("Revenue grew 20% YoY, suggesting expansion appetite")
+- 9-10: Insight + implication + specific action ("Revenue grew 20% YoY. Schedule QBR this week to discuss Enterprise tier upsell - they're likely hitting plan limits based on usage patterns.")
+
+### 2. Data Grounding (Every Claim Backed By Evidence)
+- 1-3: Assertions without data ("This account is healthy")
+- 4-6: Some data references ("Revenue is $2M")
+- 7-8: Most claims cite specific data points ("Revenue is $2.4M, up 12% from last year's $2.1M")
+- 9-10: Every claim tied to specific data with clear attribution ("Based on the 32-day gap since last contact and the 2 escalated cases, this account shows early churn signals")
+
+### 3. Risk Identification (Proactive, Not Obvious)
+- 1-3: No risks mentioned
+- 4-6: Only obvious risks ("Deal is past close date")
+- 7-8: Non-obvious risks with reasoning ("No technical champion identified - enterprise deals without one close 40% less often")
+- 9-10: Risks + severity rating + specific mitigation ("No technical champion (HIGH RISK). Mitigation: Ask Sarah to introduce you to their Solutions Architect in tomorrow's call - use the integration discussion as the hook.")
+
+### 4. Specificity (Concrete, Not Generic)
+- 1-3: Generic advice ("Follow up soon", "Build relationship")
+- 4-6: Somewhat specific ("Follow up this week", "Schedule a call")
+- 7-8: Specific with details ("Send the ROI calculator by Thursday COB")
+- 9-10: Specific + contextualized + reasoning ("Send the updated ROI calculator by Thursday that addresses their Q4 budget freeze concern - reference the 18-month payback period Sarah mentioned in the June call")
+
+### 5. Executive Tone (Appropriate for VP/C-Level)
+- 1-3: Too technical, too casual, or inappropriate
+- 4-6: Acceptable but inconsistent tone
+- 7-8: Professional, business-focused throughout
+- 9-10: Crisp, confident, focuses on business impact and decisions (not activities)
+
+### 6. Completeness (Covers All Relevant Dimensions)
+For Opportunities: Deal health, stakeholder coverage, competitive position, timeline risk, pipeline impact, specific next steps
+For Accounts: Revenue trend, pipeline coverage, support health, engagement recency, key contacts, risks, expansion opportunities
+
+## OUTPUT FORMAT
+
+Always structure your response as:
+
+```
+SELF-EVALUATION (for transparency):
+- Actionable Insights: [score]/10
+- Data Grounding: [score]/10
+- Risk Identification: [score]/10
+- Specificity: [score]/10
+- Executive Tone: [score]/10
+- Completeness: [score]/10
+Average: [avg]/10
+
+---
+
+[Your analysis in clean markdown format]
+```
+
+## WHAT TO AVOID
+
+- Never say "Based on the data provided" or "According to the information" - just analyze
+- Never use placeholder text like "[Insert X here]" or "TBD"
+- Never give generic advice that could apply to any deal/account
+- Never just list data without interpretation
+- Never skip the self-evaluation step
+```
+
+### User Prompt Template
+
+The user prompt is constructed dynamically based on:
+- First message vs. follow-up
+- Root object type (determines which exemplar to include)
+- Actual data from sample records
+
+#### First Message Template
+
+```
+## WHAT I'M BUILDING
+
+{businessContext}
+
+## EXEMPLAR: What Excellent Output Looks Like
+
+{relevantExemplar}
+
+Note: This exemplar uses different data. Your analysis should follow the same STRUCTURE and QUALITY, but use the actual data provided below.
+
+## ACTUAL DATA TO ANALYZE
+
+### Sample Records ({recordCount} {rootObject} records)
+
+{formattedSampleData}
+
+### Related Data
+
+{formattedChildData}
+
+---
+
+Generate an analysis following the exemplar's structure and quality level. Remember to self-evaluate against the rubric before presenting.
+```
+
+#### Follow-Up Message Template
+
+```
+## USER FEEDBACK
+
+{userMessage}
+
+## PREVIOUS ANALYSIS
+
+{previousDraft}
+
+---
+
+Revise your analysis based on the feedback above. Self-evaluate the revision against the rubric before presenting.
+```
+
+### Data Formatting Guidelines
+
+When formatting sample data for the prompt, follow these rules:
+
+#### For Root Object Records
+```
+### Record 1: {Name or Primary Identifier}
+- **Key Fields:** {Amount}, {Stage}, {CloseDate}, etc.
+- **Status:** {relevant status fields}
+- **Owner:** {OwnerName}
+- **Last Modified:** {LastModifiedDate}
+
+### Record 2: {Name or Primary Identifier}
+...
+```
+
+#### For Child Objects
+```
+### Related {ChildObjectLabel} ({count} records)
+
+| {Key Field 1} | {Key Field 2} | {Key Field 3} |
+|---------------|---------------|---------------|
+| {value} | {value} | {value} |
+...
+```
+
+### Exemplar Selection Logic
+
+```javascript
+// In the controller/helper, select exemplar based on root object:
+function selectExemplar(rootObject) {
+    switch(rootObject) {
+        case 'Opportunity':
+            return EXEMPLARS.DEAL_COACH;
+        case 'Account':
+            return EXEMPLARS.ACCOUNT_360;
+        case 'Case':
+            return EXEMPLARS.CASE_SUMMARY; // TODO: Create this exemplar
+        case 'Lead':
+            return EXEMPLARS.LEAD_SCORING; // TODO: Create this exemplar
+        default:
+            return EXEMPLARS.ACCOUNT_360; // Default to comprehensive view
+    }
+}
+```
+
+### Implementation Notes for Sonnet
+
+**Task 7 (Static Resource):** Store the exemplars in `PromptExemplars.resource` as JSON:
+```json
+{
+    "DEAL_COACH": "## Acme Corp - $400K Enterprise Deal\n\n### Deal Health Score...",
+    "ACCOUNT_360": "## TechCorp Industries - Account Health Report\n\n### Overall Health...",
+    "SYSTEM_PROMPT": "[The full system prompt template above]"
+}
+```
+
+**Task 8 (Chat Method):** The `chat` method should:
+1. Load the session and previous conversation
+2. Load the system prompt from static resource
+3. Select the right exemplar based on root object
+4. Format the sample data from the session
+5. Construct user prompt (first message vs follow-up)
+6. Call `AIServiceClient.callAI(systemPrompt, userPrompt, 4096, 1.0)`
+7. Store the response in session, update conversation history
+8. Return response to LWC
+
+### Token Budget Estimation
+
+| Component | Estimated Tokens |
+|-----------|------------------|
+| System prompt (rubric, rules) | ~1,200 |
+| Exemplar | ~800 |
+| Sample data (5 records) | ~1,500 |
+| Child data | ~500 |
+| Conversation history (3 turns) | ~2,000 |
+| **Total Input** | **~6,000** |
+| Response (with evaluation) | ~2,000 |
+| **Total per call** | **~8,000** |
+
+This is well within Claude's context window. For very large accounts with many child records, consider summarizing rather than including raw data.
+
+---
+
 ## Session State Management
 
 Option A: New custom object `PF_Builder_Session__c`
@@ -469,9 +679,17 @@ Option B: Reuse existing `PF_Run__c` with new fields
 - [x] Created feature branch: `feature/interactive-prompt-builder`
 - [x] Created this document with architecture, exemplars, rubric
 - [x] Created task queue with model assignments
-- [ ] Phase 1: Discovery & Data Fetch (Tasks 1-5)
+- [x] Phase 1: Discovery & Data Fetch (Tasks 1-5) - DONE by Sonnet
 - [ ] Phase 2: Chat Interface + LLM (Tasks 6-11)
 - [ ] Phase 3: Deploy (Tasks 12-15)
+
+### 2025-01-22 - Task 6: Self-Evaluating Prompt Design (Opus)
+- [x] Designed system prompt with quality rubric (6 dimensions, 1-10 scoring)
+- [x] Designed user prompt templates (first message vs follow-up)
+- [x] Defined data formatting guidelines for sample records
+- [x] Defined exemplar selection logic based on root object
+- [x] Documented implementation notes for Sonnet (Tasks 7-8)
+- [x] Estimated token budget (~8,000 tokens per call)
 
 ---
 
