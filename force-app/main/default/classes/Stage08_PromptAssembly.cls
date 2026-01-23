@@ -53,6 +53,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             String businessContext = (String) inputs.get('businessContext');
             String targetPersona = (String) inputs.get('targetPersona');
             Map<String, Object> selectedFieldsRaw = (Map<String, Object>) inputs.get('selectedFields');
+            Map<String, Object> selectedParentFieldsRaw = (Map<String, Object>) inputs.get('selectedParentFields');  // V2.2 Task 2.12
             List<Object> businessObjectivesRaw = (List<Object>) inputs.get('businessObjectives');
 
             // NEW: Extract Strategic Context from Stage 2
@@ -132,7 +133,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             Map<String, Object> promptConfig;
             if (useMetaPrompt) {
                 promptConfig = assembleMetaPromptConfiguration(
-                    aiInstructions, groundingRules, rootObject, selectedFieldsRaw);
+                    aiInstructions, groundingRules, rootObject, selectedFieldsRaw, selectedParentFieldsRaw);
             } else {
                 promptConfig = assemblePromptConfiguration(
                     aiInstructions, htmlTemplate, groundingRules, rootObject);
@@ -795,16 +796,18 @@ public without sharing class Stage08_PromptAssembly implements IStage {
      * @param groundingRules Grounding rules for AI behavior
      * @param rootObject The root Salesforce object
      * @param selectedFieldsRaw Map of object to field list
+     * @param selectedParentFieldsRaw V2.2: Map of object to parent field list
      * @return Map containing the complete prompt configuration
      */
     private Map<String, Object> assembleMetaPromptConfiguration(
             String aiInstructions,
             String groundingRules,
             String rootObject,
-            Map<String, Object> selectedFieldsRaw) {
+            Map<String, Object> selectedFieldsRaw,
+            Map<String, Object> selectedParentFieldsRaw) {
 
         // Build merge field reference section
-        String mergeFieldReference = buildMergeFieldReference(rootObject, selectedFieldsRaw);
+        String mergeFieldReference = buildMergeFieldReference(rootObject, selectedFieldsRaw, selectedParentFieldsRaw);
 
         // Build complete meta-prompt:
         // 1. Meta-prompt (6 sections with role, data, principles, toolkit, rules, directive)
@@ -832,8 +835,9 @@ public without sharing class Stage08_PromptAssembly implements IStage {
     /**
      * @description Builds merge field reference for meta-prompt mode
      * Shows LLM what fields are available and how to reference them
+     * V2.2 Task 2.12: Added parent field support
      */
-    private String buildMergeFieldReference(String rootObject, Map<String, Object> selectedFieldsRaw) {
+    private String buildMergeFieldReference(String rootObject, Map<String, Object> selectedFieldsRaw, Map<String, Object> selectedParentFieldsRaw) {
         String ref = '=== AVAILABLE MERGE FIELDS ===\n\n';
         ref += 'Use these merge fields to reference Salesforce data in your HTML output.\n';
         ref += 'GPTfy will substitute these with actual values at runtime.\n\n';
@@ -844,6 +848,19 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             List<Object> fields = (List<Object>) selectedFieldsRaw.get(rootObject);
             for (Object field : fields) {
                 ref += '  {{{' + String.valueOf(field) + '}}}\n';
+            }
+            ref += '\n';
+        }
+
+        // V2.2 Task 2.12: Parent fields for root object
+        if (selectedParentFieldsRaw != null && selectedParentFieldsRaw.containsKey(rootObject)) {
+            ref += rootObject.toUpperCase() + ' (Parent Fields via Lookup) - use {{{Relationship.Field}}}:\n';
+            List<Object> parentFields = (List<Object>) selectedParentFieldsRaw.get(rootObject);
+            for (Object parentFieldPath : parentFields) {
+                // Convert "OwnerId.Name" to "Owner.Name" (remove "Id" suffix from lookup field)
+                String pathStr = String.valueOf(parentFieldPath);
+                String mergePath = pathStr.replace('Id.', '.');
+                ref += '  {{{' + mergePath + '}}}  (from ' + pathStr + ')\n';
             }
             ref += '\n';
         }
@@ -861,6 +878,18 @@ public without sharing class Stage08_PromptAssembly implements IStage {
                 }
                 ref += '  End iteration: {{/' + relationshipName + '}}\n';
                 ref += '  Empty check: {{^' + relationshipName + '}}No ' + objName + ' records{{/' + relationshipName + '}}\n';
+
+                // V2.2 Task 2.12: Parent fields for child objects
+                if (selectedParentFieldsRaw != null && selectedParentFieldsRaw.containsKey(objName)) {
+                    ref += '  Parent fields (within {{#' + relationshipName + '}} loop):\n';
+                    List<Object> parentFields = (List<Object>) selectedParentFieldsRaw.get(objName);
+                    for (Object parentFieldPath : parentFields) {
+                        String pathStr = String.valueOf(parentFieldPath);
+                        String mergePath = pathStr.replace('Id.', '.');
+                        ref += '    {{{' + mergePath + '}}}  (from ' + pathStr + ')\n';
+                    }
+                }
+
                 ref += '\n';
             }
         }
@@ -1064,11 +1093,15 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             System.debug('Stage8: Skipped objects without valid relationships: ' + skippedObjects);
         }
 
+        // V2.2 Task 2.12: Extract selectedParentFields from inputs
+        Map<String, Object> selectedParentFieldsRaw = (Map<String, Object>) inputs.get('selectedParentFields');
+
         return new Map<String, Object>{
             'name' => promptName + ' DCM',
             'rootObject' => rootObject,
             'childObjects' => childObjects,
-            'fieldsByObject' => fieldsByObject
+            'fieldsByObject' => fieldsByObject,
+            'selectedParentFields' => selectedParentFieldsRaw  // V2.2: Pass to Stage 9
         };
     }
 
@@ -1239,8 +1272,9 @@ public without sharing class Stage08_PromptAssembly implements IStage {
         if (useMetaPrompt) {
             // V2.0: Full meta-prompt with merge field reference
             Map<String, Object> selectedFieldsRaw = (Map<String, Object>) inputs.get('selectedFields');
+            Map<String, Object> selectedParentFieldsRaw = (Map<String, Object>) inputs.get('selectedParentFields');  // V2.2
             finalPromptCommand = aiInstructions + '\n\n' + groundingRules + '\n\n' +
-                                buildMergeFieldReference(rootObject, selectedFieldsRaw);
+                                buildMergeFieldReference(rootObject, selectedFieldsRaw, selectedParentFieldsRaw);
             // Empty template - LLM generates the HTML
             finalHtmlTemplate = '';
         } else {
