@@ -5,6 +5,16 @@ All architecture, decisions, tasks, and progress tracked here.
 
 ---
 
+## CURRENTLY ACTIVE WORK (Check Before Starting)
+
+| Model | Task | File Being Modified | Started |
+|-------|------|---------------------|---------|
+| - | - | - | - |
+
+**Status:** V2.1 COMPLETE - All Phase 1A, 1B, 1C tasks done. Ready for V2.2.
+
+---
+
 ## Release Strategy
 
 ### Current Branch: `feature/builder-improvements`
@@ -21,7 +31,7 @@ All architecture, decisions, tasks, and progress tracked here.
 |---------|--------|--------|-------------|
 | V1.1 | main | ✅ Released | Builder prompt injection (Run ID a0gQH000005GHurYAG) |
 | V2.0 | feature/builder-improvements | ✅ Complete | Meta-prompt architecture, LLM metadata, field validation |
-| V2.1 | feature/v2.1-enhancements | 🔴 Not Started | Visual diversity, parent traversals, builder library |
+| V2.1 | feature/v2.1-enhancements | ✅ Complete | Visual diversity, parent traversals, builder library |
 | V2.2 | TBD | 📋 Planned | Field density profiling, bidirectional traversal |
 | V2.3 | TBD | 📋 Planned | Knowledge base expansion, smart builder selection |
 
@@ -97,27 +107,27 @@ sf project deploy start -o agentictso -d force-app/main/default/classes/ClassNam
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 1.1 | Update `buildUIToolkitSection()` with real HTML snippets | Sonnet | not_started | Add actual HTML patterns, not just component names |
-| 1.2 | Add visual diversity requirement to directive section | Sonnet | not_started | "MUST use colored alerts, stats strip, etc." |
-| 1.3 | Create UI Component builders in Salesforce org | Sonnet | not_started | Stats Strip, Health Score, Insight Card, Recommendation Card, Alert variants |
-| 1.4 | Test visual diversity in output | Sonnet | not_started | Verify colored components appear |
+| 1.1 | Update `buildUIToolkitSection()` with real HTML snippets | Sonnet | done | Added actual HTML patterns from UI_TOOLKIT.md (commit bd06599) |
+| 1.2 | Add visual diversity requirement to directive section | Sonnet | done | Added VISUAL DIVERSITY REQUIREMENT section (commit bd06599) |
+| 1.3 | Create UI Component builders in Salesforce org | Sonnet | done | 12 UI Component builders already deployed |
+| 1.4 | Test visual diversity in output | Manual | done | Verified: Stats Strip, Insight Cards, Recommendation Cards with colors |
 
 ### Phase 1B: Personalization Fixes
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 1.5 | Add "use names not titles" instruction to meta-prompt | Sonnet | not_started | "Say 'Sarah Johnson' not 'the CFO'" |
-| 1.6 | Document parent traversal catalog (see below) | Opus | not_started | Create reference list of 20 common traversals |
-| 1.7 | Store traversal catalog as Static Resource | Sonnet | not_started | JSON file for LLM/system reference |
-| 1.8 | Update Stage 5 to suggest parent fields | Opus | not_started | When OCR selected, suggest Contact.Name |
+| 1.5 | Add "use names not titles" instruction to meta-prompt | Sonnet | done | Added PERSONALIZATION REQUIREMENT section (commit bd06599) |
+| 1.6 | Add remaining traversal builders to insert script | Opus | done | Expanded from 8 to 25 traversals in insert_builder_prompts.apex |
+| 1.7 | Deploy traversal builders to org | Sonnet | done | 25 traversal builders confirmed in org |
+| 1.8 | Update Stage 5 to suggest parent fields | Opus | done | Deployed: loads traversals, adds to LLM prompt, parses selectedParentFields |
 
 ### Phase 1C: Output Quality
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 1.9 | Fix single-line HTML requirement | Sonnet | not_started | LLM output has newlines, GPTfy needs single-line |
-| 1.10 | Remove emojis from builder prompts | Sonnet | not_started | Clean up Evidence Binding Rules (✅ ❌) |
-| 1.11 | Test multi-sample flow with 3 records | Opus | not_started | Verify pattern detection works |
+| 1.9 | Fix single-line HTML requirement | Sonnet | done | Strengthened instruction with ENFORCEMENT section (commit 770aa3f) |
+| 1.10 | Remove emojis from builder prompts | Sonnet | done | Removed ✅ ❌ from Evidence Binding Rules v2 (commit 770aa3f) |
+| 1.11 | Test multi-sample flow with 3 records | Manual | done | Tested via LWC UI - output verified with personalization, UI components, evidence citations |
 
 ---
 
@@ -392,6 +402,14 @@ Stage 5: Field Selection (Enhanced)
 | 2026-01-23 | Task 4.2: V1.1 vs V2.0 comparison | Opus | Documented quality improvements across all aspects |
 | 2026-01-23 | Task 4.3: V2.1 priorities | Opus | Identified visual diversity, parent traversal, builder library expansion |
 | 2026-01-23 | V2.1 Planning | Opus | Documented traversal catalog, builder library, phased task queue |
+| 2026-01-23 | Task 1.6: Traversal builders | Opus | Added 17 new traversals to insert_builder_prompts.apex (now 25 total, 50 builders overall) |
+| 2026-01-23 | Task 1.8: Parent field suggestions | Opus | Updated Stage 5 to load traversal builders and suggest parent fields to LLM |
+| 2026-01-23 | Tasks 1.1, 1.2, 1.5: Visual diversity & personalization | Sonnet | Added HTML snippets to UI toolkit, visual diversity requirement, name personalization |
+| 2026-01-23 | Tasks 1.3, 1.7: Builder deployment | Sonnet | Verified 59 active builders deployed (12 UI Components, 25 Traversals) |
+| 2026-01-23 | Tasks 1.9, 1.10: Output quality fixes | Sonnet | Strengthened single-line HTML instruction, removed emojis from Evidence builder |
+| 2026-01-23 | Task 1.8: Stage 5 parent traversals | Opus | Wired traversal builders into field selection: loadTraversalsForObjects(), prompt section, selectedParentFields output |
+| 2026-01-23 | Tasks 1.4, 1.11: V2.1 End-to-End Testing | Manual | V2.1 fully validated - Stats Strip, Insight Cards, Recommendation Cards, personalization (names not titles), evidence citations, single-line HTML |
+| 2026-01-23 | Bug fix: Invalid merge field references | Opus | Fixed hardcoded Tasks example in buildMergeFieldReference(); now dynamic based on selected objects. Added CRITICAL RESTRICTION to prevent LLM from inventing merge fields |
 
 ---
 

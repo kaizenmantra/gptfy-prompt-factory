@@ -39,8 +39,7 @@ try {
 if (runId != null) {
     PF_Run__c run = [
         SELECT Id, Name, Status__c, Current_Stage__c,
-               Sample_Record_Id__c, Sample_Record_Ids__c,
-               Root_Object__c, Target_Persona__c
+               Sample_Record_Id__c, Root_Object__c
         FROM PF_Run__c
         WHERE Id = :runId
     ];
@@ -51,16 +50,8 @@ if (runId != null) {
     System.debug('Status: ' + run.Status__c);
     System.debug('Current Stage: ' + run.Current_Stage__c);
     System.debug('Sample Record ID (primary): ' + run.Sample_Record_Id__c);
-    System.debug('Sample Record IDs (all): ' + run.Sample_Record_Ids__c);
     System.debug('Root Object: ' + run.Root_Object__c);
-    System.debug('Target Persona: ' + run.Target_Persona__c);
-
-    // Check that multi-sample IDs were stored
-    if (run.Sample_Record_Ids__c != null && run.Sample_Record_Ids__c.contains(',')) {
-        System.debug('\n✅ Multi-sample IDs stored correctly');
-    } else {
-        System.debug('\n❌ WARNING: Multi-sample IDs not stored correctly');
-    }
+    System.debug('\nNOTE: Multi-sample IDs parsing will be checked in PromptFactoryController');
 }
 
 System.debug('\n===== TEST INITIATED =====');

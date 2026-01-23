@@ -9,10 +9,11 @@
  * with RecordType.DeveloperName = 'Builder'. Builder prompts are queried by
  * Category__c field and injected into the final prompt:
  *
- *   - Quality Rules   (Category__c = 'Quality Rule')
- *   - Patterns        (Category__c = 'Pattern')
- *   - UI Components   (Category__c = 'UI Component')
+ *   - Quality Rules     (Category__c = 'Quality Rule')
+ *   - Patterns          (Category__c = 'Pattern')
+ *   - UI Components     (Category__c = 'UI Component')
  *   - Context Templates (Category__c = 'Context Template')
+ *   - Traversals        (Category__c = 'Traversal') - V2.1: Parent field mappings
  *
  * Requirements for Builder Prompts to be injected:
  *   1. RecordType must be 'Builder' (not 'Execution')
@@ -678,6 +679,54 @@ public without sharing class Stage08_PromptAssembly implements IStage {
     }
 
     /**
+     * @description Load active Traversals from Builder Prompts (V2.1)
+     * Traversals define parent field mappings (e.g., ContactId → Contact.Name)
+     * @param runId PF_Run__c ID for logging
+     * @param rootObject The root object to filter traversals (optional)
+     * @return Combined traversal definitions as JSON array
+     */
+    private String loadTraversals(Id runId, String rootObject) {
+        try {
+            PromptFactoryLogger.info(runId, 8, '🔍 loadTraversals() called for ' + rootObject);
+
+            Id builderRtId = Schema.SObjectType.ccai__AI_Prompt__c.getRecordTypeInfosByDeveloperName().get('Builder').getRecordTypeId();
+
+            List<ccai__AI_Prompt__c> traversals = [
+                SELECT Id, Name, ccai__Prompt_Command__c, ccai__Object__c
+                FROM ccai__AI_Prompt__c
+                WHERE RecordTypeId = :builderRtId
+                  AND Category__c = 'Traversal'
+                  AND ccai__Status__c = 'Active'
+                  AND (ccai__Object__c = :rootObject OR ccai__Object__c = null)
+                ORDER BY Name
+            ];
+
+            PromptFactoryLogger.info(runId, 8, '📊 Query returned: ' + traversals.size() + ' Traversals');
+
+            if (traversals.isEmpty()) {
+                PromptFactoryLogger.warning(runId, 8, '⚠️ No Traversals found for ' + rootObject);
+                return '[]';
+            }
+
+            // Build JSON array of traversal definitions
+            List<String> traversalJsons = new List<String>();
+            for (ccai__AI_Prompt__c traversal : traversals) {
+                PromptFactoryLogger.info(runId, 8, '✅ Loading: ' + traversal.Name);
+                traversalJsons.add(traversal.ccai__Prompt_Command__c);
+            }
+
+            PromptFactoryLogger.info(runId, 8, '✅ Loaded ' + traversals.size() + ' Traversals');
+            return '[' + String.join(traversalJsons, ',') + ']';
+
+        } catch (Exception e) {
+            String errorMsg = 'Failed to load Traversals: ' + e.getMessage() + ' | Stack: ' + e.getStackTraceString();
+            System.debug(LoggingLevel.ERROR, errorMsg);
+            // Return empty array on error (non-critical)
+            return '[]';
+        }
+    }
+
+    /**
      * @description Builds grounding rules for consistent AI behavior
      * Simplified since main rules are now in AI instructions
      * @param rootObject The root Salesforce object
@@ -816,8 +865,35 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             }
         }
 
+        // Generate dynamic example based on actual selected objects
         ref += 'EXAMPLE USAGE:\n';
-        ref += '<div style="..."><h1>{{{Name}}}</h1>{{#Tasks}}<div>{{{Subject}}} - {{{Status}}}</div>{{/Tasks}}{{^Tasks}}<div>No tasks</div>{{/Tasks}}</div>\n\n';
+        ref += '<div style="..."><h1>{{{Name}}}</h1>';
+
+        // Use first child object for example, if available
+        String exampleChild = null;
+        String exampleField = null;
+        for (String objName : selectedFieldsRaw.keySet()) {
+            if (objName != rootObject) {
+                exampleChild = getRelationshipNameForObject(objName, rootObject);
+                List<Object> fields = (List<Object>) selectedFieldsRaw.get(objName);
+                if (fields != null && !fields.isEmpty()) {
+                    exampleField = String.valueOf(fields[0]);
+                }
+                break;
+            }
+        }
+
+        if (String.isNotBlank(exampleChild) && String.isNotBlank(exampleField)) {
+            ref += '{{#' + exampleChild + '}}<div>{{{' + exampleField + '}}}</div>{{/' + exampleChild + '}}';
+            ref += '{{^' + exampleChild + '}}<div>No records</div>{{/' + exampleChild + '}}';
+        }
+        ref += '</div>\n\n';
+
+        // CRITICAL: Enforce that ONLY listed merge fields can be used
+        ref += 'CRITICAL RESTRICTION:\n';
+        ref += 'You may ONLY use merge fields that are explicitly listed above.\n';
+        ref += 'Do NOT invent or guess merge fields. Do NOT use relationships not shown above.\n';
+        ref += 'If a field or relationship is not listed, you cannot use it.\n\n';
 
         return ref;
     }
@@ -1373,27 +1449,56 @@ public without sharing class Stage08_PromptAssembly implements IStage {
 
     /**
      * @description Section 4: UI TOOLKIT - Available components
+     * V2.1: Now queries UI Component builders for actual HTML snippets
      */
     private String buildUIToolkitSection() {
         String section = '=== UI TOOLKIT ===\n\n';
         section += 'You have these components available. Use them strategically.\n\n';
 
-        section += 'LAYOUT COMPONENTS:\n';
-        section += '- Dashboard Container: Full-width responsive layout\n';
-        section += '- Section Card: White card with header and content area\n';
-        section += '- Stats Strip: Horizontal metrics display (3-5 key numbers)\n';
-        section += '- Two-Column Grid: Side-by-side content areas\n\n';
+        // V2.1: Query UI Component builders for actual HTML templates
+        List<ccai__AI_Prompt__c> uiComponents = queryUIComponentBuilders();
 
-        section += 'INSIGHT COMPONENTS:\n';
-        section += '- Alert Box: Highlight critical information (error/warning/info)\n';
-        section += '- Insight Card: Analysis finding with evidence citation\n';
-        section += '- Recommendation Card: Action item with rationale\n';
-        section += '- Health Score: Visual indicator (0-100 with color coding)\n\n';
+        if (!uiComponents.isEmpty()) {
+            // Use dynamic components from database
+            section += 'AVAILABLE COMPONENTS (use these HTML patterns):\n\n';
+            for (ccai__AI_Prompt__c component : uiComponents) {
+                section += '--- ' + component.Name + ' ---\n';
+                if (String.isNotBlank(component.ccai__Description__c)) {
+                    section += 'When to use: ' + component.ccai__Description__c + '\n';
+                }
+                section += 'HTML Pattern:\n';
+                section += component.ccai__Prompt_Command__c + '\n\n';
+            }
+        } else {
+            // Fallback to actual HTML patterns if no components in database
+            section += 'LAYOUT COMPONENTS:\n\n';
 
-        section += 'DATA COMPONENTS:\n';
-        section += '- Data Table: For listing related records (use sparingly!)\n';
-        section += '- Metric Tile: Single KPI with label and trend indicator\n';
-        section += '- Status Badge: Inline status indicator with semantic color\n\n';
+            section += '--- Stats Strip (use at top for key metrics) ---\n';
+            section += '<div style="display:flex;gap:16px;margin-bottom:20px;"><div style="flex:1;background:white;border-radius:6px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,0.1);"><div style="font-size:28px;font-weight:700;color:#0176D3;margin-bottom:4px;">{{{Value}}}</div><div style="font-size:13px;color:#706E6B;">Label</div></div></div>\n\n';
+
+            section += '--- Section Card ---\n';
+            section += '<div style="background:white;border-radius:8px;padding:20px;margin-bottom:16px;box-shadow:0 2px 4px rgba(0,0,0,0.1);"><h2 style="margin:0 0 16px 0;font-size:18px;font-weight:600;color:#181818;">Section Title</h2><!-- Content here --></div>\n\n';
+
+            section += 'INSIGHT COMPONENTS:\n\n';
+
+            section += '--- Critical Alert (RED) ---\n';
+            section += '<div style="background:#FED7D7;border-left:4px solid #BA0517;padding:12px 16px;border-radius:4px;margin-bottom:12px;"><div style="font-weight:600;color:#BA0517;margin-bottom:4px;">Critical Issue</div><div style="color:#54514C;">Description with evidence</div></div>\n\n';
+
+            section += '--- Warning Alert (ORANGE) ---\n';
+            section += '<div style="background:#FEF3CD;border-left:4px solid #DD7A01;padding:12px 16px;border-radius:4px;margin-bottom:12px;"><div style="font-weight:600;color:#DD7A01;margin-bottom:4px;">Warning</div><div style="color:#54514C;">Description with evidence</div></div>\n\n';
+
+            section += '--- Info Alert (BLUE) ---\n';
+            section += '<div style="background:#D7E9FC;border-left:4px solid #0176D3;padding:12px 16px;border-radius:4px;margin-bottom:12px;"><div style="font-weight:600;color:#0176D3;margin-bottom:4px;">Information</div><div style="color:#54514C;">Description with evidence</div></div>\n\n';
+
+            section += '--- Insight Card ---\n';
+            section += '<div style="background:white;border-radius:6px;padding:16px;margin-bottom:12px;border:1px solid #DDDBDA;"><div style="font-weight:600;color:#181818;margin-bottom:8px;">Finding Title</div><div style="color:#706E6B;margin-bottom:12px;line-height:1.5;">Analysis with evidence</div><div style="font-size:12px;color:#706E6B;"><strong>Evidence:</strong> specific data points</div></div>\n\n';
+
+            section += '--- Recommendation Card ---\n';
+            section += '<div style="background:#FFFFFF;border-left:4px solid #2E844A;border-radius:6px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.1);"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><div style="font-weight:600;color:#181818;">Action</div><div style="background:#DD7A01;color:white;padding:4px 12px;border-radius:12px;font-size:11px;font-weight:600;">URGENT</div></div><div style="color:#706E6B;margin-bottom:12px;line-height:1.5;">Specific action description</div><div style="font-size:12px;color:#706E6B;"><strong>Why:</strong> Rationale</div></div>\n\n';
+
+            section += '--- Health Score ---\n';
+            section += '<div style="display:flex;align-items:center;gap:12px;"><div style="font-size:36px;font-weight:700;color:#2E844A;">85</div><div><div style="font-size:14px;font-weight:600;color:#181818;">Health Score</div><div style="width:200px;height:8px;background:#E0E0E0;border-radius:4px;overflow:hidden;"><div style="width:85%;height:100%;background:#2E844A;"></div></div></div></div>\n\n';
+        }
 
         section += 'COMPONENT USAGE RULES:\n';
         section += '- Lead with insights (Alert Boxes, Insight Cards) not tables\n';
@@ -1405,17 +1510,45 @@ public without sharing class Stage08_PromptAssembly implements IStage {
     }
 
     /**
+     * @description Query UI Component builders from database
+     * @return List of active UI Component builder prompts with HTML templates
+     */
+    private List<ccai__AI_Prompt__c> queryUIComponentBuilders() {
+        try {
+            Id builderRtId = Schema.SObjectType.ccai__AI_Prompt__c.getRecordTypeInfosByDeveloperName().get('Builder').getRecordTypeId();
+
+            return [
+                SELECT Id, Name, ccai__Prompt_Command__c, ccai__Description__c
+                FROM ccai__AI_Prompt__c
+                WHERE RecordTypeId = :builderRtId
+                  AND Category__c = 'UI Component'
+                  AND ccai__Status__c = 'Active'
+                ORDER BY Name
+                LIMIT 20
+            ];
+        } catch (Exception e) {
+            System.debug(LoggingLevel.WARN, 'Failed to query UI Component builders: ' + e.getMessage());
+            return new List<ccai__AI_Prompt__c>();
+        }
+    }
+
+    /**
      * @description Section 5: OUTPUT RULES - GPTfy compliance
      */
     private String buildOutputRulesSection() {
         String section = '=== OUTPUT RULES ===\n\n';
         section += 'CRITICAL GPTfy REQUIREMENTS:\n';
-        section += '1. Single line HTML - no newlines\n';
+        section += '1. **SINGLE-LINE HTML ONLY** - Your ENTIRE output must be ONE continuous line with NO newlines, line breaks, or \\n characters. Compress all HTML into a single line.\n';
         section += '2. Inline styles only - no CSS classes or style blocks\n';
         section += '3. No scripts or event handlers\n';
         section += '4. Start with <div style="..." and end with </div>\n';
         section += '5. No emojis or special characters\n';
         section += '6. No placeholders, TBD, TODO markers\n\n';
+        section += 'SINGLE-LINE HTML ENFORCEMENT:\n';
+        section += '- Remove ALL newlines and line breaks from your HTML\n';
+        section += '- Use single spaces between tags: </div><div> NOT </div>\\n<div>\n';
+        section += '- Do NOT format for readability - format for GPTfy compliance\n';
+        section += '- Example: <div style="padding:20px;"><h2>Title</h2><p>Content</p></div>\n\n';
 
         section += 'MERGE FIELD SYNTAX:\n';
         section += '- Field values: {{{FieldName}}}\n';
@@ -1459,14 +1592,31 @@ public without sharing class Stage08_PromptAssembly implements IStage {
 
         section += '4. SUPPORTING DATA (if warranted)\n';
         section += '   - Tables for detailed records ONLY if adds value\n';
+        section += '   - ONLY use child objects listed in AVAILABLE MERGE FIELDS section\n';
+        section += '   - Do NOT create tables for objects not in the merge field reference\n';
         section += '   - Keep tables compact (5-7 rows max)\n';
         section += '   - Add context paragraph before each table\n\n';
+
+        section += 'VISUAL DIVERSITY REQUIREMENT:\n';
+        section += '- MUST use colored components (red/orange/blue alerts, colored borders)\n';
+        section += '- MUST use Stats Strip at the top for key metrics\n';
+        section += '- MUST vary component types (mix alerts, insight cards, recommendation cards)\n';
+        section += '- Avoid repetitive layouts - use visual hierarchy\n\n';
+
+        section += 'PERSONALIZATION REQUIREMENT:\n';
+        section += '- Always use actual names, not titles or roles\n';
+        section += '- Say "Sarah Johnson" not "the CFO"\n';
+        section += '- Say "John Smith at Acme Corp" not "the customer"\n';
+        section += '- Use merge fields: {{{Contact.Name}}}, {{{Account.Name}}}, {{{Owner.Name}}}\n\n';
 
         section += 'QUALITY CHECKLIST:\n';
         section += '[ ] Does the summary capture the key story?\n';
         section += '[ ] Does every insight cite specific evidence?\n';
         section += '[ ] Are recommendations specific and actionable?\n';
         section += '[ ] Is the layout insight-first, not table-first?\n';
+        section += '[ ] Did I use colored alerts and stats strip?\n';
+        section += '[ ] Did I use actual names instead of titles?\n';
+        section += '[ ] Did I ONLY use merge fields from the AVAILABLE MERGE FIELDS list?\n';
         section += '[ ] Would an executive find this valuable?\n\n';
 
         section += 'Generate the dashboard now. Output raw HTML only.\n\n';

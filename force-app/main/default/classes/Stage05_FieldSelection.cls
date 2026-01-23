@@ -10,6 +10,9 @@
  *
  * V2.0: Enhanced with multi-sample awareness - uses cross-sample data patterns from Stage 4
  * to inform field selection. Objects with consistent data across samples are prioritized.
+ *
+ * V2.1: Enhanced with parent traversal suggestions - loads Traversal builder prompts to suggest
+ * parent field candidates (e.g., Contact.Name via ContactId) for personalization.
  */
 public with sharing class Stage05_FieldSelection implements IStage {
 
@@ -20,6 +23,20 @@ public with sharing class Stage05_FieldSelection implements IStage {
 
     // Feature flag: Use LLM-based field selection (matches shell script behavior)
     private static final Boolean USE_LLM_SELECTION = true;
+
+    // V2.1: Inner class to hold parsed traversal data
+    public class TraversalDefinition {
+        public String sourceObject;
+        public String sourceField;
+        public String targetObject;
+        public Boolean isPolymorphic;
+        public List<TraversalField> fields;
+    }
+
+    public class TraversalField {
+        public String path;
+        public String alias;
+    }
 
     /**
      * @description Executes Stage 5: Field Selection
@@ -58,6 +75,7 @@ public with sharing class Stage05_FieldSelection implements IStage {
             }
 
             Map<String, List<String>> selectedFields;
+            Map<String, List<String>> selectedParentFields = new Map<String, List<String>>();
             List<String> validationWarnings = new List<String>();
 
             if (USE_LLM_SELECTION) {
@@ -70,11 +88,16 @@ public with sharing class Stage05_FieldSelection implements IStage {
                 Map<String, List<SchemaHelper.FieldMetadata>> fieldsByObject =
                     getFieldsForObjectsDeferred(objectsWithData, runId, result);
 
+                // Step 1.5 (V2.1): Load traversal builders for parent field suggestions
+                Map<String, List<TraversalDefinition>> traversalsByObject =
+                    loadTraversalsForObjects(objectsWithData, runId, result);
+
                 // Step 2: Use Claude to select relevant fields based on context
                 // V2.0: Pass multi-sample profile if available for enhanced field selection
+                // V2.1: Pass traversals for parent field suggestions
                 selectedFields = selectFieldsWithAIDeferred(
-                    fieldsByObject, rootObject, businessContext, targetPersona,
-                    multiSampleProfile, runId, result);
+                    fieldsByObject, traversalsByObject, rootObject, businessContext, targetPersona,
+                    multiSampleProfile, runId, result, selectedParentFields);
 
                 // Step 3: Validate AI-selected fields against schema
                 Map<String, List<String>> validatedFields = new Map<String, List<String>>();
@@ -212,6 +235,13 @@ public with sharing class Stage05_FieldSelection implements IStage {
                 result.outputs.put('sampleCount', multiSampleProfile.sampleCount);
             }
             result.outputs.put('sampleRecordIds', inputs.get('sampleRecordIds'));
+
+            // V2.1: Pass selected parent fields for DCM Builder
+            if (selectedParentFields != null && !selectedParentFields.isEmpty()) {
+                result.outputs.put('selectedParentFields', selectedParentFields);
+                result.queueInfo(runId, STAGE_NUMBER,
+                    'Parent fields selected: ' + JSON.serialize(selectedParentFields));
+            }
 
             result.markCompleted();
 
@@ -387,25 +417,29 @@ public with sharing class Stage05_FieldSelection implements IStage {
     /**
      * @description Calls Claude AI to select most relevant fields (deferred logging)
      * @param fieldsByObject Map of object to available fields
+     * @param traversalsByObject V2.1: Map of object to available parent traversals
      * @param rootObject The root Salesforce object
      * @param businessContext User-provided business requirements
      * @param targetPersona Target user persona
      * @param multiSampleProfile V2.0: Multi-sample profile from Stage 4 (can be null for single-sample)
      * @param runId Run ID for logging
      * @param result StageResult for deferred logging
+     * @param selectedParentFields V2.1: Output map to populate with selected parent fields
      * @return Map of object name to selected field list
      */
     private Map<String, List<String>> selectFieldsWithAIDeferred(
             Map<String, List<SchemaHelper.FieldMetadata>> fieldsByObject,
+            Map<String, List<TraversalDefinition>> traversalsByObject,
             String rootObject,
             String businessContext,
             String targetPersona,
             Stage04_DataProfiling.MultiSampleProfile multiSampleProfile,
             Id runId,
-            StageResult result) {
+            StageResult result,
+            Map<String, List<String>> selectedParentFields) {
 
-        // Build prompt for field selection (V2.0: includes multi-sample context if available)
-        String prompt = buildFieldSelectionPrompt(fieldsByObject, rootObject,
+        // Build prompt for field selection (V2.0: multi-sample, V2.1: traversals)
+        String prompt = buildFieldSelectionPrompt(fieldsByObject, traversalsByObject, rootObject,
                                                   businessContext, targetPersona, multiSampleProfile);
 
         result.queueDebug(runId, STAGE_NUMBER, 'Calling Claude AI for field selection');
@@ -444,6 +478,22 @@ public with sharing class Stage05_FieldSelection implements IStage {
             selectedFields.put(objectName, fieldList);
         }
 
+        // V2.1: Extract selected parent fields if present
+        if (parsedResponse.containsKey('selectedParentFields') && selectedParentFields != null) {
+            Object rawParentFields = parsedResponse.get('selectedParentFields');
+            if (rawParentFields instanceof Map<String, Object>) {
+                Map<String, Object> parentFieldsMap = (Map<String, Object>) rawParentFields;
+                for (String objectName : parentFieldsMap.keySet()) {
+                    List<Object> rawFieldList = (List<Object>) parentFieldsMap.get(objectName);
+                    List<String> fieldList = new List<String>();
+                    for (Object field : rawFieldList) {
+                        fieldList.add(String.valueOf(field));
+                    }
+                    selectedParentFields.put(objectName, fieldList);
+                }
+            }
+        }
+
         return selectedFields;
     }
 
@@ -452,7 +502,9 @@ public with sharing class Stage05_FieldSelection implements IStage {
      * Uses List<String> and String.join() to avoid stack overflow from string concatenation
      * CRITICAL: Emphasizes selecting meaningful data fields, not just ID fields
      * V2.0: Enhanced with multi-sample context to inform field selection priorities
+     * V2.1: Enhanced with parent traversal suggestions for personalization
      * @param fieldsByObject Map of object to available fields
+     * @param traversalsByObject V2.1: Map of object to available parent traversals
      * @param rootObject The root Salesforce object
      * @param businessContext User-provided business requirements
      * @param targetPersona Target user persona
@@ -461,6 +513,7 @@ public with sharing class Stage05_FieldSelection implements IStage {
      */
     private String buildFieldSelectionPrompt(
             Map<String, List<SchemaHelper.FieldMetadata>> fieldsByObject,
+            Map<String, List<TraversalDefinition>> traversalsByObject,
             String rootObject,
             String businessContext,
             String targetPersona,
@@ -518,6 +571,35 @@ public with sharing class Stage05_FieldSelection implements IStage {
             promptParts.add('- Focus on fields that can reveal the patterns detected above');
         }
 
+        // V2.1: Add parent traversal suggestions if available
+        if (traversalsByObject != null && !traversalsByObject.isEmpty()) {
+            promptParts.add('');
+            promptParts.add('=== PARENT FIELD TRAVERSALS (V2.1) ===');
+            promptParts.add('For personalization, you can select parent fields via lookup relationships.');
+            promptParts.add('These fields come from PARENT objects (e.g., Contact.Name via ContactId).');
+            promptParts.add('');
+            promptParts.add('AVAILABLE PARENT TRAVERSALS:');
+
+            for (String objectName : traversalsByObject.keySet()) {
+                List<TraversalDefinition> traversals = traversalsByObject.get(objectName);
+                for (TraversalDefinition trav : traversals) {
+                    String polymorphicNote = trav.isPolymorphic ? ' [POLYMORPHIC]' : '';
+                    promptParts.add('');
+                    promptParts.add('From ' + trav.sourceObject + '.' + trav.sourceField + ' -> ' + trav.targetObject + polymorphicNote);
+                    for (TraversalField tf : trav.fields) {
+                        promptParts.add('  - ' + trav.sourceField + '.' + tf.path + ' (alias: ' + tf.alias + ')');
+                    }
+                }
+            }
+
+            promptParts.add('');
+            promptParts.add('PARENT FIELD SELECTION GUIDANCE:');
+            promptParts.add('- Use Owner.Name to personalize "assigned to Sarah Johnson" instead of "the owner"');
+            promptParts.add('- Use Contact.Name for stakeholder names in OpportunityContactRole');
+            promptParts.add('- Use Account.Industry for business context');
+            promptParts.add('- Include 1-3 key parent fields per object for personalization');
+        }
+
         promptParts.add('');
         promptParts.add('AVAILABLE FIELDS BY OBJECT:');
 
@@ -573,6 +655,13 @@ public with sharing class Stage05_FieldSelection implements IStage {
         promptParts.add('    "' + rootObject + '": ["Id", "Name", "Field3", "Field4", ...],');
         promptParts.add('    "ChildObject": ["Id", "Name", "MeaningfulField1", "MeaningfulField2", ...]');
         promptParts.add('  },');
+        // V2.1: Add parent field selection format if traversals are available
+        if (traversalsByObject != null && !traversalsByObject.isEmpty()) {
+            promptParts.add('  "selectedParentFields": {');
+            promptParts.add('    "' + rootObject + '": ["OwnerId.Name", "OwnerId.Email"],');
+            promptParts.add('    "OpportunityContactRole": ["ContactId.Name", "ContactId.Title"]');
+            promptParts.add('  },');
+        }
         promptParts.add('  "reasoning": "Brief explanation of your field selection strategy"');
         promptParts.add('}');
 
@@ -754,6 +843,110 @@ public with sharing class Stage05_FieldSelection implements IStage {
         return objectPriorityFields.containsKey(objectName)
             ? objectPriorityFields.get(objectName)
             : new List<String>{'Name', 'Subject', 'Status', 'Type', 'Description'};
+    }
+
+    /**
+     * @description V2.1: Loads traversal builder definitions for the given objects
+     * Queries Builder prompts with Category__c = 'Traversal' that match the objects
+     * @param objectNames List of object API names to find traversals for
+     * @param runId Run ID for logging
+     * @param result StageResult for deferred logging
+     * @return Map of object name to list of traversal definitions
+     */
+    private Map<String, List<TraversalDefinition>> loadTraversalsForObjects(
+            List<String> objectNames, Id runId, StageResult result) {
+
+        Map<String, List<TraversalDefinition>> traversalsByObject = new Map<String, List<TraversalDefinition>>();
+
+        try {
+            // Get Builder RecordType ID
+            Id builderRtId = Schema.SObjectType.ccai__AI_Prompt__c.getRecordTypeInfosByDeveloperName()
+                .get('Builder').getRecordTypeId();
+
+            // Query traversals for the objects we're analyzing
+            Set<String> objectSet = new Set<String>(objectNames);
+            List<ccai__AI_Prompt__c> traversals = [
+                SELECT Id, Name, ccai__Prompt_Command__c, ccai__Object__c
+                FROM ccai__AI_Prompt__c
+                WHERE RecordTypeId = :builderRtId
+                  AND Category__c = 'Traversal'
+                  AND ccai__Status__c = 'Active'
+                  AND ccai__Object__c IN :objectSet
+                ORDER BY ccai__Object__c, Name
+            ];
+
+            result.queueDebug(runId, STAGE_NUMBER,
+                'Loaded ' + traversals.size() + ' traversal builders for ' + objectNames.size() + ' objects');
+
+            if (traversals.isEmpty()) {
+                return traversalsByObject;
+            }
+
+            // Parse traversal JSON and group by source object
+            for (ccai__AI_Prompt__c trav : traversals) {
+                try {
+                    String objectName = trav.ccai__Object__c;
+                    TraversalDefinition def = parseTraversalJson(trav.ccai__Prompt_Command__c);
+
+                    if (def != null) {
+                        if (!traversalsByObject.containsKey(objectName)) {
+                            traversalsByObject.put(objectName, new List<TraversalDefinition>());
+                        }
+                        traversalsByObject.get(objectName).add(def);
+                    }
+                } catch (Exception e) {
+                    result.queueWarning(runId, STAGE_NUMBER,
+                        'Failed to parse traversal ' + trav.Name + ': ' + e.getMessage());
+                }
+            }
+
+            // Log summary
+            Integer totalTraversals = 0;
+            for (List<TraversalDefinition> defs : traversalsByObject.values()) {
+                totalTraversals += defs.size();
+            }
+            result.queueInfo(runId, STAGE_NUMBER,
+                'Parsed ' + totalTraversals + ' traversals for ' + traversalsByObject.size() + ' objects');
+
+        } catch (Exception e) {
+            result.queueError(runId, STAGE_NUMBER,
+                'Failed to load traversals: ' + e.getMessage());
+        }
+
+        return traversalsByObject;
+    }
+
+    /**
+     * @description V2.1: Parses traversal JSON into TraversalDefinition
+     * @param jsonString The JSON string from ccai__Prompt_Command__c
+     * @return Parsed TraversalDefinition or null if invalid
+     */
+    private TraversalDefinition parseTraversalJson(String jsonString) {
+        if (String.isBlank(jsonString)) {
+            return null;
+        }
+
+        Map<String, Object> data = (Map<String, Object>) JSON.deserializeUntyped(jsonString);
+
+        TraversalDefinition def = new TraversalDefinition();
+        def.sourceObject = (String) data.get('sourceObject');
+        def.sourceField = (String) data.get('sourceField');
+        def.targetObject = (String) data.get('targetObject');
+        def.isPolymorphic = data.containsKey('polymorphic') && (Boolean) data.get('polymorphic');
+        def.fields = new List<TraversalField>();
+
+        List<Object> rawFields = (List<Object>) data.get('fields');
+        if (rawFields != null) {
+            for (Object rawField : rawFields) {
+                Map<String, Object> fieldData = (Map<String, Object>) rawField;
+                TraversalField tf = new TraversalField();
+                tf.path = (String) fieldData.get('path');
+                tf.alias = (String) fieldData.get('alias');
+                def.fields.add(tf);
+            }
+        }
+
+        return def;
     }
 
     /**
