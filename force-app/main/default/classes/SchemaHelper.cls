@@ -626,6 +626,76 @@ public with sharing class SchemaHelper {
     }
 
     /**
+     * @description Calculates field population density by querying sample records
+     * V2.2: Task 2.6 - Enables LLM to prioritize fields that actually contain data
+     * @param objectName The object to analyze
+     * @param sampleSize Number of records to query (default 100, max 500)
+     * @return Map of fieldName -> usagePercent (0-100)
+     */
+    public static Map<String, Integer> calculateFieldDensity(String objectName, Integer sampleSize) {
+        // Cap sample size to avoid governor limits
+        Integer maxSample = Math.min(sampleSize != null ? sampleSize : 100, 500);
+
+        // Get queryable fields
+        List<FieldMetadata> fields = getFields(objectName);
+
+        // Build field list (limit to 50 to avoid query length issues)
+        List<String> fieldNames = new List<String>();
+        for (FieldMetadata f : fields) {
+            if (fieldNames.size() >= 50) break;
+            if (f.isAccessible && isQueryableType(f.type)) {
+                fieldNames.add(f.name);
+            }
+        }
+
+        // Handle case where no queryable fields found
+        if (fieldNames.isEmpty()) {
+            return new Map<String, Integer>();
+        }
+
+        // Query records
+        String soql = 'SELECT ' + String.join(fieldNames, ', ') +
+                      ' FROM ' + objectName + ' LIMIT ' + maxSample;
+        List<SObject> records = Database.query(soql);
+
+        // Count non-null values
+        Map<String, Integer> counts = new Map<String, Integer>();
+        for (String fn : fieldNames) counts.put(fn, 0);
+
+        for (SObject rec : records) {
+            for (String fn : fieldNames) {
+                Object val = rec.get(fn);
+                if (val != null && String.valueOf(val) != '') {
+                    counts.put(fn, counts.get(fn) + 1);
+                }
+            }
+        }
+
+        // Convert to percentages
+        Map<String, Integer> density = new Map<String, Integer>();
+        Integer total = records.size();
+        if (total > 0) {
+            for (String fn : counts.keySet()) {
+                density.put(fn, (counts.get(fn) * 100) / total);
+            }
+        }
+
+        return density;
+    }
+
+    /**
+     * @description Checks if a field type is queryable in SOQL
+     * V2.2: Helper for calculateFieldDensity()
+     * @param fieldType The field type (e.g., STRING, CURRENCY, BASE64)
+     * @return true if the field type can be queried
+     */
+    private static Boolean isQueryableType(String fieldType) {
+        // Exclude blob, address, location compound types
+        Set<String> nonQueryable = new Set<String>{'BASE64', 'ADDRESS', 'LOCATION'};
+        return !nonQueryable.contains(fieldType.toUpperCase());
+    }
+
+    /**
      * @description Gets environment information for field selection thresholds
      * @return EnvironmentInfo with sandbox type and density threshold
      */

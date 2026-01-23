@@ -602,6 +602,7 @@ public with sharing class Stage05_FieldSelection implements IStage {
 
         promptParts.add('');
         promptParts.add('AVAILABLE FIELDS BY OBJECT:');
+        promptParts.add('(V2.2: Fields now include category, helpText when available, and relevance hints)');
 
         Integer maxFieldsPerObjectInPrompt = 30;
         for (String objectName : fieldsByObject.keySet()) {
@@ -609,14 +610,54 @@ public with sharing class Stage05_FieldSelection implements IStage {
             promptParts.add('Object: ' + objectName);
             List<SchemaHelper.FieldMetadata> fields = fieldsByObject.get(objectName);
 
-            Integer fieldCount = 0;
+            // V2.2: Group fields by category for easier selection
+            Map<String, List<SchemaHelper.FieldMetadata>> fieldsByCategory = new Map<String, List<SchemaHelper.FieldMetadata>>();
             for (SchemaHelper.FieldMetadata field : fields) {
-                if (fieldCount >= maxFieldsPerObjectInPrompt) {
-                    promptParts.add('- ... and ' + (fields.size() - maxFieldsPerObjectInPrompt) + ' more fields');
-                    break;
+                String cat = String.isNotBlank(field.category) ? field.category : 'other';
+                if (!fieldsByCategory.containsKey(cat)) {
+                    fieldsByCategory.put(cat, new List<SchemaHelper.FieldMetadata>());
                 }
-                promptParts.add('- ' + field.name + ' (' + field.label + ') [' + field.type + ']');
-                fieldCount++;
+                fieldsByCategory.get(cat).add(field);
+            }
+
+            // V2.2: Display fields grouped by category with relevance hints
+            Integer fieldCount = 0;
+            List<String> categoryOrder = new List<String>{'narrative', 'metric', 'classification', 'temporal', 'contact', 'flag', 'relationship', 'other'};
+
+            for (String category : categoryOrder) {
+                if (!fieldsByCategory.containsKey(category)) continue;
+                List<SchemaHelper.FieldMetadata> catFields = fieldsByCategory.get(category);
+                if (catFields.isEmpty()) continue;
+
+                // V2.2: Category header with relevance hint
+                String relevanceHint = getCategoryRelevanceHint(category);
+                promptParts.add('  [' + category.toUpperCase() + '] ' + relevanceHint);
+
+                for (SchemaHelper.FieldMetadata field : catFields) {
+                    if (fieldCount >= maxFieldsPerObjectInPrompt) {
+                        promptParts.add('    ... and more fields');
+                        break;
+                    }
+
+                    // V2.2: Build enhanced field description with helpText
+                    String fieldDesc = '    - ' + field.name + ' (' + field.label + ') [' + field.type + ']';
+
+                    // V2.2: Add helpText if available (truncate if too long)
+                    if (String.isNotBlank(field.helpText)) {
+                        String helpTextShort = field.helpText.length() > 60
+                            ? field.helpText.substring(0, 60) + '...'
+                            : field.helpText;
+                        fieldDesc += ' - "' + helpTextShort + '"';
+                    }
+
+                    // V2.2: Add usage density hint if available
+                    if (field.usagePercent != null && field.usagePercent > 0) {
+                        fieldDesc += ' [' + field.usagePercent + '% populated]';
+                    }
+
+                    promptParts.add(fieldDesc);
+                    fieldCount++;
+                }
             }
         }
 
@@ -633,14 +674,19 @@ public with sharing class Stage05_FieldSelection implements IStage {
         promptParts.add('- BAD: ["Id", "OpportunityId", "ContactId"] - This is useless for AI output');
         promptParts.add('- GOOD: ["Id", "Name", "Role", "IsPrimary", "ContactId"] - Has meaningful data');
         promptParts.add('');
-        promptParts.add('FIELD SELECTION PRIORITIES:');
-        promptParts.add('1. Name fields (Name, FirstName, LastName, Subject, Title) - HIGH PRIORITY');
-        promptParts.add('2. Status/Stage fields (Status, StageName, Priority) - HIGH PRIORITY');
-        promptParts.add('3. Amount/Currency fields (Amount, TotalPrice, AnnualRevenue) - HIGH PRIORITY');
-        promptParts.add('4. Date fields (CloseDate, CreatedDate, ActivityDate) - MEDIUM PRIORITY');
-        promptParts.add('5. Description/Text fields (Description, Comments, Body) - MEDIUM PRIORITY');
-        promptParts.add('6. Boolean flags (IsPrimary, IsClosed, IsWon) - MEDIUM PRIORITY');
-        promptParts.add('7. Lookup ID fields (AccountId, OwnerId) - LOW PRIORITY (include 1-2 key ones)');
+        promptParts.add('FIELD SELECTION PRIORITIES (V2.2 - Use Category Hints Above):');
+        promptParts.add('1. NARRATIVE category fields (Description, Comments, Body) - HIGH PRIORITY for insights');
+        promptParts.add('2. METRIC category fields (Amount, Quantity, Percent) - HIGH PRIORITY for KPIs');
+        promptParts.add('3. CLASSIFICATION category fields (Status, StageName, Type) - HIGH PRIORITY for segmentation');
+        promptParts.add('4. TEMPORAL category fields (CloseDate, CreatedDate) - MEDIUM PRIORITY for trends');
+        promptParts.add('5. CONTACT category fields (Email, Phone) - MEDIUM PRIORITY for personalization');
+        promptParts.add('6. FLAG category fields (IsWon, IsClosed) - MEDIUM PRIORITY for filtering');
+        promptParts.add('7. RELATIONSHIP category fields (AccountId, OwnerId) - LOW PRIORITY (use parent traversals instead)');
+        promptParts.add('');
+        promptParts.add('V2.2 TIPS:');
+        promptParts.add('- Fields with helpText (in quotes) have admin-defined descriptions - they are well-maintained');
+        promptParts.add('- Fields with [X% populated] have real data - prioritize highly populated fields');
+        promptParts.add('- Prefer NARRATIVE fields for text summaries and METRIC fields for dashboards');
         promptParts.add('');
         promptParts.add('OBJECT-SPECIFIC GUIDANCE:');
         promptParts.add('- For Opportunity: Amount, StageName, CloseDate, Probability, Type, NextStep, Description');
@@ -843,6 +889,29 @@ public with sharing class Stage05_FieldSelection implements IStage {
         return objectPriorityFields.containsKey(objectName)
             ? objectPriorityFields.get(objectName)
             : new List<String>{'Name', 'Subject', 'Status', 'Type', 'Description'};
+    }
+
+    /**
+     * @description V2.2: Gets relevance hint for a field category
+     * Helps the LLM understand which categories are most valuable for different use cases
+     * @param category The field category (narrative, metric, classification, etc.)
+     * @return Relevance hint string for the LLM
+     */
+    private static String getCategoryRelevanceHint(String category) {
+        Map<String, String> categoryHints = new Map<String, String>{
+            'narrative' => '(HIGH VALUE: Rich text for insights, summaries, context)',
+            'metric' => '(HIGH VALUE: Numbers, currency, percentages for KPIs)',
+            'classification' => '(HIGH VALUE: Picklists for segmentation, status, categories)',
+            'temporal' => '(MEDIUM VALUE: Dates for timelines, aging, trends)',
+            'contact' => '(MEDIUM VALUE: Email, phone for personalization)',
+            'flag' => '(MEDIUM VALUE: Boolean flags for filtering, status)',
+            'relationship' => '(LOW VALUE: IDs only - include sparingly for joins)',
+            'other' => '(Misc fields - evaluate based on name/label)'
+        };
+
+        return categoryHints.containsKey(category)
+            ? categoryHints.get(category)
+            : '(Evaluate based on context)';
     }
 
     /**

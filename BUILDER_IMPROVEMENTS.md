@@ -181,10 +181,10 @@ Send enriched metadata to LLM for smarter field selection.
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 2.14 | Update Stage 5 prompt with helpText | Opus | not_started | Include field helpText in LLM prompt so it understands field purpose |
-| 2.15 | Update Stage 5 prompt with density | Opus | not_started | Show usagePercent so LLM prioritizes populated fields |
-| 2.16 | Update Stage 5 prompt with categories | Sonnet | not_started | Group fields by category (narrative, metric, etc.) in prompt |
-| 2.17 | Add relevance scoring hints | Opus | not_started | Boost fields with helpText, high density, matching use case keywords |
+| 2.14 | Update Stage 5 prompt with helpText | Opus | done | Fields now show helpText in quotes when available |
+| 2.15 | Update Stage 5 prompt with density | Opus | done | Fields show [X% populated] when usagePercent is set (needs 2.6 to populate) |
+| 2.16 | Update Stage 5 prompt with categories | Opus | done | Fields grouped by category with relevance hints (did this with 2.14/2.17) |
+| 2.17 | Add relevance scoring hints | Opus | done | getCategoryRelevanceHint() provides HIGH/MEDIUM/LOW VALUE hints per category |
 
 ### Phase 2E: Testing & Validation
 
