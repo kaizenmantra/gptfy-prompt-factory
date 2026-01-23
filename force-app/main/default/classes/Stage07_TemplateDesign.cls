@@ -20,11 +20,10 @@ public with sharing class Stage07_TemplateDesign implements IStage {
     private static final Integer STAGE_NUMBER = 7;
 
     // V2.0: Feature flag for meta-prompt architecture
-    // When true: generates analysis brief for meta-prompt approach
+    // When true: generates analysis brief for meta-prompt approach (V2.0)
     // When false: generates fixed HTML template (V1.1 behavior)
-    // TEMPORARILY DISABLED: Stage 8 deployment blocked by scheduled job
-    // TODO: Re-enable once Stage 8 is deployed (blocked by CronTrigger 08eQH00000Qqsyr)
-    private static final Boolean USE_META_PROMPT = false;
+    // ENABLED: Stage 8 meta-prompt assembly deployed and ready (2026-01-23)
+    private static final Boolean USE_META_PROMPT = true;
 
     // Cached UI patterns and styles
     private Map<String, Object> uiPatterns;

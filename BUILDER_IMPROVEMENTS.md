@@ -196,7 +196,7 @@ Analyze the data. Lead with insights. Let the data drive the structure.
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 4.1 | End-to-end test with 3 sample Opportunities | Sonnet | not_started | Validate full flow |
+| 4.1 | End-to-end test with 3 sample Opportunities | Sonnet | in_progress | Testing V2.0 multi-sample + meta-prompt flow |
 | 4.2 | Compare output quality: V1.1 vs V2.0 | Opus | not_started | Qualitative analysis |
 | 4.3 | Document findings and next iteration priorities | Opus | not_started | What worked, what needs more |
 
