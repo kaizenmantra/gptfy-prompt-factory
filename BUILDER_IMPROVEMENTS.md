@@ -465,6 +465,10 @@ Stage 5: Field Selection (Enhanced)
 | 2026-01-23 | Task 1.8: Stage 5 parent traversals | Opus | Wired traversal builders into field selection: loadTraversalsForObjects(), prompt section, selectedParentFields output |
 | 2026-01-23 | Tasks 1.4, 1.11: V2.1 End-to-End Testing | Manual | V2.1 fully validated - Stats Strip, Insight Cards, Recommendation Cards, personalization (names not titles), evidence citations, single-line HTML |
 | 2026-01-23 | Bug fix: Invalid merge field references | Opus | Fixed hardcoded Tasks example in buildMergeFieldReference(); now dynamic based on selected objects. Added CRITICAL RESTRICTION to prevent LLM from inventing merge fields |
+| 2026-01-23 | V2.2 Planning | Opus | Analyzed gptfy-claude-automation repo, created comprehensive V2.2 task queue (20 tasks) |
+| 2026-01-23 | Tasks 2.1-2.4: Phase 2A Schema Enrichment | Opus | Enhanced FieldMetadata with helpText, picklistValues, category, referenceTo, relationshipName, length, isFormula, usagePercent. Added PicklistValue, ParentRelationship classes, getParentRelationships(), categorizeField() |
+| 2026-01-23 | Tasks 2.5, 2.9: Design Specs | Opus | Created docs/design/V2.2_DESIGN_SPECS.md with full implementation specs for Sonnet: calculateFieldDensity(), parent field resolution architecture |
+| 2026-01-23 | Tasks 2.14-2.17: Stage 5 Prompt Enhancements | Opus | Fields grouped by category, helpText shown in quotes, usagePercent shown when available, getCategoryRelevanceHint() with HIGH/MEDIUM/LOW VALUE hints |
 
 ---
 
