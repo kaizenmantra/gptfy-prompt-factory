@@ -277,16 +277,35 @@ public with sharing class PromptBuilderController {
             // Query sample records
             List<SchemaHelper.FieldMetadata> fields = SchemaHelper.getFields(session.Root_Object__c);
             List<String> fieldNames = getQueryableFieldNames(fields);
-            String soql = 'SELECT ' + String.join(fieldNames, ', ') +
-                         ' FROM ' + session.Root_Object__c +
-                         ' WHERE Id IN :sampleRecordIds';
+
+            // Get child relationships for querying
+            List<SchemaHelper.ChildRelationship> allChildRels = SchemaHelper.getChildRelationships(session.Root_Object__c);
+            List<SchemaHelper.ChildRelationship> childRelationships = selectImportantRelationships(
+                allChildRels,
+                session.Root_Object__c
+            );
+
+            // Build SOQL with child relationships
+            String soql = buildSOQLWithChildren(
+                session.Root_Object__c,
+                fieldNames,
+                childRelationships
+            );
+            soql += ' WHERE Id IN :sampleRecordIds';
+
             List<SObject> sampleRecords = Database.query(soql);
+
+            // Query child data for each relationship
+            Map<String, List<SObject>> childDataByRelationship = queryChildData(
+                sampleRecordIds,
+                childRelationships
+            );
 
             // Determine if this is first message or follow-up
             Boolean isFirstMessage = String.isBlank(userMessage) || userMessage.equals('START');
             String previousDraft = session.Current_Draft__c;
 
-            // Build user prompt
+            // Build user prompt with child data
             String userPrompt = buildUserPrompt(
                 session.Root_Object__c,
                 session.Business_Context__c,
@@ -295,7 +314,9 @@ public with sharing class PromptBuilderController {
                 exemplars,
                 userMessage,
                 previousDraft,
-                isFirstMessage
+                isFirstMessage,
+                childRelationships,
+                childDataByRelationship
             );
 
             // Call AI
@@ -389,13 +410,26 @@ public with sharing class PromptBuilderController {
         Map<String, String> exemplars,
         String userMessage,
         String previousDraft,
-        Boolean isFirstMessage
+        Boolean isFirstMessage,
+        List<SchemaHelper.ChildRelationship> childRelationships,
+        Map<String, List<SObject>> childDataByRelationship
     ) {
         // Select relevant exemplar
         String relevantExemplar = selectExemplar(rootObject, exemplars);
 
-        // Format sample data
+        // Format sample data (root + children)
         String formattedData = formatSampleData(sampleRecords, fieldNames, rootObject);
+
+        // Add child relationship data (Task 19)
+        String formattedChildData = formatChildRelationshipData(
+            sampleRecords,
+            childRelationships,
+            childDataByRelationship
+        );
+
+        if (String.isNotBlank(formattedChildData)) {
+            formattedData += '\n\n' + formattedChildData;
+        }
 
         // Build prompt based on whether this is first message or follow-up
         if (isFirstMessage) {
@@ -478,6 +512,108 @@ public with sharing class PromptBuilderController {
         }
 
         return String.join(recordStrings, '\n\n');
+    }
+
+    /**
+     * @description Formats child relationship data as tables for LLM context
+     * Task 19: Format relationship data for LLM context
+     *
+     * @param sampleRecords Parent records
+     * @param childRelationships Child relationships to format
+     * @param childDataByRelationship Additional child data queried separately
+     * @return Formatted string with child data tables
+     */
+    private static String formatChildRelationshipData(
+        List<SObject> sampleRecords,
+        List<SchemaHelper.ChildRelationship> childRelationships,
+        Map<String, List<SObject>> childDataByRelationship
+    ) {
+        if (childRelationships == null || childRelationships.isEmpty()) {
+            return '';
+        }
+
+        List<String> childSections = new List<String>();
+
+        // Format subquery results (from parent query)
+        for (SchemaHelper.ChildRelationship rel : childRelationships) {
+            if (String.isBlank(rel.relationshipName)) {
+                continue;
+            }
+
+            List<SObject> allChildRecords = new List<SObject>();
+
+            // Collect child records from all parent records
+            for (SObject parent : sampleRecords) {
+                try {
+                    List<SObject> childRecords = parent.getSObjects(rel.relationshipName);
+                    if (childRecords != null && !childRecords.isEmpty()) {
+                        allChildRecords.addAll(childRecords);
+                    }
+                } catch (Exception e) {
+                    // Relationship might not be in query or not accessible
+                }
+            }
+
+            // Also check separately queried data
+            if (childDataByRelationship.containsKey(rel.relationshipName)) {
+                allChildRecords.addAll(childDataByRelationship.get(rel.relationshipName));
+            }
+
+            // Format as table if we have records
+            if (!allChildRecords.isEmpty()) {
+                String tableSection = formatChildRecordsAsTable(
+                    rel.childObject,
+                    rel.relationshipName,
+                    allChildRecords
+                );
+                if (String.isNotBlank(tableSection)) {
+                    childSections.add(tableSection);
+                }
+            }
+        }
+
+        if (childSections.isEmpty()) {
+            return '';
+        }
+
+        return '### Related Records\n\n' + String.join(childSections, '\n\n');
+    }
+
+    /**
+     * @description Formats child records as a markdown table
+     * @param childObjectName Name of child object
+     * @param relationshipName Relationship name
+     * @param childRecords Child records to format
+     * @return Formatted markdown table
+     */
+    private static String formatChildRecordsAsTable(
+        String childObjectName,
+        String relationshipName,
+        List<SObject> childRecords
+    ) {
+        if (childRecords == null || childRecords.isEmpty()) {
+            return '';
+        }
+
+        String header = '#### ' + childObjectName + ' (' + childRecords.size() + ' records)\n\n';
+
+        // Simple list format (more readable than tables for AI)
+        List<String> recordLines = new List<String>();
+        for (SObject child : childRecords) {
+            try {
+                String name = child.get('Name') != null ? String.valueOf(child.get('Name')) : 'Unnamed';
+                String id = child.get('Id') != null ? String.valueOf(child.get('Id')) : '';
+                recordLines.add('- ' + name + (String.isNotBlank(id) ? ' (' + id.substring(0, 8) + ')' : ''));
+            } catch (Exception e) {
+                // Skip if can't access fields
+            }
+        }
+
+        if (recordLines.isEmpty()) {
+            return '';
+        }
+
+        return header + String.join(recordLines, '\n');
     }
 
     /**
@@ -704,6 +840,86 @@ public with sharing class PromptBuilderController {
         }
 
         return new List<String>(keyFieldSet);
+    }
+
+    /**
+     * @description Builds SOQL query with child relationship subqueries
+     * @param rootObject Root object name
+     * @param fieldNames Root object field names
+     * @param childRelationships Child relationships to include
+     * @return SOQL query string (without WHERE clause)
+     */
+    private static String buildSOQLWithChildren(
+        String rootObject,
+        List<String> fieldNames,
+        List<SchemaHelper.ChildRelationship> childRelationships
+    ) {
+        String baseQuery = 'SELECT ' + String.join(fieldNames, ', ');
+
+        // Add child relationship subqueries (limit to 3 to avoid query complexity)
+        Integer subqueryCount = 0;
+        for (SchemaHelper.ChildRelationship rel : childRelationships) {
+            if (subqueryCount >= 3) {
+                break; // SOQL limit: max 3 levels of subqueries
+            }
+
+            // Only add if relationship name exists
+            if (String.isNotBlank(rel.relationshipName)) {
+                // Query Id and Name (or other key fields) from child objects
+                baseQuery += ', (SELECT Id, Name FROM ' + rel.relationshipName + ' LIMIT 10)';
+                subqueryCount++;
+            }
+        }
+
+        baseQuery += ' FROM ' + rootObject;
+        return baseQuery;
+    }
+
+    /**
+     * @description Queries child object data for all sample records
+     * Used for relationships that couldn't fit in the parent query
+     *
+     * @param sampleRecordIds Parent record IDs
+     * @param childRelationships Child relationships to query
+     * @return Map of relationship name to child records
+     */
+    private static Map<String, List<SObject>> queryChildData(
+        List<Id> sampleRecordIds,
+        List<SchemaHelper.ChildRelationship> childRelationships
+    ) {
+        Map<String, List<SObject>> childDataMap = new Map<String, List<SObject>>();
+
+        // Query each child object separately (for relationships not in parent query)
+        Integer queryCount = 0;
+        for (SchemaHelper.ChildRelationship rel : childRelationships) {
+            // Skip first 3 (already in parent query)
+            if (queryCount < 3) {
+                queryCount++;
+                continue;
+            }
+
+            try {
+                String childSOQL = 'SELECT Id, Name, ' + rel.field +
+                                  ' FROM ' + rel.childObject +
+                                  ' WHERE ' + rel.field + ' IN :sampleRecordIds' +
+                                  ' LIMIT 50';
+
+                List<SObject> childRecords = Database.query(childSOQL);
+                if (!childRecords.isEmpty()) {
+                    childDataMap.put(rel.relationshipName, childRecords);
+                }
+            } catch (Exception e) {
+                // Skip if query fails (field might not be accessible)
+                System.debug('Error querying child object ' + rel.childObject + ': ' + e.getMessage());
+            }
+
+            queryCount++;
+            if (queryCount >= 5) {
+                break; // Limit total child queries to avoid governor limits
+            }
+        }
+
+        return childDataMap;
     }
 
     /**

@@ -951,8 +951,8 @@ WHERE Id IN :sampleRecordIds
 | 16 | **Design HTML output architecture** | Opus | done | - | See [Task 16 Details](#task-16-html-output-architecture-opus---complete) |
 | 16a | **UI Redesign: Split-screen layout** | Sonnet | done | - | Fixed alignment bug + implemented 75/25 split layout |
 | 17 | Add child object relationship detection to initializeSession | Sonnet | done | - | Prioritizes top 3-5 relationships per object type |
-| 18 | Build SOQL query with parent/child relationships | Sonnet | not_started | 17 | Query 2nd/3rd level data |
-| 19 | Format relationship data for LLM context | Sonnet | not_started | 18 | Tables for child objects in prompt |
+| 18 | Build SOQL query with parent/child relationships | Sonnet | done | 17 | Query 2nd/3rd level data with subqueries + separate queries |
+| 19 | Format relationship data for LLM context | Sonnet | done | 18 | Markdown lists for child objects in prompt |
 | 20 | **Design HTML template generation strategy** | Opus | done | 16 | Merged into Task 16 - see conversion prompt approach |
 | 21 | Update system prompt for HTML output | Sonnet | not_started | 16 | Add `convertToHTML()` method using conversion prompt |
 | 22 | Create HTML exemplars (Deal Coach, Account 360) | Sonnet | not_started | 16 | Convert markdown exemplars to HTML with merge fields |
