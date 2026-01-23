@@ -151,6 +151,24 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             Map<String, Object> promptConfigForStage9 = buildPromptConfigForStage9(
                 rootObject, aiInstructions, htmlTemplate, groundingRules, inputs);
 
+            // V2.0: Validate prompt command size against field limit
+            String finalPromptCommand = (String) promptConfigForStage9.get('promptCommand');
+            if (String.isNotBlank(finalPromptCommand)) {
+                Integer maxPromptLength = getPromptCommandMaxLength();
+                Integer currentLength = finalPromptCommand.length();
+                if (currentLength > maxPromptLength) {
+                    String sizeError = 'Prompt command exceeds maximum field length of ' + maxPromptLength +
+                        ' characters (current: ' + currentLength + '). ' +
+                        'Try reducing builder prompts or selected fields.';
+                    result.queueError(runId, STAGE_NUMBER, sizeError);
+                    result.markFailed(sizeError);
+                    return result;
+                } else {
+                    result.queueInfo(runId, STAGE_NUMBER, 'Prompt size: ' + currentLength + '/' + maxPromptLength + ' chars (' +
+                        Math.round((Decimal.valueOf(currentLength) / Decimal.valueOf(maxPromptLength)) * 100) + '%)');
+                }
+            }
+
             // Build outputs - include dcmConfig and promptConfig for Stage 9
             result.outputs.put('dcmConfig', dcmConfig);
             result.outputs.put('promptConfig', promptConfigForStage9);
@@ -805,6 +823,29 @@ public without sharing class Stage08_PromptAssembly implements IStage {
     }
 
     /**
+     * @description Gets the maximum character length for the Prompt_Command__c field
+     * Uses Schema describe API to get the actual field limit
+     * @return Maximum field length (typically 131072 for long text area)
+     */
+    private Integer getPromptCommandMaxLength() {
+        try {
+            Schema.SObjectType objType = Schema.getGlobalDescribe().get('ccai__AI_Prompt__c');
+            if (objType != null) {
+                Schema.DescribeSObjectResult objDescribe = objType.getDescribe();
+                Schema.SObjectField field = objDescribe.fields.getMap().get('ccai__Prompt_Command__c');
+                if (field != null) {
+                    Schema.DescribeFieldResult fieldDescribe = field.getDescribe();
+                    return fieldDescribe.getLength();
+                }
+            }
+        } catch (Exception e) {
+            System.debug(LoggingLevel.WARN, 'Could not describe ccai__AI_Prompt__c.ccai__Prompt_Command__c: ' + e.getMessage());
+        }
+        // Default to 131072 (128KB) for long text areas if describe fails
+        return 131072;
+    }
+
+    /**
      * @description Gets relationship name for a child object
      */
     private String getRelationshipNameForObject(String childObject, String parentObject) {
@@ -1132,12 +1173,36 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             finalHtmlTemplate = htmlTemplate;
         }
 
-        return new Map<String, Object>{
+        // V2.0: Extract LLM-generated metadata from analysisBrief (Stage 7)
+        String promptDescription;
+        String promptHowItWorks;
+
+        if (useMetaPrompt) {
+            Map<String, Object> analysisBrief = (Map<String, Object>) inputs.get('analysisBrief');
+            if (analysisBrief != null) {
+                promptDescription = (String) analysisBrief.get('promptDescription');
+                promptHowItWorks = (String) analysisBrief.get('promptHowItWorks');
+            }
+        }
+
+        // Fallback descriptions if not provided by LLM
+        if (String.isBlank(promptDescription)) {
+            promptDescription = 'AI-powered ' + rootObject + ' analysis providing actionable insights';
+            if (String.isNotBlank(businessContext) && promptDescription.length() + businessContext.length() < 250) {
+                promptDescription += ': ' + businessContext.left(200);
+            }
+            promptDescription += '.';
+        }
+
+        // Ensure description fits in 255 chars (final safety check)
+        if (promptDescription.length() > 255) {
+            promptDescription = promptDescription.substring(0, 252) + '...';
+        }
+
+        Map<String, Object> config = new Map<String, Object>{
             'name' => promptName,
             'label' => promptName,
-            'description' => 'Auto-generated prompt for ' + rootObject + '. ' +
-                           (String.isNotBlank(businessContext) ? businessContext.left(200) : '') +
-                           (useMetaPrompt ? ' [Meta-Prompt V2.0]' : ''),
+            'description' => promptDescription,
             'promptCommand' => finalPromptCommand,
             'htmlTemplate' => finalHtmlTemplate,
             'groundingRules' => groundingRules,
@@ -1147,6 +1212,13 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             'maxTokens' => 4096,
             'temperature' => 1.0
         };
+
+        // V2.0: Add howItWorks if available
+        if (String.isNotBlank(promptHowItWorks)) {
+            config.put('howItWorks', promptHowItWorks);
+        }
+
+        return config;
     }
 
     // ========================================================================

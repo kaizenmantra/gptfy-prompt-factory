@@ -118,6 +118,13 @@ public with sharing class Stage07_TemplateDesign implements IStage {
                     companyIntelligence, industryContext, strategicInsightsStr, dataSummary,
                     multiSampleProfile, runId, result);
 
+                // V2.0: Generate prompt metadata (description, howItWorks) via LLM
+                // This is displayed in the Salesforce UI and helps users understand the prompt
+                Map<String, String> promptMetadata = generatePromptMetadataWithAI(
+                    rootObject, businessContext, targetPersona, strategicInsightsStr, runId, result);
+                analysisBrief.put('promptDescription', promptMetadata.get('description'));
+                analysisBrief.put('promptHowItWorks', promptMetadata.get('howItWorks'));
+
                 // Store analysis brief for Stage 8 meta-prompt assembly
                 result.outputs.put('analysisBrief', analysisBrief);
                 result.outputs.put('useMetaPrompt', true);
@@ -1645,6 +1652,136 @@ public with sharing class Stage07_TemplateDesign implements IStage {
         guidelines.add('- Do NOT use generic recommendations');
 
         return String.join(guidelines, '\n');
+    }
+
+    /**
+     * @description Generates prompt metadata (description, howItWorks) using AI
+     * This content is displayed in the Salesforce UI to help users understand the prompt.
+     * - description: Concise summary (max 255 chars) for list views
+     * - howItWorks: Comprehensive explanation for end users on how to use/interpret the prompt
+     *
+     * @param rootObject The root Salesforce object
+     * @param businessContext User-provided business context
+     * @param targetPersona The target user persona
+     * @param strategicInsights Strategic insights from context analysis
+     * @param runId Run ID for logging
+     * @param result StageResult for deferred logging
+     * @return Map with 'description' and 'howItWorks' keys
+     */
+    private Map<String, String> generatePromptMetadataWithAI(
+            String rootObject,
+            String businessContext,
+            String targetPersona,
+            String strategicInsights,
+            Id runId,
+            StageResult result) {
+
+        result.queueInfo(runId, STAGE_NUMBER, 'Generating prompt metadata via AI');
+
+        // Build prompt for AI to generate metadata
+        String prompt = 'You are helping create a Salesforce AI prompt that analyzes ' + rootObject + ' records.\n\n';
+        prompt += '=== CONTEXT ===\n';
+        prompt += 'Target Object: ' + rootObject + '\n';
+        prompt += 'Target User: ' + (String.isNotBlank(targetPersona) ? targetPersona : 'Sales professional') + '\n';
+
+        if (String.isNotBlank(businessContext)) {
+            prompt += 'Business Context: ' + businessContext + '\n';
+        }
+
+        if (String.isNotBlank(strategicInsights)) {
+            prompt += 'Strategic Focus: ' + strategicInsights.left(500) + '\n';
+        }
+
+        prompt += '\n=== YOUR TASK ===\n';
+        prompt += 'Generate TWO pieces of content for this AI prompt:\n\n';
+
+        prompt += '1. DESCRIPTION (REQUIRED: exactly 200-250 characters, no more!):\n';
+        prompt += '   - A concise summary that appears in list views\n';
+        prompt += '   - Explains what this prompt does in one sentence\n';
+        prompt += '   - Format: "Analyzes [object] to [benefit] for [user type]"\n';
+        prompt += '   - Must be compelling and professional\n\n';
+
+        prompt += '2. HOW_IT_WORKS (500-1000 characters):\n';
+        prompt += '   - Detailed explanation for end users\n';
+        prompt += '   - What data is analyzed\n';
+        prompt += '   - What insights are provided\n';
+        prompt += '   - How to interpret the output\n';
+        prompt += '   - When to use this prompt\n\n';
+
+        prompt += '=== OUTPUT FORMAT ===\n';
+        prompt += 'Return ONLY a JSON object with these exact keys:\n';
+        prompt += '{\n';
+        prompt += '  "description": "Your 200-250 character description here",\n';
+        prompt += '  "howItWorks": "Your 500-1000 character explanation here"\n';
+        prompt += '}\n\n';
+        prompt += 'CRITICAL: Return ONLY the JSON object, no other text.';
+
+        Map<String, String> metadata = new Map<String, String>();
+
+        try {
+            // Call AI with low temperature for consistent output
+            AIServiceClient.AIResponse aiResponse = AIServiceClient.callAI(null, prompt, 1024, 0.3);
+
+            if (aiResponse.success && String.isNotBlank(aiResponse.content)) {
+                // Parse JSON response
+                String jsonContent = aiResponse.content.trim();
+
+                // Handle markdown code blocks if present
+                if (jsonContent.startsWith('```')) {
+                    Integer start = jsonContent.indexOf('{');
+                    Integer endBrace = jsonContent.lastIndexOf('}');
+                    if (start >= 0 && endBrace > start) {
+                        jsonContent = jsonContent.substring(start, endBrace + 1);
+                    }
+                }
+
+                Map<String, Object> parsed = (Map<String, Object>) JSON.deserializeUntyped(jsonContent);
+
+                String description = (String) parsed.get('description');
+                String howItWorks = (String) parsed.get('howItWorks');
+
+                // Ensure description fits in 255 chars
+                if (String.isNotBlank(description)) {
+                    if (description.length() > 255) {
+                        description = description.substring(0, 252) + '...';
+                    }
+                    metadata.put('description', description);
+                }
+
+                if (String.isNotBlank(howItWorks)) {
+                    metadata.put('howItWorks', howItWorks);
+                }
+
+                result.queueInfo(runId, STAGE_NUMBER, 'Generated prompt metadata: description=' +
+                    (description != null ? description.length() : 0) + ' chars, howItWorks=' +
+                    (howItWorks != null ? howItWorks.length() : 0) + ' chars');
+            }
+        } catch (Exception e) {
+            result.queueError(runId, STAGE_NUMBER, 'AI metadata generation failed: ' + e.getMessage());
+        }
+
+        // Fallback if AI failed
+        if (!metadata.containsKey('description')) {
+            String fallback = 'AI-powered ' + rootObject + ' analysis providing actionable insights for ' +
+                (String.isNotBlank(targetPersona) ? targetPersona : 'business users') + '.';
+            if (fallback.length() > 255) {
+                fallback = fallback.substring(0, 252) + '...';
+            }
+            metadata.put('description', fallback);
+        }
+
+        if (!metadata.containsKey('howItWorks')) {
+            metadata.put('howItWorks',
+                'This AI prompt analyzes ' + rootObject + ' records to provide actionable business insights.\n\n' +
+                'How to use:\n' +
+                '1. Navigate to an ' + rootObject + ' record\n' +
+                '2. Click the AI Assistant button\n' +
+                '3. Review the generated insights and recommendations\n\n' +
+                'The analysis includes key metrics, identified risks, and prioritized next steps ' +
+                'tailored for ' + (String.isNotBlank(targetPersona) ? targetPersona : 'your role') + '.');
+        }
+
+        return metadata;
     }
 
     /**
