@@ -46,7 +46,13 @@ public with sharing class PromptBuilderController {
             // Get schema metadata
             Schema.DescribeSObjectResult objDescribe = SchemaHelper.getObjectDescribe(rootObject);
             List<SchemaHelper.FieldMetadata> fields = SchemaHelper.getFields(rootObject);
-            List<SchemaHelper.ChildRelationship> childRelationships = SchemaHelper.getChildRelationships(rootObject);
+            List<SchemaHelper.ChildRelationship> allChildRelationships = SchemaHelper.getChildRelationships(rootObject);
+
+            // Select top 3-5 most important child relationships
+            List<SchemaHelper.ChildRelationship> childRelationships = selectImportantRelationships(
+                allChildRelationships,
+                rootObject
+            );
 
             // Query sample records with all accessible fields
             List<String> fieldNames = getQueryableFieldNames(fields);
@@ -698,5 +704,83 @@ public with sharing class PromptBuilderController {
         }
 
         return new List<String>(keyFieldSet);
+    }
+
+    /**
+     * @description Selects the most important child relationships for a given object
+     * Prioritizes relationships that provide business context
+     *
+     * @param allRelationships All child relationships for the object
+     * @param rootObject Root object name
+     * @return List of top 3-5 most important relationships
+     */
+    private static List<SchemaHelper.ChildRelationship> selectImportantRelationships(
+        List<SchemaHelper.ChildRelationship> allRelationships,
+        String rootObject
+    ) {
+        if (allRelationships == null || allRelationships.isEmpty()) {
+            return new List<SchemaHelper.ChildRelationship>();
+        }
+
+        // Define priority child objects per root object
+        Map<String, Set<String>> priorityMap = new Map<String, Set<String>>{
+            'Account' => new Set<String>{
+                'Opportunity', 'Contact', 'Case', 'Task', 'Event'
+            },
+            'Opportunity' => new Set<String>{
+                'OpportunityLineItem', 'OpportunityContactRole', 'Task', 'Event', 'Note'
+            },
+            'Case' => new Set<String>{
+                'CaseComment', 'Task', 'Attachment', 'EmailMessage'
+            },
+            'Lead' => new Set<String>{
+                'Task', 'Event', 'LeadHistory'
+            },
+            'Contact' => new Set<String>{
+                'Task', 'Event', 'Opportunity', 'Case'
+            }
+        };
+
+        Set<String> priorityObjects = priorityMap.get(rootObject);
+        if (priorityObjects == null) {
+            priorityObjects = new Set<String>();
+        }
+
+        List<SchemaHelper.ChildRelationship> prioritized = new List<SchemaHelper.ChildRelationship>();
+        List<SchemaHelper.ChildRelationship> others = new List<SchemaHelper.ChildRelationship>();
+
+        // Separate priority relationships from others
+        for (SchemaHelper.ChildRelationship rel : allRelationships) {
+            // Skip system objects and history/share objects
+            if (rel.childObject.endsWith('History') ||
+                rel.childObject.endsWith('Share') ||
+                rel.childObject.endsWith('Feed') ||
+                rel.childObject == 'Attachment' ||
+                rel.childObject == 'Note') {
+                continue;
+            }
+
+            if (priorityObjects.contains(rel.childObject)) {
+                prioritized.add(rel);
+            } else {
+                others.add(rel);
+            }
+        }
+
+        // Return top 5: prioritized first, then others (custom objects)
+        List<SchemaHelper.ChildRelationship> result = new List<SchemaHelper.ChildRelationship>();
+        result.addAll(prioritized);
+
+        // Add custom child objects if we have room
+        for (SchemaHelper.ChildRelationship rel : others) {
+            if (result.size() >= 5) {
+                break;
+            }
+            if (rel.childObject.endsWith('__c')) {
+                result.add(rel);
+            }
+        }
+
+        return result;
     }
 }
