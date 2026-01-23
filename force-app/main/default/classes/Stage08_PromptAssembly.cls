@@ -1,7 +1,27 @@
 /**
  * @description Stage 8: Prompt Assembly
  * Builds complete prompt command with AI instructions, integrates HTML template,
- * adds grounding rules, and validates all merge fields
+ * adds grounding rules, and validates all merge fields.
+ *
+ * BUILDER PROMPT INJECTION (Verified Working - 2026-01-23)
+ * =========================================================
+ * This stage loads and injects Builder Prompts from ccai__AI_Prompt__c records
+ * with RecordType.DeveloperName = 'Builder'. Builder prompts are queried by
+ * Category__c field and injected into the final prompt:
+ *
+ *   - Quality Rules   (Category__c = 'Quality Rule')
+ *   - Patterns        (Category__c = 'Pattern')
+ *   - UI Components   (Category__c = 'UI Component')
+ *   - Context Templates (Category__c = 'Context Template')
+ *
+ * Requirements for Builder Prompts to be injected:
+ *   1. RecordType must be 'Builder' (not 'Execution')
+ *   2. ccai__Status__c must be 'Active'
+ *   3. Category__c must match one of the above values
+ *   4. For Patterns: ccai__Object__c should match rootObject or be null (global)
+ *
+ * Verification: Run ID a0gQH000005GHurYAG confirmed all 6 text-based builder
+ * prompts were successfully injected into the final ccai__Prompt_Command__c.
  */
 public without sharing class Stage08_PromptAssembly implements IStage {
 
