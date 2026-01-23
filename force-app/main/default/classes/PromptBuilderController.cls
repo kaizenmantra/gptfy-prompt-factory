@@ -1030,7 +1030,7 @@ public with sharing class PromptBuilderController {
         );
 
         if (aiResponse == null || String.isBlank(aiResponse.content)) {
-            throw new PromptBuilderException('Failed to convert markdown to HTML');
+            throw new GPTfyException('Failed to convert markdown to HTML');
         }
 
         String htmlTemplate = aiResponse.content.trim();
