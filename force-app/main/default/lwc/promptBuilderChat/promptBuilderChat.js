@@ -1,6 +1,7 @@
 import { LightningElement, track } from 'lwc';
 import initializeSession from '@salesforce/apex/PromptBuilderController.initializeSession';
 import chat from '@salesforce/apex/PromptBuilderController.chat';
+import deployPrompt from '@salesforce/apex/PromptBuilderController.deployPrompt';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 
 /**
@@ -23,6 +24,12 @@ export default class PromptBuilderChat extends LightningElement {
     @track messages = [];
     @track chatInput = '';
     @track isChatLoading = false;
+
+    // Deploy State
+    @track promptName = '';
+    @track isDeployed = false;
+    @track isDeployLoading = false;
+    @track deployResult = {};
 
     // UI State
     @track isLoading = false;
@@ -343,5 +350,78 @@ export default class PromptBuilderChat extends LightningElement {
         formatted = formatted.replace(/\n/g, '<br/>');
 
         return formatted;
+    }
+
+    /**
+     * Phase 3: Deploy Methods
+     */
+
+    /**
+     * Handle prompt name change
+     */
+    handlePromptNameChange(event) {
+        this.promptName = event.target.value;
+    }
+
+    /**
+     * Check if deploy button should be disabled
+     */
+    get isDeployDisabled() {
+        return this.isDeployLoading || !this.promptName || this.promptName.trim().length === 0;
+    }
+
+    /**
+     * Get DCM record URL
+     */
+    get dcmUrl() {
+        if (this.deployResult && this.deployResult.dcmId) {
+            return `/${this.deployResult.dcmId}`;
+        }
+        return '';
+    }
+
+    /**
+     * Get Prompt record URL
+     */
+    get promptUrl() {
+        if (this.deployResult && this.deployResult.promptId) {
+            return `/${this.deployResult.promptId}`;
+        }
+        return '';
+    }
+
+    /**
+     * Handle Deploy button click
+     */
+    handleDeploy() {
+        if (!this.promptName || this.promptName.trim().length === 0) {
+            this.showError('Please enter a prompt name');
+            return;
+        }
+
+        this.isDeployLoading = true;
+        this.clearError();
+
+        deployPrompt({
+            sessionId: this.sessionId,
+            promptName: this.promptName
+        })
+            .then(result => {
+                if (result.success) {
+                    this.isDeployed = true;
+                    this.deployResult = result;
+                    this.showSuccess(result.message || 'Prompt deployed successfully!');
+                    console.log('Deploy result:', result);
+                } else {
+                    this.showError('Failed to deploy prompt');
+                }
+            })
+            .catch(error => {
+                this.showError(this.getErrorMessage(error));
+                console.error('Error deploying prompt:', error);
+            })
+            .finally(() => {
+                this.isDeployLoading = false;
+            });
     }
 }

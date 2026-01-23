@@ -124,6 +124,23 @@ lightning-button {
     height: 100%;
 }
 
+/* Deploy Section */
+.slds-theme_success {
+    background-color: #d9f0e6;
+    border-left: 3px solid #2e844a;
+}
+
+.slds-list_ordered {
+    padding-left: 1.5rem;
+    line-height: 1.8;
+}
+
+.slds-box_x-small {
+    padding: 0.75rem;
+    background-color: #f3f3f3;
+    border-radius: 0.25rem;
+}
+
 /* Mobile Responsiveness */
 @media (max-width: 768px) {
     .prompt-builder-container {

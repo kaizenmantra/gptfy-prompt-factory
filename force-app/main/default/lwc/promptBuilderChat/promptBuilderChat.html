@@ -222,6 +222,100 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Phase 3: Deploy (shown after messages exist) -->
+                <template if:true={hasMessages}>
+                    <div class="slds-m-top_medium">
+                        <div class="slds-card">
+                            <div class="slds-card__header slds-grid">
+                                <div class="slds-media slds-media_center slds-has-flexi-truncate">
+                                    <div class="slds-media__figure">
+                                        <lightning-icon icon-name="utility:upload" size="small"></lightning-icon>
+                                    </div>
+                                    <div class="slds-media__body">
+                                        <h2 class="slds-card__header-title">
+                                            <span>Phase 3: Deploy to GPTfy</span>
+                                        </h2>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="slds-card__body slds-card__body_inner">
+                                <template if:false={isDeployed}>
+                                    <!-- Deploy Form -->
+                                    <div class="slds-form">
+                                        <div class="slds-form-element">
+                                            <label class="slds-form-element__label" for="prompt-name-input">
+                                                <abbr class="slds-required" title="required">*</abbr>
+                                                Prompt Name
+                                            </label>
+                                            <div class="slds-form-element__control">
+                                                <lightning-input
+                                                    id="prompt-name-input"
+                                                    type="text"
+                                                    value={promptName}
+                                                    onchange={handlePromptNameChange}
+                                                    placeholder="e.g., High-Value Account Summary"
+                                                    required
+                                                    disabled={isDeployLoading}>
+                                                </lightning-input>
+                                            </div>
+                                        </div>
+                                        <div class="slds-m-top_medium">
+                                            <lightning-button
+                                                label="Approve & Deploy"
+                                                variant="success"
+                                                onclick={handleDeploy}
+                                                disabled={isDeployDisabled}
+                                                icon-name="utility:check"
+                                                class="slds-m-right_small">
+                                            </lightning-button>
+                                            <span class="slds-text-body_small slds-text-color_weak">
+                                                This will create a GPTfy prompt you can use immediately
+                                            </span>
+                                        </div>
+                                    </div>
+                                </template>
+                                <template if:true={isDeployed}>
+                                    <!-- Success Message -->
+                                    <div class="slds-box slds-theme_success slds-m-bottom_medium">
+                                        <div class="slds-media">
+                                            <div class="slds-media__figure">
+                                                <lightning-icon icon-name="utility:success" variant="inverse" size="medium"></lightning-icon>
+                                            </div>
+                                            <div class="slds-media__body">
+                                                <h3 class="slds-text-heading_small">Prompt Deployed Successfully!</h3>
+                                                <p class="slds-m-top_x-small">Your prompt is ready to use in GPTfy.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-grid slds-wrap slds-gutters_small">
+                                        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                                            <div class="slds-box slds-box_x-small">
+                                                <div class="slds-text-title slds-m-bottom_xx-small">DCM Record</div>
+                                                <lightning-formatted-url value={dcmUrl} label={deployResult.dcmId}></lightning-formatted-url>
+                                            </div>
+                                        </div>
+                                        <div class="slds-col slds-size_1-of-1 slds-medium-size_1-of-2">
+                                            <div class="slds-box slds-box_x-small">
+                                                <div class="slds-text-title slds-m-bottom_xx-small">Prompt Record</div>
+                                                <lightning-formatted-url value={promptUrl} label={deployResult.promptId}></lightning-formatted-url>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="slds-m-top_medium">
+                                        <h4 class="slds-text-heading_small slds-m-bottom_small">Next Steps:</h4>
+                                        <ol class="slds-list_ordered">
+                                            <li>Navigate to the Prompt record and activate it</li>
+                                            <li>Test the prompt on a sample record in GPTfy</li>
+                                            <li>Adjust field mappings if needed</li>
+                                            <li>Roll out to your team</li>
+                                        </ol>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+                </template>
             </div>
         </template>
 
