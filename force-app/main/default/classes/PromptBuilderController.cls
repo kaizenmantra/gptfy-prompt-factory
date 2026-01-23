@@ -473,4 +473,129 @@ public with sharing class PromptBuilderController {
 
         return String.join(recordStrings, '\n\n');
     }
+
+    /**
+     * @description Deploy approved prompt to DCM and Prompt records
+     * Phase 3: Creates production-ready prompt configuration
+     *
+     * @param sessionId ID of the PF_Run__c session record
+     * @param promptName Name for the prompt
+     * @return Map containing success status, DCM ID, and Prompt ID
+     */
+    @AuraEnabled
+    public static Map<String, Object> deployPrompt(Id sessionId, String promptName) {
+        try {
+            // Load session
+            PF_Run__c session = [
+                SELECT Id, Root_Object__c, Business_Context__c, Sample_Record_Id__c,
+                       Current_Draft__c, Status__c
+                FROM PF_Run__c
+                WHERE Id = :sessionId
+                LIMIT 1
+            ];
+
+            // Validate that there's an approved draft
+            if (String.isBlank(session.Current_Draft__c)) {
+                throw new AuraHandledException('No draft available to deploy. Please generate analysis first.');
+            }
+
+            // Get sample record IDs to determine which fields were used
+            List<String> recordIds = session.Sample_Record_Id__c.split(',');
+            List<Id> sampleRecordIds = new List<Id>();
+            for (String recordId : recordIds) {
+                sampleRecordIds.add((Id)recordId.trim());
+            }
+
+            // Query fields again to build DCM
+            List<SchemaHelper.FieldMetadata> fields = SchemaHelper.getFields(session.Root_Object__c);
+            List<String> fieldNames = getQueryableFieldNames(fields);
+
+            // Build DCM Config
+            DCMBuilder.DCMConfig dcmConfig = new DCMBuilder.DCMConfig();
+            dcmConfig.name = promptName + ' - Data Mapping';
+            dcmConfig.rootObject = session.Root_Object__c;
+
+            // Add root object fields (limit to key fields to keep it manageable)
+            List<String> keyFields = getKeyFields(session.Root_Object__c, fieldNames);
+            dcmConfig.fieldsByObject.put(session.Root_Object__c, keyFields);
+
+            // Create DCM
+            Id dcmId = DCMBuilder.createDCM(dcmConfig);
+
+            // Build Prompt Config
+            PromptBuilder.PromptConfig promptConfig = new PromptBuilder.PromptConfig();
+            promptConfig.name = promptName;
+            promptConfig.label = promptName;
+            promptConfig.description = session.Business_Context__c;
+            promptConfig.dcmId = dcmId;
+            promptConfig.targetObject = session.Root_Object__c;
+            promptConfig.promptType = 'Text';
+            promptConfig.maxTokens = 4096;
+            promptConfig.temperature = 1.0;
+            promptConfig.autoActivate = false;
+
+            // Build prompt command from the approved draft
+            // Use the system prompt + structure from the draft
+            Map<String, String> exemplars = loadExemplars();
+            String systemPrompt = exemplars.get('SYSTEM_PROMPT');
+
+            promptConfig.promptCommand = systemPrompt + '\n\n---\n\n' +
+                'Generate an analysis following the structure below:\n\n' +
+                session.Current_Draft__c;
+
+            // Create Prompt
+            Id promptId = PromptBuilder.createPrompt(promptConfig);
+
+            // Update session status
+            session.Status__c = 'Completed';
+            session.Created_DCM_Id__c = dcmId;
+            session.Created_Prompt_Id__c = promptId;
+            update session;
+
+            // Build response
+            Map<String, Object> response = new Map<String, Object>{
+                'success' => true,
+                'dcmId' => dcmId,
+                'promptId' => promptId,
+                'message' => 'Prompt deployed successfully! You can now test it in GPTfy.'
+            };
+
+            return response;
+
+        } catch (Exception e) {
+            throw new AuraHandledException('Error deploying prompt: ' + e.getMessage());
+        }
+    }
+
+    /**
+     * @description Gets key fields for an object (Name, common fields, custom fields)
+     * @param objectName API name of the object
+     * @param allFields List of all field names
+     * @return List of key field names
+     */
+    private static List<String> getKeyFields(String objectName, List<String> allFields) {
+        Set<String> keyFieldSet = new Set<String>();
+
+        // Always include these if they exist
+        Set<String> commonFields = new Set<String>{
+            'Id', 'Name', 'OwnerId', 'CreatedDate', 'LastModifiedDate',
+            'Amount', 'StageName', 'CloseDate', 'Probability', // Opportunity
+            'Industry', 'AnnualRevenue', 'NumberOfEmployees', // Account
+            'Status', 'Priority', 'Subject', 'Origin', // Case
+            'Email', 'Phone', 'Title', 'Department' // Contact/Lead
+        };
+
+        for (String field : allFields) {
+            // Include common fields
+            if (commonFields.contains(field)) {
+                keyFieldSet.add(field);
+            }
+            // Include all custom fields
+            else if (field.endsWith('__c')) {
+                keyFieldSet.add(field);
+            }
+        }
+
+        return new List<String>(keyFieldSet);
+    }
 }

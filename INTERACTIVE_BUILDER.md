@@ -60,7 +60,7 @@ Wait for deployment to complete and check for errors before marking task as done
 | 9 | Add chat UI to LWC (message list, input, send) | Sonnet | done | 8 | Render markdown responses |
 | 10 | Deploy Phase 2 to Salesforce and test | Sonnet | done | 7,8,9 | `sf project deploy start -o agentictso`, test chat flow |
 | 11 | **Review Phase 2 quality, adjust prompt if needed** | Opus | done | 10 | Fixed follow-up prompts, added Current_Draft__c field |
-| 12 | Add `deployPrompt` method to controller | Sonnet | not_started | 11 | Extract fields, create DCM + Prompt |
+| 12 | Add `deployPrompt` method to controller | Sonnet | done | 11 | Extract fields, create DCM + Prompt |
 | 13 | Add deploy UI (approve button, success message) | Sonnet | not_started | 12 | Show created record IDs, next steps |
 | 14 | Deploy Phase 3 to Salesforce and test | Sonnet | not_started | 12,13 | `sf project deploy start -o agentictso`, full flow test |
 | 15 | **Final review and polish** | Opus | not_started | 14 | NEEDS THINKING - overall quality check |
