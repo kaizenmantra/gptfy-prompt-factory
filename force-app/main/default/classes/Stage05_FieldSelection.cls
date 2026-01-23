@@ -99,6 +99,15 @@ public with sharing class Stage05_FieldSelection implements IStage {
                     fieldsByObject, traversalsByObject, rootObject, businessContext, targetPersona,
                     multiSampleProfile, runId, result, selectedParentFields);
 
+                // V2.2 FALLBACK: If LLM didn't return parent fields but traversals exist, add defaults
+                if (selectedParentFields.isEmpty() && traversalsByObject != null && !traversalsByObject.isEmpty()) {
+                    result.queueInfo(runId, STAGE_NUMBER,
+                        'LLM did not return selectedParentFields - adding defaults from available traversals');
+                    addDefaultParentFields(selectedParentFields, traversalsByObject, objectsWithData);
+                    result.queueInfo(runId, STAGE_NUMBER,
+                        'Default parent fields added: ' + JSON.serialize(selectedParentFields));
+                }
+
                 // Step 3: Validate AI-selected fields against schema
                 Map<String, List<String>> validatedFields = new Map<String, List<String>>();
                 for (String objectName : selectedFields.keySet()) {
@@ -1045,6 +1054,59 @@ public with sharing class Stage05_FieldSelection implements IStage {
         }
 
         return def;
+    }
+
+    /**
+     * @description V2.2: Adds default parent fields when LLM doesn't return any
+     * This ensures personalization works even if LLM doesn't follow instructions
+     * @param selectedParentFields Output map to populate
+     * @param traversalsByObject Available traversals by object
+     * @param objectsWithData Objects that have data
+     */
+    private void addDefaultParentFields(
+            Map<String, List<String>> selectedParentFields,
+            Map<String, List<TraversalDefinition>> traversalsByObject,
+            List<String> objectsWithData) {
+
+        // Priority fields to add by source field
+        Map<String, List<String>> priorityFields = new Map<String, List<String>>{
+            'OwnerId' => new List<String>{'Name'},
+            'AccountId' => new List<String>{'Name', 'Industry'},
+            'ContactId' => new List<String>{'Name', 'Title', 'Email'}
+        };
+
+        for (String objectName : objectsWithData) {
+            if (!traversalsByObject.containsKey(objectName)) {
+                continue;
+            }
+
+            List<String> parentFields = new List<String>();
+
+            for (TraversalDefinition trav : traversalsByObject.get(objectName)) {
+                // Skip polymorphic fields (WhatId, WhoId) - too complex for auto-selection
+                if (trav.isPolymorphic) {
+                    continue;
+                }
+
+                // Check if this is a priority traversal
+                if (priorityFields.containsKey(trav.sourceField)) {
+                    List<String> fieldsToAdd = priorityFields.get(trav.sourceField);
+                    for (String fieldPath : fieldsToAdd) {
+                        // Check if traversal has this field
+                        for (TraversalField tf : trav.fields) {
+                            if (tf.path == fieldPath) {
+                                parentFields.add(trav.sourceField + '.' + tf.path);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (!parentFields.isEmpty()) {
+                selectedParentFields.put(objectName, parentFields);
+            }
+        }
     }
 
     /**
