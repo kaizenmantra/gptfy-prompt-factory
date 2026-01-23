@@ -163,9 +163,8 @@ public with sharing class PromptBuilder {
             errors.add('Prompt command is required');
         }
 
-        if (String.isBlank(config.htmlTemplate)) {
-            errors.add('HTML template is required');
-        }
+        // HTML template is optional for text/markdown analysis prompts
+        // It's only required for visual dashboard prompts with merge fields
 
         if (String.isBlank(config.targetObject)) {
             errors.add('Target object is required');
