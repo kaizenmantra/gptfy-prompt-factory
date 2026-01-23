@@ -87,7 +87,6 @@ sf project deploy start -o agentictso -d force-app/main/default/classes/ClassNam
 | `BUILDER_IMPROVEMENTS.md` | This file - master tracker |
 | `docs/designs/META_PROMPT_DESIGN.md` | Meta-prompt 6-section architecture |
 | `docs/designs/MULTI_SAMPLE_DESIGN.md` | Multi-sample profiling architecture |
-| `docs/designs/PARENT_TRAVERSAL_CATALOG.md` | Parent traversal reference (33 traversals, JSON schema) |
 | `docs/UI_TOOLKIT.md` | UI component library for dashboards |
 
 ---
@@ -108,8 +107,8 @@ sf project deploy start -o agentictso -d force-app/main/default/classes/ClassNam
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
 | 1.5 | Add "use names not titles" instruction to meta-prompt | Sonnet | not_started | "Say 'Sarah Johnson' not 'the CFO'" |
-| 1.6 | Document parent traversal catalog (see below) | Opus | done | Created docs/designs/PARENT_TRAVERSAL_CATALOG.md with 33 traversals |
-| 1.7 | Store traversal catalog as Static Resource | Sonnet | not_started | JSON file for LLM/system reference |
+| 1.6 | Add remaining traversal builders to insert script | Opus | done | Expanded from 8 to 25 traversals in insert_builder_prompts.apex |
+| 1.7 | Deploy traversal builders to org | Sonnet | not_started | Run insert_builder_prompts.apex to create Traversal builder records |
 | 1.8 | Update Stage 5 to suggest parent fields | Opus | not_started | When OCR selected, suggest Contact.Name |
 
 ### Phase 1C: Output Quality
@@ -393,7 +392,7 @@ Stage 5: Field Selection (Enhanced)
 | 2026-01-23 | Task 4.2: V1.1 vs V2.0 comparison | Opus | Documented quality improvements across all aspects |
 | 2026-01-23 | Task 4.3: V2.1 priorities | Opus | Identified visual diversity, parent traversal, builder library expansion |
 | 2026-01-23 | V2.1 Planning | Opus | Documented traversal catalog, builder library, phased task queue |
-| 2026-01-23 | Task 1.6: Parent traversal catalog | Opus | Created PARENT_TRAVERSAL_CATALOG.md with 33 traversals, JSON schema, implementation notes |
+| 2026-01-23 | Task 1.6: Traversal builders | Opus | Added 17 new traversals to insert_builder_prompts.apex (now 25 total, 50 builders overall) |
 
 ---
 

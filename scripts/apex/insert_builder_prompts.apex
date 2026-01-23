@@ -6,11 +6,10 @@
  * Categories included:
  * - Quality Rules (10)
  * - UI Components (10)
- * - Patterns (8)
- * - Traversals (20)
  * - Context Templates (5)
+ * - Traversals (25)
  *
- * Total: 53 builder prompts
+ * Total: 50 builder prompts
  *
  * USAGE:
  *   sf apex run -f scripts/apex/insert_builder_prompts.apex -o agentictso
@@ -262,7 +261,7 @@ builders.add(new ccai__AI_Prompt__c(
 ));
 
 // ============================================
-// TRAVERSALS (Selected Key Traversals)
+// TRAVERSALS (25 - Comprehensive Coverage)
 // ============================================
 
 builders.add(new ccai__AI_Prompt__c(
@@ -343,6 +342,226 @@ builders.add(new ccai__AI_Prompt__c(
     ccai__Object__c = 'Case',
     ccai__Description__c = 'Resolves AccountId to Account.Name for case context.',
     ccai__Prompt_Command__c = '{"sourceObject":"Case","sourceField":"AccountId","targetObject":"Account","fields":[{"path":"Name","alias":"AccountName"}]}'
+));
+
+builders.add(new ccai__AI_Prompt__c(
+    Name = 'Case Owner Traversal',
+    RecordTypeId = builderRtId,
+    Category__c = 'Traversal',
+    ccai__Status__c = 'Active',
+    ccai__Object__c = 'Case',
+    ccai__Description__c = 'Resolves OwnerId to User.Name for case owner personalization.',
+    ccai__Prompt_Command__c = '{"sourceObject":"Case","sourceField":"OwnerId","targetObject":"User","fields":[{"path":"Name","alias":"OwnerName"},{"path":"Email","alias":"OwnerEmail"}]}'
+));
+
+builders.add(new ccai__AI_Prompt__c(
+    Name = 'Account Owner Traversal',
+    RecordTypeId = builderRtId,
+    Category__c = 'Traversal',
+    ccai__Status__c = 'Active',
+    ccai__Object__c = 'Account',
+    ccai__Description__c = 'Resolves OwnerId to User.Name for account manager personalization.',
+    ccai__Prompt_Command__c = '{"sourceObject":"Account","sourceField":"OwnerId","targetObject":"User","fields":[{"path":"Name","alias":"OwnerName"},{"path":"Email","alias":"OwnerEmail"},{"path":"Title","alias":"OwnerTitle"}]}'
+));
+
+builders.add(new ccai__AI_Prompt__c(
+    Name = 'Lead Owner Traversal',
+    RecordTypeId = builderRtId,
+    Category__c = 'Traversal',
+    ccai__Status__c = 'Active',
+    ccai__Object__c = 'Lead',
+    ccai__Description__c = 'Resolves OwnerId to User.Name for lead owner personalization.',
+    ccai__Prompt_Command__c = '{"sourceObject":"Lead","sourceField":"OwnerId","targetObject":"User","fields":[{"path":"Name","alias":"OwnerName"},{"path":"Email","alias":"OwnerEmail"}]}'
+));
+
+builders.add(new ccai__AI_Prompt__c(
+    Name = 'Task Owner Traversal',
+    RecordTypeId = builderRtId,
+    Category__c = 'Traversal',
+    ccai__Status__c = 'Active',
+    ccai__Object__c = 'Task',
+    ccai__Description__c = 'Resolves OwnerId to User.Name for task assignee personalization.',
+    ccai__Prompt_Command__c = '{"sourceObject":"Task","sourceField":"OwnerId","targetObject":"User","fields":[{"path":"Name","alias":"OwnerName"}]}'
+));
+
+builders.add(new ccai__AI_Prompt__c(
+    Name = 'Event Who Traversal',
+    RecordTypeId = builderRtId,
+    Category__c = 'Traversal',
+    ccai__Status__c = 'Active',
+    ccai__Object__c = 'Event',
+    ccai__Description__c = 'Resolves WhoId to Contact.Name or Lead.Name (polymorphic).',
+    ccai__Prompt_Command__c = '{"sourceObject":"Event","sourceField":"WhoId","targetObject":"Contact|Lead","polymorphic":true,"fields":[{"path":"Name","alias":"WhoName"}]}'
+));
+
+builders.add(new ccai__AI_Prompt__c(
+    Name = 'Event What Traversal',
+    RecordTypeId = builderRtId,
+    Category__c = 'Traversal',
+    ccai__Status__c = 'Active',
+    ccai__Object__c = 'Event',
+    ccai__Description__c = 'Resolves WhatId to Account.Name or Opportunity.Name (polymorphic).',
+    ccai__Prompt_Command__c = '{"sourceObject":"Event","sourceField":"WhatId","targetObject":"Account|Opportunity","polymorphic":true,"fields":[{"path":"Name","alias":"WhatName"}]}'
+));
+
+builders.add(new ccai__AI_Prompt__c(
+    Name = 'Event Owner Traversal',
+    RecordTypeId = builderRtId,
+    Category__c = 'Traversal',
+    ccai__Status__c = 'Active',
+    ccai__Object__c = 'Event',
+    ccai__Description__c = 'Resolves OwnerId to User.Name for event organizer personalization.',
+    ccai__Prompt_Command__c = '{"sourceObject":"Event","sourceField":"OwnerId","targetObject":"User","fields":[{"path":"Name","alias":"OwnerName"}]}'
+));
+
+builders.add(new ccai__AI_Prompt__c(
+    Name = 'CampaignMember Contact Traversal',
+    RecordTypeId = builderRtId,
+    Category__c = 'Traversal',
+    ccai__Status__c = 'Active',
+    ccai__Object__c = 'CampaignMember',
+    ccai__Description__c = 'Resolves ContactId to Contact.Name, Contact.Email for campaign targeting.',
+    ccai__Prompt_Command__c = '{"sourceObject":"CampaignMember","sourceField":"ContactId","targetObject":"Contact","fields":[{"path":"Name","alias":"ContactName"},{"path":"Email","alias":"ContactEmail"}]}'
+));
+
+builders.add(new ccai__AI_Prompt__c(
+    Name = 'Contract Account Traversal',
+    RecordTypeId = builderRtId,
+    Category__c = 'Traversal',
+    ccai__Status__c = 'Active',
+    ccai__Object__c = 'Contract',
+    ccai__Description__c = 'Resolves AccountId to Account.Name for contract context.',
+    ccai__Prompt_Command__c = '{"sourceObject":"Contract","sourceField":"AccountId","targetObject":"Account","fields":[{"path":"Name","alias":"AccountName"},{"path":"BillingCity","alias":"AccountCity"}]}'
+));
+
+builders.add(new ccai__AI_Prompt__c(
+    Name = 'Order Account Traversal',
+    RecordTypeId = builderRtId,
+    Category__c = 'Traversal',
+    ccai__Status__c = 'Active',
+    ccai__Object__c = 'Order',
+    ccai__Description__c = 'Resolves AccountId to Account.Name for order context.',
+    ccai__Prompt_Command__c = '{"sourceObject":"Order","sourceField":"AccountId","targetObject":"Account","fields":[{"path":"Name","alias":"AccountName"},{"path":"ShippingCity","alias":"AccountCity"}]}'
+));
+
+builders.add(new ccai__AI_Prompt__c(
+    Name = 'Quote Account Traversal',
+    RecordTypeId = builderRtId,
+    Category__c = 'Traversal',
+    ccai__Status__c = 'Active',
+    ccai__Object__c = 'Quote',
+    ccai__Description__c = 'Resolves AccountId to Account.Name for quote context.',
+    ccai__Prompt_Command__c = '{"sourceObject":"Quote","sourceField":"AccountId","targetObject":"Account","fields":[{"path":"Name","alias":"AccountName"}]}'
+));
+
+builders.add(new ccai__AI_Prompt__c(
+    Name = 'Asset Account Traversal',
+    RecordTypeId = builderRtId,
+    Category__c = 'Traversal',
+    ccai__Status__c = 'Active',
+    ccai__Object__c = 'Asset',
+    ccai__Description__c = 'Resolves AccountId to Account.Name, Account.Industry for asset context.',
+    ccai__Prompt_Command__c = '{"sourceObject":"Asset","sourceField":"AccountId","targetObject":"Account","fields":[{"path":"Name","alias":"AccountName"},{"path":"Industry","alias":"AccountIndustry"}]}'
+));
+
+builders.add(new ccai__AI_Prompt__c(
+    Name = 'OpportunityLineItem Opportunity Traversal',
+    RecordTypeId = builderRtId,
+    Category__c = 'Traversal',
+    ccai__Status__c = 'Active',
+    ccai__Object__c = 'OpportunityLineItem',
+    ccai__Description__c = 'Resolves OpportunityId to Opportunity.Name, StageName for line item context.',
+    ccai__Prompt_Command__c = '{"sourceObject":"OpportunityLineItem","sourceField":"OpportunityId","targetObject":"Opportunity","fields":[{"path":"Name","alias":"OpportunityName"},{"path":"StageName","alias":"OpportunityStage"},{"path":"Amount","alias":"OpportunityAmount"}]}'
+));
+
+builders.add(new ccai__AI_Prompt__c(
+    Name = 'OpportunityLineItem Product Traversal',
+    RecordTypeId = builderRtId,
+    Category__c = 'Traversal',
+    ccai__Status__c = 'Active',
+    ccai__Object__c = 'OpportunityLineItem',
+    ccai__Description__c = 'Resolves Product2Id to Product2.Name, Family for product context.',
+    ccai__Prompt_Command__c = '{"sourceObject":"OpportunityLineItem","sourceField":"Product2Id","targetObject":"Product2","fields":[{"path":"Name","alias":"ProductName"},{"path":"Family","alias":"ProductFamily"},{"path":"ProductCode","alias":"ProductCode"}]}'
+));
+
+builders.add(new ccai__AI_Prompt__c(
+    Name = 'Quote Opportunity Traversal',
+    RecordTypeId = builderRtId,
+    Category__c = 'Traversal',
+    ccai__Status__c = 'Active',
+    ccai__Object__c = 'Quote',
+    ccai__Description__c = 'Resolves OpportunityId to Opportunity.Name for quote-to-deal alignment.',
+    ccai__Prompt_Command__c = '{"sourceObject":"Quote","sourceField":"OpportunityId","targetObject":"Opportunity","fields":[{"path":"Name","alias":"OpportunityName"},{"path":"Amount","alias":"OpportunityAmount"},{"path":"CloseDate","alias":"OpportunityCloseDate"}]}'
+));
+
+builders.add(new ccai__AI_Prompt__c(
+    Name = 'QuoteLineItem Product Traversal',
+    RecordTypeId = builderRtId,
+    Category__c = 'Traversal',
+    ccai__Status__c = 'Active',
+    ccai__Object__c = 'QuoteLineItem',
+    ccai__Description__c = 'Resolves Product2Id to Product2.Name, Family for quote line context.',
+    ccai__Prompt_Command__c = '{"sourceObject":"QuoteLineItem","sourceField":"Product2Id","targetObject":"Product2","fields":[{"path":"Name","alias":"ProductName"},{"path":"Family","alias":"ProductFamily"},{"path":"ProductCode","alias":"ProductCode"}]}'
+));
+
+builders.add(new ccai__AI_Prompt__c(
+    Name = 'OrderItem Product Traversal',
+    RecordTypeId = builderRtId,
+    Category__c = 'Traversal',
+    ccai__Status__c = 'Active',
+    ccai__Object__c = 'OrderItem',
+    ccai__Description__c = 'Resolves Product2Id to Product2.Name for order line context.',
+    ccai__Prompt_Command__c = '{"sourceObject":"OrderItem","sourceField":"Product2Id","targetObject":"Product2","fields":[{"path":"Name","alias":"ProductName"},{"path":"Family","alias":"ProductFamily"}]}'
+));
+
+builders.add(new ccai__AI_Prompt__c(
+    Name = 'CaseComment Case Traversal',
+    RecordTypeId = builderRtId,
+    Category__c = 'Traversal',
+    ccai__Status__c = 'Active',
+    ccai__Object__c = 'CaseComment',
+    ccai__Description__c = 'Resolves ParentId to Case.Subject, CaseNumber for comment context.',
+    ccai__Prompt_Command__c = '{"sourceObject":"CaseComment","sourceField":"ParentId","targetObject":"Case","fields":[{"path":"Subject","alias":"CaseSubject"},{"path":"CaseNumber","alias":"CaseNumber"},{"path":"Status","alias":"CaseStatus"}]}'
+));
+
+builders.add(new ccai__AI_Prompt__c(
+    Name = 'EmailMessage Case Traversal',
+    RecordTypeId = builderRtId,
+    Category__c = 'Traversal',
+    ccai__Status__c = 'Active',
+    ccai__Object__c = 'EmailMessage',
+    ccai__Description__c = 'Resolves ParentId to Case.Subject, CaseNumber for email thread context.',
+    ccai__Prompt_Command__c = '{"sourceObject":"EmailMessage","sourceField":"ParentId","targetObject":"Case","fields":[{"path":"Subject","alias":"CaseSubject"},{"path":"CaseNumber","alias":"CaseNumber"}]}'
+));
+
+builders.add(new ccai__AI_Prompt__c(
+    Name = 'CaseContactRole Contact Traversal',
+    RecordTypeId = builderRtId,
+    Category__c = 'Traversal',
+    ccai__Status__c = 'Active',
+    ccai__Object__c = 'CaseContactRole',
+    ccai__Description__c = 'Resolves ContactId to Contact.Name, Contact.Email for case contact personalization.',
+    ccai__Prompt_Command__c = '{"sourceObject":"CaseContactRole","sourceField":"ContactId","targetObject":"Contact","fields":[{"path":"Name","alias":"ContactName"},{"path":"Title","alias":"ContactTitle"},{"path":"Email","alias":"ContactEmail"}]}'
+));
+
+builders.add(new ccai__AI_Prompt__c(
+    Name = 'AccountContactRole Contact Traversal',
+    RecordTypeId = builderRtId,
+    Category__c = 'Traversal',
+    ccai__Status__c = 'Active',
+    ccai__Object__c = 'AccountContactRole',
+    ccai__Description__c = 'Resolves ContactId to Contact.Name, Contact.Title for account team personalization.',
+    ccai__Prompt_Command__c = '{"sourceObject":"AccountContactRole","sourceField":"ContactId","targetObject":"Contact","fields":[{"path":"Name","alias":"ContactName"},{"path":"Title","alias":"ContactTitle"}]}'
+));
+
+builders.add(new ccai__AI_Prompt__c(
+    Name = 'OpportunityContactRole Opportunity Traversal',
+    RecordTypeId = builderRtId,
+    Category__c = 'Traversal',
+    ccai__Status__c = 'Active',
+    ccai__Object__c = 'OpportunityContactRole',
+    ccai__Description__c = 'Resolves OpportunityId to Opportunity.Name, StageName for role-to-deal mapping.',
+    ccai__Prompt_Command__c = '{"sourceObject":"OpportunityContactRole","sourceField":"OpportunityId","targetObject":"Opportunity","fields":[{"path":"Name","alias":"OpportunityName"},{"path":"StageName","alias":"OpportunityStage"}]}'
 ));
 
 // Insert all builders
