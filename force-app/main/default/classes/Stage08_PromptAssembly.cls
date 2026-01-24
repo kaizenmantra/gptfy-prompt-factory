@@ -54,6 +54,18 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             String targetPersona = (String) inputs.get('targetPersona');
             Map<String, Object> selectedFieldsRaw = (Map<String, Object>) inputs.get('selectedFields');
             Map<String, Object> selectedParentFieldsRaw = (Map<String, Object>) inputs.get('selectedParentFields');  // V2.2 Task 2.12
+
+            // V2.2 Enhancement: Auto-load parent fields from traversal definitions if not populated
+            // MUST happen before buildMergeFieldReference is called
+            if (selectedParentFieldsRaw == null || selectedParentFieldsRaw.isEmpty()) {
+                List<String> objectsForTraversal = new List<String>(selectedFieldsRaw.keySet());
+                selectedParentFieldsRaw = loadParentFieldsFromTraversals(objectsForTraversal);
+                if (selectedParentFieldsRaw != null && !selectedParentFieldsRaw.isEmpty()) {
+                    result.queueInfo(runId, STAGE_NUMBER,
+                        'Auto-loaded parent fields from traversals: ' + JSON.serialize(selectedParentFieldsRaw));
+                }
+            }
+
             List<Object> businessObjectivesRaw = (List<Object>) inputs.get('businessObjectives');
 
             // NEW: Extract Strategic Context from Stage 2
