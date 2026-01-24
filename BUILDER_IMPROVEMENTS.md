@@ -381,9 +381,106 @@ The parent lookup feature now works correctly using the **existing infrastructur
 
 **Solution:** Few-shot learning. Include 3-5 complete example prompts in the meta-prompt. The LLM will pattern-match and generate output in the same format. This requires:
 1. A REST test harness to query schema/data from Salesforce
-2. A Python orchestration script to iterate on meta-prompts
-3. Example prompts as few-shot patterns
-4. Automated evaluation of generated prompts
+2. Automated testing to catch regressions before they reach production
+3. A Python orchestration script to iterate on meta-prompts
+4. Example prompts as few-shot patterns
+5. Automated evaluation of generated prompts
+
+---
+
+## Architectural Fragility Analysis (V2.5)
+
+**Date**: 2026-01-24
+**Context**: 100+ hours invested, recurring "fix one thing, break another" cycle
+**Reviewed**: Agent Lightning (Microsoft) - training framework for agent optimization
+
+### The Pattern of Failure
+
+Looking at the version history:
+
+1. **V2.2 Abandoned** - Pipeline refactoring broke stage-to-stage data passing. Hours of debugging with no resolution. Root cause: Complex accumulation logic across 12 stage records was too fragile.
+
+2. **V2.5 Attempts Failed** - Multiple approaches tried (TEMPLATE GENERATION MODE, prompt tweaks). LLM continued embedding hardcoded values. Each approach was "emphatically recommended" but didn't work.
+
+3. **100+ Hours of Churn** - Fix Stage 5, Stage 7 breaks. Fix DCM, merge fields fail. Fix merge fields, parent lookups break. Pattern: **manual testing catches issues too late, after deployment**.
+
+### Root Cause: Fragility + No Safety Nets
+
+The problem is NOT agent intelligence (Agent Lightning solves that). The problem IS:
+
+**Architectural Fragility:**
+- 12-stage pipeline with complex data dependencies
+- Changes to Stage N can break Stage N+3 in non-obvious ways
+- DCM creation involves 4+ detail record types (FIELD, CHILD, GRANDCHILD, PARENT_LOOKUP)
+- Merge field syntax has multiple formats ({{{Field}}}, {{{Child.Field}}}, {{{Child.Parent.Field}}})
+- No validation that generated prompts are valid until runtime
+
+**No Automated Testing:**
+- Zero integration tests for full pipeline
+- No smoke tests to catch obvious breaks
+- Manual testing only - issues discovered after hours of work
+- No regression detection - previous working cases can break silently
+
+**Slow Feedback Loops:**
+- Deploy → Manual test → Find issue → Debug → Repeat
+- Each cycle takes 30-60 minutes minimum
+- Claude can't self-validate changes
+
+### Why Agent Lightning Won't Help
+
+Agent Lightning is a **training framework** for agent optimization through reinforcement learning. It would:
+- Help if Claude was making poor decisions despite having good information
+- Require 20+ hours of setup, telemetry integration, training data collection
+- Not prevent architectural fragility or catch regressions
+
+What we actually need:
+- **Integration tests** to validate full pipeline works end-to-end
+- **Smoke tests** to catch obvious breaks immediately after deployment
+- **Regression tests** to ensure previously working cases still work
+- **Fast feedback loops** so Claude can validate changes autonomously
+
+### The Solution: Test-Driven Stability
+
+**Phase 5A.5: Automated Testing (NEW - inserted before Python orchestration)**
+
+Create a safety net BEFORE continuing with autonomous iteration:
+
+1. **Golden Test Case** - One known-good Opportunity with all features (children, parents, grandchildren)
+2. **Integration Test** - Full pipeline run, validate DCM structure, prompt syntax, no hardcoded values
+3. **Stage Smoke Tests** - After each stage, validate expected outputs exist
+4. **Deployment Validation** - Script that runs tests before accepting any deployment
+5. **Baseline Validation** - Claude can run tests autonomously to verify changes work
+
+**Why This Helps:**
+- Catches breaks in minutes, not hours
+- Claude can self-validate changes without user intervention
+- Prevents "fix one thing, break another" cycle
+- Creates confidence that changes are safe
+- Establishes a baseline for "working state"
+
+**What This Doesn't Do:**
+- Won't make the architecture less fragile (that requires refactoring)
+- Won't eliminate all bugs
+- Won't reduce complexity
+
+**But it will:** Give us fast, automated feedback so we stop chasing our tail.
+
+---
+
+### Decision: Prioritize Testing Over Features
+
+**Key Insight from User (2026-01-24):**
+> "Every approach, including the abandoned ones, were as emphatically proposed and recommended to me as your current recommendation. The challenge is it's really hard to actually know when your recommendation is worth pursuing and when it's not."
+
+**This is the harsh truth.** Claude Code has given confident recommendations before (V2.2 pipeline refactoring, TEMPLATE GENERATION MODE) that failed spectacularly. Without tests, there's no way to validate recommendations objectively.
+
+**Going Forward:**
+- Test-driven approach: Write test FIRST, then implement feature
+- Validate recommendations: If Claude suggests a change, test it before committing
+- Track failures: Document what was tried, what failed, why
+- Measure progress: Tests passing = actual progress, not just code written
+
+**This document now serves as a learning log** - not just task tracking, but reasoning tracking. Future Claude sessions should review this section before making confident recommendations.
 
 ### Phase 5A: REST Test Harness (Apex)
 
@@ -391,27 +488,45 @@ Create REST endpoints that expose schema discovery and data retrieval capabiliti
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 5.1 | Create `TestHarnessController.cls` REST resource | Opus | not_started | Base class with @RestResource annotation |
-| 5.2 | Add `/test-harness/schema/{objectName}` endpoint | Opus | not_started | Returns fields, child relationships, parent lookups |
-| 5.3 | Add `/test-harness/children/{objectName}` endpoint | Opus | not_started | Returns child objects with relationship names |
-| 5.4 | Add `/test-harness/grandchildren/{objectName}` endpoint | Opus | not_started | Returns grandchild discovery results |
-| 5.5 | Add `/test-harness/sample/{objectName}/{recordId}` endpoint | Opus | not_started | Returns sample record with related data (JSON) |
-| 5.6 | Add `/test-harness/dcm-config` POST endpoint | Opus | not_started | Builds DCM config from selected objects/fields |
-| 5.7 | Deploy and test REST endpoints | Opus | not_started | Verify all endpoints work via `sf` CLI |
+| 5.1 | Create `TestHarnessController.cls` REST resource | Opus | done | Base class with @RestResource annotation (commit a336187) |
+| 5.2 | Add `/test-harness/schema/{objectName}` endpoint | Opus | done | Returns fields, child relationships, parent lookups |
+| 5.3 | Add `/test-harness/children/{objectName}` endpoint | Opus | done | Returns child objects with relationship names |
+| 5.4 | Add `/test-harness/grandchildren/{objectName}` endpoint | Opus | done | Returns grandchild discovery results |
+| 5.5 | Add `/test-harness/sample/{objectName}/{recordId}` endpoint | Opus | done | Returns sample record with related data (JSON) |
+| 5.6 | Add `/test-harness/dcm-config` POST endpoint | Opus | done | Builds DCM config from selected objects/fields |
+| 5.7 | Add `/test-harness/example-prompts` endpoint | Opus | done | Returns example prompts for few-shot learning |
+| 5.8 | Deploy and test REST endpoints | Opus | done | Deployed to agentictso@gptfy.com, basic testing complete |
+
+### Phase 5A.5: Automated Testing (NEW - Critical)
+
+**PRIORITY: Do this BEFORE Phase 5B.** Create safety nets to catch regressions and enable autonomous validation.
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 5.9 | Identify golden test case | Sonnet | not_started | Find Opportunity with children, parents, grandchildren |
+| 5.10 | Document expected outputs | Sonnet | not_started | What should DCM look like? What merge fields? What structure? |
+| 5.11 | Create `PipelineIntegrationTest.cls` | Sonnet | not_started | Full pipeline test with assertions on DCM, prompt, outputs |
+| 5.12 | Create `PipelineValidator.cls` helper | Sonnet | not_started | Reusable validation methods (checkDCM, checkPrompt, checkMergeFields) |
+| 5.13 | Add smoke tests to each stage | Sonnet | not_started | Stage05 must output selectedFields, Stage07 must output analysisBrief |
+| 5.14 | Create `scripts/validate-pipeline.sh` | Sonnet | not_started | Run tests + validate recent run still works |
+| 5.15 | Run baseline and document results | Sonnet | not_started | Does current code pass tests? Document any failures |
+| 5.16 | Add test run to git commit hooks | Sonnet | not_started | Optional: Prevent commits if tests fail |
 
 ### Phase 5B: Python Orchestration Script
 
 Create a Python script that orchestrates meta-prompt testing. Calls REST endpoints, builds meta-prompts, calls LLM API, evaluates output.
 
+**PREREQUISITE: Phase 5A.5 must be complete.** We need tests before autonomous iteration.
+
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 5.8 | Create `temp/prompt-lab/` directory structure | Opus | not_started | scripts/, examples/, outputs/, config/ |
-| 5.9 | Create `config.py` with Salesforce + LLM credentials | Opus | not_started | Load from env vars, support Claude + OpenAI |
-| 5.10 | Create `sf_client.py` to call REST endpoints | Opus | not_started | Uses `sf` CLI or requests with OAuth |
-| 5.11 | Create `llm_client.py` to call Claude/OpenAI API | Opus | not_started | Wrapper for API calls with retry logic |
-| 5.12 | Create `prompt_builder.py` to assemble meta-prompts | Opus | not_started | Combines context + examples + business requirements |
-| 5.13 | Create `evaluator.py` to validate generated prompts | Opus | not_started | Checks merge field syntax, structure, no hardcoded values |
-| 5.14 | Create `main.py` orchestration script | Opus | not_started | Full loop: gather context → build prompt → call LLM → evaluate |
+| 5.17 | Create `temp/prompt-lab/` directory structure | Opus | not_started | scripts/, examples/, outputs/, config/ |
+| 5.18 | Create `config.py` with Salesforce + LLM credentials | Opus | not_started | Load from env vars, support Claude + OpenAI |
+| 5.19 | Create `sf_client.py` to call REST endpoints | Opus | not_started | Uses `sf` CLI or requests with OAuth |
+| 5.20 | Create `llm_client.py` to call Claude/OpenAI API | Opus | not_started | Wrapper for API calls with retry logic |
+| 5.21 | Create `prompt_builder.py` to assemble meta-prompts | Opus | not_started | Combines context + examples + business requirements |
+| 5.22 | Create `evaluator.py` to validate generated prompts | Opus | not_started | Checks merge field syntax, structure, no hardcoded values |
+| 5.23 | Create `main.py` orchestration script | Opus | not_started | Full loop: gather context → build prompt → call LLM → evaluate |
 
 ### Phase 5C: Example Prompts (Few-Shot Patterns)
 
@@ -419,11 +534,11 @@ Extract and organize example prompts for few-shot learning. These show the LLM w
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 5.15 | Extract example prompts from `prepackaged_prompts_raw.json` | Opus | not_started | "Account 360 View - Reimagined" has good patterns |
-| 5.16 | Create `examples/account_360.txt` | Opus | not_started | Clean example with merge fields highlighted |
-| 5.17 | Create `examples/opportunity_dashboard.txt` | Opus | not_started | Example for Opportunity root object |
-| 5.18 | Create `examples/case_analysis.txt` | Opus | not_started | Example for Case root object |
-| 5.19 | Document example prompt patterns | Opus | not_started | What makes these examples good (structure, merge fields) |
+| 5.24 | Extract example prompts from `prepackaged_prompts_raw.json` | Opus | not_started | "Account 360 View - Reimagined" has good patterns |
+| 5.25 | Create `examples/account_360.txt` | Opus | not_started | Clean example with merge fields highlighted |
+| 5.26 | Create `examples/opportunity_dashboard.txt` | Opus | not_started | Example for Opportunity root object |
+| 5.27 | Create `examples/case_analysis.txt` | Opus | not_started | Example for Case root object |
+| 5.28 | Document example prompt patterns | Opus | not_started | What makes these examples good (structure, merge fields) |
 
 ### Phase 5D: Meta-Prompt Iteration
 
@@ -431,12 +546,12 @@ Use the test harness to iterate on meta-prompt design until generated prompts ma
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 5.20 | Run baseline test with current meta-prompt | Opus | not_started | Document failure modes (hardcoded values, missing merge fields) |
-| 5.21 | Add few-shot examples to meta-prompt | Opus | not_started | Include 2-3 example prompts in context |
-| 5.22 | Test with few-shot examples | Opus | not_started | Compare output quality |
-| 5.23 | Iterate on meta-prompt structure | Opus | not_started | Adjust based on results |
-| 5.24 | Document winning meta-prompt pattern | Opus | not_started | What worked, what didn't |
-| 5.25 | Port successful meta-prompt back to Stage08 | Opus | not_started | Update Apex code with proven approach |
+| 5.29 | Run baseline test with current meta-prompt | Opus | not_started | Document failure modes (hardcoded values, missing merge fields) |
+| 5.30 | Add few-shot examples to meta-prompt | Opus | not_started | Include 2-3 example prompts in context |
+| 5.31 | Test with few-shot examples | Opus | not_started | Compare output quality |
+| 5.32 | Iterate on meta-prompt structure | Opus | not_started | Adjust based on results |
+| 5.33 | Document winning meta-prompt pattern | Opus | not_started | What worked, what didn't |
+| 5.34 | Port successful meta-prompt back to Stage08 | Opus | not_started | Update Apex code with proven approach |
 
 ### Phase 5E: Interactive Refinement (Future)
 
@@ -444,9 +559,9 @@ Enable user-driven refinement of generated prompts.
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 5.26 | Add interactive mode to Python script | Opus | not_started | User reviews output, requests changes |
-| 5.27 | Implement change requests (add section, modify field) | Opus | not_started | LLM applies user feedback |
-| 5.28 | Save final prompt to Salesforce | Opus | not_started | Create AI_Prompt__c record |
+| 5.35 | Add interactive mode to Python script | Opus | not_started | User reviews output, requests changes |
+| 5.36 | Implement change requests (add section, modify field) | Opus | not_started | LLM applies user feedback |
+| 5.37 | Save final prompt to Salesforce | Opus | not_started | Create AI_Prompt__c record |
 
 ---
 
@@ -850,6 +965,9 @@ Stage 5: Field Selection (Enhanced)
 | 2026-01-24 | Few-shot learning required for prompt generation | Tried prompt tweaks (TEMPLATE GENERATION MODE, WRONG vs CORRECT examples) but LLM still embedded hardcoded values. Root cause: LLM never saw what a finished prompt looks like. Solution: Include 3-5 complete example prompts as few-shot patterns. LLM will pattern-match and generate similar output. |
 | 2026-01-24 | Create REST test harness for autonomous iteration | User feedback: manual testing cycle too slow, Claude can iterate faster autonomously. Create REST endpoints to expose SchemaHelper, data retrieval, DCM config. Python script orchestrates: call Salesforce → build meta-prompt → call LLM → evaluate → iterate. No UI clicks needed. |
 | 2026-01-24 | Reset V2.5 branch to main | Previous V2.5 attempts (TEMPLATE GENERATION MODE) deployed to org but didn't solve the problem. Reset branch, redeploy main's code, start fresh with test harness approach. |
+| 2026-01-24 | Prioritize automated testing over features | After 100+ hours and recurring "fix one thing, break another" cycles, root cause identified: architectural fragility + no safety nets. Agent Lightning (MS training framework) won't solve this - it optimizes agent intelligence, not codebase stability. Decision: Create integration tests, smoke tests, regression tests BEFORE continuing with autonomous iteration. Tests give fast feedback loops and catch breaks immediately. |
+| 2026-01-24 | Phase 5A.5: Automated Testing inserted before Phase 5B | New phase with 8 tasks: golden test case, integration test, smoke tests, validation script, baseline run. Claude must be able to self-validate changes autonomously. Tests are prerequisite for Python orchestration - without them, we'll continue chasing tail. |
+| 2026-01-24 | This document is now a learning log | Not just task tracking, but reasoning tracking. User feedback: "Every approach was as emphatically proposed and recommended as your current recommendation." Truth: Without tests, there's no objective way to validate recommendations. Future Claude sessions must review Architectural Fragility Analysis before making confident recommendations. |
 
 ---
 
@@ -901,6 +1019,11 @@ Stage 5: Field Selection (Enhanced)
 | 2026-01-24 | FIXED: Parent lookup via Stage08 integration | Opus | Discovered working DCM (a05QH000008RJTNYA4) uses dot-notation FIELD records, NOT PARENT_LOOKUP details. Fix: (1) Reverted broken auto-discovery code from DCMBuilder PHASE 1.5, (2) Added `selectedParentFields` integration to Stage08's `buildDCMConfigForStage9()`, (3) Added `convertLookupToRelationship()` to convert `ContactId.Name` → `Contact.Name`. Parent fields now flow: Stage05 traversals → `selectedParentFields` → Stage08 → `fieldsByObject` → DCMBuilder. No more guessing fields - uses existing traversal definitions. |
 | 2026-01-24 | V2.5: TEMPLATE GENERATION MODE attempt failed | Opus | Added "CRITICAL - TEMPLATE GENERATION MODE" section to directive, strengthened with WRONG vs CORRECT examples. Deployed and tested. Result: LLM output used ONE merge field ({{{Name}}}) but still embedded hardcoded values ($125,000, John Peterson, etc.). Prompt tweaks insufficient - need structural change. |
 | 2026-01-24 | V2.5: Reset branch and new approach | Opus | Deleted failed V2.5 branch, created fresh from main. Fixed buildMergeFieldReference 4-param bug in main. Documented new approach: REST test harness + Python orchestration + few-shot learning. Test harness allows Claude to iterate autonomously without manual UI testing. |
+| 2026-01-24 | Tasks 5.1-5.8: REST Test Harness | Opus | Created TestHarnessController.cls with 6 REST endpoints: schema, children, grandchildren, sample, example-prompts, dcm-config. Deployed to agentictso@gptfy.com. Basic testing complete. Commit a336187. |
+| 2026-01-24 | Agent Lightning evaluation | Sonnet | Reviewed Microsoft's agent training framework. Conclusion: It's a distraction - solves wrong problem (agent intelligence vs codebase stability). Won't prevent regressions, catch architectural issues, or validate data flows. |
+| 2026-01-24 | Architectural Fragility Analysis | Sonnet | Documented pattern of failure across V2.2, V2.5 attempts. Root cause: fragility + no safety nets, not agent intelligence. Added comprehensive analysis to BUILDER_IMPROVEMENTS.md with user feedback about emphatically confident but failed recommendations. |
+| 2026-01-24 | Phase 5A.5: Automated Testing designed | Sonnet | Created new phase with 8 tasks (5.9-5.16): golden test case, PipelineIntegrationTest.cls, PipelineValidator.cls, stage smoke tests, validation script, baseline run. Inserted as prerequisite before Phase 5B. Renumbered subsequent tasks. |
+| 2026-01-24 | Decision Log + Progress Log updated | Sonnet | Documented testing prioritization decision, learning log approach, all V2.5 Phase 5A work. File now serves as reasoning tracker, not just task tracker. |
 
 ---
 
