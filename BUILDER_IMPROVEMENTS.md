@@ -281,9 +281,9 @@ Add state file link and fix navigation to open in new browser tabs.
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 4.13 | Add State File link to Run Detail LWC | Opus | not_started | Show link to PipelineState JSON file (ContentVersion) |
-| 4.14 | Make State File link open in new tab | Opus | not_started | Use `target="_blank"` or `window.open()` |
-| 4.15 | Fix Run Logs link to open in new tab | Opus | not_started | Currently opens in same window, losing LWC context |
+| 4.13 | Add State File link to Run Detail LWC | Opus | done | Added getStateFileInfo() Apex method + LWC buttons |
+| 4.14 | Make State File link open in new tab | Opus | done | Uses NavigationMixin.GenerateUrl + window.open() |
+| 4.15 | Fix Run Logs link to open in new tab | Opus | done | Fixed pfRunHistory.handleViewRun() to use new tab |
 | 4.16 | Add State File content preview | Opus | not_started | Optional: Show JSON content inline (collapsible) |
 | 4.17 | Test LWC navigation behavior | Manual | not_started | Verify both links open in new tabs |
 
