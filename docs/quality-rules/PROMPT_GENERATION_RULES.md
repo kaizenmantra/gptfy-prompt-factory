@@ -171,11 +171,16 @@ For contacts, iterate like this: {{#Contacts}}...{{/Contacts}}
 {{{CreatedBy.Email}}}  ✅ System relationship
 ```
 
-### Rule 4: Child Collections - Plural Names
+### Rule 4: Child Collections - Use DCM Relationship Name
 ```
-{{#Contacts}}...{{/Contacts}}         ✅ Iterate contacts
-{{#Opportunities}}...{{/Opportunities}} ✅ Iterate opportunities
-{{#Contact}}...{{/Contact}}           ❌ Wrong - must be plural
+The relationship name MUST match exactly what is defined in the DCM (Data Context Mapping).
+This can be plural OR singular depending on the DCM configuration.
+
+{{#Contacts}}...{{/Contacts}}         ✅ If DCM relationshipName is "Contacts"
+{{#Task}}...{{/Task}}                 ✅ If DCM relationshipName is "Task" (singular is valid!)
+{{#Cases}}...{{/Cases}}               ✅ If DCM relationshipName is "Cases"
+
+Check your DCM's relationshipName field - use that exact value.
 ```
 
 ### Rule 5: Conditional Rendering & Empty States
@@ -216,27 +221,51 @@ For contacts, iterate like this: {{#Contacts}}...{{/Contacts}}
 {{/OpportunityContactRoles}}
 ```
 
+### Rule 7: Grandchild Relationships - Chained Dot Notation
+```
+Grandchildren are child objects OF child objects. Use chained dot notation:
+{{{ParentRelationship.ChildRelationship.FieldName}}}
+
+Example: Account → Case → CaseComment
+DCM Structure:
+  - Cases (CHILD of Account, relationshipName: "Cases")
+  - CaseComments (GRANDCHILD of Account via Cases, relationshipName: "CaseComments")
+
+Merge Field Syntax:
+{{{Cases.CaseComments.CommentBody}}}     ✅ Grandchild field
+{{{Cases.CaseComments.CreatedDate}}}     ✅ Grandchild field
+{{{CaseComments.CommentBody}}}           ❌ Wrong - missing parent chain
+
+Full iteration example:
+{{#Cases}}
+  <div>Case: {{{Cases.Subject}}}</div>
+  {{#Cases.CaseComments}}
+    <div>Comment: {{{Cases.CaseComments.CommentBody}}}</div>
+  {{/Cases.CaseComments}}
+{{/Cases}}
+```
+
 ---
 
 ## OUTPUT FORMAT RULES (HTML)
 
-### Rule 7: Single Line Output
+### Rule 8: Single Line Output
 The ENTIRE HTML output must be ONE LINE - no newlines, no line breaks.
 
-### Rule 8: Inline Styles Only
+### Rule 9: Inline Styles Only
 ```
 <div style="color:red;">Text</div>  ✅ Inline style
 <div class="red">Text</div>         ❌ CSS class
 <style>.red{color:red}</style>      ❌ Style block
 ```
 
-### Rule 9: No Script Tags
+### Rule 10: No Script Tags
 ```
 <script>...</script>  ❌ Not allowed
 onclick="..."         ❌ Not allowed
 ```
 
-### Rule 10: Proper Structure
+### Rule 11: Proper Structure
 ```
 <div style="...">...</div>  ✅ Must start and end with div
 <p>...</p>                  ❌ Don't start with other tags
@@ -246,27 +275,92 @@ onclick="..."         ❌ Not allowed
 
 ## TABLE RENDERING RULES
 
-### Rule 11: Table Header OUTSIDE Loop
+### Rule 12: Table Header OUTSIDE Loop
 ```
 ✅ CORRECT:
 <table style="width:100%;">
 <tr><th>Name</th><th>Stage</th><th>Amount</th></tr>
-{{#Opportunities}}{{#unless IsClosed}}<tr><td>{{{Name}}}</td><td>{{{StageName}}}</td><td>{{{Amount}}}</td></tr>{{/unless}}{{/Opportunities}}
+{{#Opportunities}}{{#unless Opportunities.IsClosed}}<tr><td>{{{Opportunities.Name}}}</td><td>{{{Opportunities.StageName}}}</td><td>{{{Opportunities.Amount}}}</td></tr>{{/unless}}{{/Opportunities}}
 </table>
 
 ❌ WRONG:
 {{#Opportunities}}<table><tr><th>Name</th></tr><tr><td>{{{Name}}}</td></tr></table>{{/Opportunities}}
 ```
 
-### Rule 12: Empty State Handling
+### Rule 13: Empty State Handling
 ```
 ✅ PREFERRED (inline {{else}}):
-{{#Opportunities}}<tr><td>{{{Name}}}</td></tr>{{else}}<div>No opportunities</div>{{/Opportunities}}
+{{#Opportunities}}<tr><td>{{{Opportunities.Name}}}</td></tr>{{else}}<div>No opportunities</div>{{/Opportunities}}
 
 ✅ LEGACY (separate {{^}} block):
 {{#Opportunities}}...{{/Opportunities}}
 {{^Opportunities}}<div>No opportunities found</div>{{/Opportunities}}
 ```
+
+---
+
+## DCM CONFIGURATION RULES
+
+### Rule 14: Relationship Types
+The DCM (Data Context Mapping) supports three relationship types:
+
+| Type | Description | Example |
+|------|-------------|---------|
+| **CHILD** | Direct child of the primary object | Account → Cases |
+| **GRANDCHILD** | Child of a child object | Account → Cases → CaseComments |
+| **PARENT** | Lookup relationship (future) | Case → Account (via AccountId) |
+
+```json
+// CHILD example
+{
+  "objectName": "Case",
+  "relationshipName": "Cases",
+  "relationshipField": "AccountId",
+  "type": "CHILD"
+}
+
+// GRANDCHILD example
+{
+  "objectName": "CaseComment",
+  "relationshipName": "CaseComments",
+  "relationshipField": "ParentId",
+  "parentDetailId": "a02J9000005JuRMIA0",  // Links to parent CHILD
+  "type": "GRANDCHILD"
+}
+```
+
+### Rule 15: WHERE Clause / Ordering
+DCM details support a `whereClause` for filtering and ordering child records:
+
+```json
+{
+  "objectName": "Case",
+  "relationshipName": "Cases",
+  "type": "CHILD",
+  "whereClause": "ORDER BY CreatedDate DESC"
+}
+```
+
+Common patterns:
+- `ORDER BY CreatedDate DESC` - Most recent first
+- `ORDER BY Amount DESC` - Highest value first
+- `WHERE IsClosed = false ORDER BY CloseDate ASC` - Open items, soonest first
+
+### Rule 16: File Attachments (Future)
+Prompts can include file attachments via the `includeFiles` setting:
+
+```json
+{
+  "promptName": "Document Analysis",
+  "includeFiles": true,
+  "objectName": "Account"
+}
+```
+
+When `includeFiles: true`:
+- Files attached to the record are included in the prompt context
+- File content is available for LLM analysis
+- Syntax for referencing files: TBD (not yet implemented in Prompt Factory)
 
 ---
 
@@ -280,10 +374,12 @@ Before generating any prompt, verify:
 4. [ ] **4-styling.txt**: Contains ACTUAL merge fields that GPTfy will substitute
 5. [ ] All merge fields use triple braces `{{{...}}}`
 6. [ ] Primary object fields have no prefix
-7. [ ] Child collections use plural names
-8. [ ] Tables have headers outside loops
-9. [ ] Empty states are handled with `{{^Collection}}`
-10. [ ] No newlines in 4-styling.txt (single line HTML template)
+7. [ ] Child collection names match DCM `relationshipName` exactly (can be singular or plural)
+8. [ ] Child fields include collection prefix: `{{{Contacts.Name}}}` not `{{{Name}}}`
+9. [ ] Grandchild fields use chained notation: `{{{Cases.CaseComments.CommentBody}}}`
+10. [ ] Tables have headers outside loops
+11. [ ] Empty states are handled with `{{else}}` or `{{^Collection}}`
+12. [ ] No newlines in 4-styling.txt (single line HTML template)
 
 ---
 
@@ -374,10 +470,18 @@ Use the child collection names exactly as shown (Contacts, Opportunities, Cases,
    - Wrong: `{{#OpportunityContactRoles}}{{{Contact.Title}}}{{/OpportunityContactRoles}}`
    - Right: `{{#OpportunityContactRoles}}{{{OpportunityContactRoles.Contact.Title}}}{{/OpportunityContactRoles}}`
 
-5. **Table headers inside loops**
+5. **Missing parent chain for grandchild fields**
+   - Wrong: `{{{CaseComments.CommentBody}}}`
+   - Right: `{{{Cases.CaseComments.CommentBody}}}`
+
+6. **Assuming relationship names are always plural**
+   - Wrong: Assuming `{{#Tasks}}` when DCM has `relationshipName: "Task"`
+   - Right: Use exactly what DCM specifies - check `relationshipName` field
+
+7. **Table headers inside loops**
    - Wrong: `{{#Opportunities}}<table><th>Name</th><td>{{{Opportunities.Name}}}</td></table>{{/Opportunities}}`
    - Right: `<table><th>Name</th>{{#Opportunities}}<tr><td>{{{Opportunities.Name}}}</td></tr>{{/Opportunities}}</table>`
 
-6. **Newlines in HTML template**
+8. **Newlines in HTML template**
    - Wrong: Multi-line HTML with proper formatting
    - Right: Single line, no newlines
