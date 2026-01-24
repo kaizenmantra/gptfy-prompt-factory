@@ -150,18 +150,21 @@ export default class PfRunHistory extends NavigationMixin(LightningElement) {
     }
 
     /**
-     * Navigate to run record
+     * Navigate to run record - opens in new tab to preserve Factory LWC context
      */
     handleViewRun(event) {
         const runId = event.currentTarget.dataset.id;
 
-        this[NavigationMixin.Navigate]({
+        // Generate URL and open in new tab to preserve Factory LWC context
+        this[NavigationMixin.GenerateUrl]({
             type: 'standard__recordPage',
             attributes: {
                 recordId: runId,
                 objectApiName: 'PF_Run__c',
                 actionName: 'view'
             }
+        }).then(url => {
+            window.open(url, '_blank');
         });
     }
 

@@ -7,18 +7,19 @@
  * =========================================================
  * This stage loads and injects Builder Prompts from ccai__AI_Prompt__c records
  * with RecordType.DeveloperName = 'Builder'. Builder prompts are queried by
- * Category__c field and injected into the final prompt:
+ * ccai__Type__c field and injected into the final prompt:
  *
- *   - Quality Rules     (Category__c = 'Quality Rule')
- *   - Patterns          (Category__c = 'Pattern')
- *   - UI Components     (Category__c = 'UI Component')
- *   - Context Templates (Category__c = 'Context Template')
- *   - Traversals        (Category__c = 'Traversal') - V2.1: Parent field mappings
+ *   - Quality Rules     (ccai__Type__c = 'Quality Rule')
+ *   - Patterns          (ccai__Type__c = 'Pattern')
+ *   - UI Components     (ccai__Type__c = 'UI Component')
+ *   - Context Templates (ccai__Type__c = 'Context Template')
+ *   - Traversals        (ccai__Type__c = 'Traversal') - V2.1: Parent field mappings
+ *   - Output Rules      (ccai__Type__c = 'Output Rules') - V2.4: Merge field syntax
  *
  * Requirements for Builder Prompts to be injected:
  *   1. RecordType must be 'Builder' (not 'Execution')
  *   2. ccai__Status__c must be 'Active'
- *   3. Category__c must match one of the above values
+ *   3. ccai__Type__c must match one of the above values
  *   4. For Patterns: ccai__Object__c should match rootObject or be null (global)
  *
  * Verification: Run ID a0gQH000005GHurYAG confirmed all 6 text-based builder
@@ -54,6 +55,18 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             String targetPersona = (String) inputs.get('targetPersona');
             Map<String, Object> selectedFieldsRaw = (Map<String, Object>) inputs.get('selectedFields');
             List<Object> businessObjectivesRaw = (List<Object>) inputs.get('businessObjectives');
+
+            // V2.4: Extract selected parent fields (e.g., Owner.Name, Contact.Title)
+            Map<String, Object> selectedParentFieldsRaw = (Map<String, Object>) inputs.get('selectedParentFields');
+            if (selectedParentFieldsRaw == null) {
+                selectedParentFieldsRaw = new Map<String, Object>();
+            }
+
+            // V2.4: Extract grandchild info for proper merge field path generation
+            List<Object> selectedGrandchildrenRaw = (List<Object>) inputs.get('selectedGrandchildren');
+            if (selectedGrandchildrenRaw == null) {
+                selectedGrandchildrenRaw = new List<Object>();
+            }
 
             // NEW: Extract Strategic Context from Stage 2
             // CRITICAL: Use companyIntelligence (actual research) over companyProfile (AI summary)
@@ -132,7 +145,8 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             Map<String, Object> promptConfig;
             if (useMetaPrompt) {
                 promptConfig = assembleMetaPromptConfiguration(
-                    aiInstructions, groundingRules, rootObject, selectedFieldsRaw);
+                    aiInstructions, groundingRules, rootObject, selectedFieldsRaw,
+                    selectedParentFieldsRaw, selectedGrandchildrenRaw);
             } else {
                 promptConfig = assemblePromptConfiguration(
                     aiInstructions, htmlTemplate, groundingRules, rootObject);
@@ -508,7 +522,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
                 SELECT Id, Name, ccai__Prompt_Command__c
                 FROM ccai__AI_Prompt__c
                 WHERE RecordTypeId = :builderRtId
-                  AND Category__c = 'Quality Rule'
+                  AND ccai__Type__c = 'Quality Rule'
                   AND ccai__Status__c = 'Active'
                 ORDER BY Name
             ];
@@ -555,7 +569,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
                 SELECT Id, Name, ccai__Prompt_Command__c
                 FROM ccai__AI_Prompt__c
                 WHERE RecordTypeId = :builderRtId
-                  AND Category__c = 'Pattern'
+                  AND ccai__Type__c = 'Pattern'
                   AND ccai__Status__c = 'Active'
                   AND (ccai__Object__c = :rootObject OR ccai__Object__c = null)
                 ORDER BY Name
@@ -602,7 +616,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
                 SELECT Id, Name, ccai__Prompt_Command__c
                 FROM ccai__AI_Prompt__c
                 WHERE RecordTypeId = :builderRtId
-                  AND Category__c = 'UI Component'
+                  AND ccai__Type__c = 'UI Component'
                   AND ccai__Status__c = 'Active'
                 ORDER BY Name
             ];
@@ -648,7 +662,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
                 SELECT Id, Name, ccai__Prompt_Command__c
                 FROM ccai__AI_Prompt__c
                 WHERE RecordTypeId = :builderRtId
-                  AND Category__c = 'Context Template'
+                  AND ccai__Type__c = 'Context Template'
                   AND ccai__Status__c = 'Active'
                 ORDER BY Name
             ];
@@ -695,7 +709,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
                 SELECT Id, Name, ccai__Prompt_Command__c, ccai__Object__c
                 FROM ccai__AI_Prompt__c
                 WHERE RecordTypeId = :builderRtId
-                  AND Category__c = 'Traversal'
+                  AND ccai__Type__c = 'Traversal'
                   AND ccai__Status__c = 'Active'
                   AND (ccai__Object__c = :rootObject OR ccai__Object__c = null)
                 ORDER BY Name
@@ -723,6 +737,43 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             System.debug(LoggingLevel.ERROR, errorMsg);
             // Return empty array on error (non-critical)
             return '[]';
+        }
+    }
+
+    /**
+     * @description V2.4: Load Output Rules from Builder Prompts
+     * Contains GPTfy merge field syntax rules for prompt generation
+     * @param runId PF_Run__c ID for logging
+     * @return Output rules content or empty string if not found
+     */
+    private String loadOutputRules(Id runId) {
+        try {
+            PromptFactoryLogger.info(runId, 8, 'Loading Output Rules builder');
+
+            Id builderRtId = Schema.SObjectType.ccai__AI_Prompt__c.getRecordTypeInfosByDeveloperName().get('Builder').getRecordTypeId();
+
+            List<ccai__AI_Prompt__c> outputRules = [
+                SELECT Id, Name, ccai__Prompt_Command__c
+                FROM ccai__AI_Prompt__c
+                WHERE RecordTypeId = :builderRtId
+                  AND ccai__Type__c = 'Output Rules'
+                  AND ccai__Status__c = 'Active'
+                ORDER BY Name
+                LIMIT 1
+            ];
+
+            if (outputRules.isEmpty()) {
+                PromptFactoryLogger.warning(runId, 8, 'No Output Rules builder found');
+                return '';
+            }
+
+            PromptFactoryLogger.info(runId, 8, 'Loaded Output Rules: ' + outputRules[0].Name + ' (' + outputRules[0].ccai__Prompt_Command__c.length() + ' chars)');
+            return outputRules[0].ccai__Prompt_Command__c;
+
+        } catch (Exception e) {
+            String errorMsg = 'Failed to load Output Rules: ' + e.getMessage();
+            System.debug(LoggingLevel.WARN, errorMsg);
+            return '';
         }
     }
 
@@ -795,16 +846,21 @@ public without sharing class Stage08_PromptAssembly implements IStage {
      * @param groundingRules Grounding rules for AI behavior
      * @param rootObject The root Salesforce object
      * @param selectedFieldsRaw Map of object to field list
+     * @param selectedParentFieldsRaw V2.4: Map of object to parent lookup fields
+     * @param selectedGrandchildrenRaw V2.4: List of grandchild configs for proper path generation
      * @return Map containing the complete prompt configuration
      */
     private Map<String, Object> assembleMetaPromptConfiguration(
             String aiInstructions,
             String groundingRules,
             String rootObject,
-            Map<String, Object> selectedFieldsRaw) {
+            Map<String, Object> selectedFieldsRaw,
+            Map<String, Object> selectedParentFieldsRaw,
+            List<Object> selectedGrandchildrenRaw) {
 
-        // Build merge field reference section
-        String mergeFieldReference = buildMergeFieldReference(rootObject, selectedFieldsRaw);
+        // Build merge field reference section (V2.4: includes parent lookup fields and grandchildren)
+        String mergeFieldReference = buildMergeFieldReference(rootObject, selectedFieldsRaw,
+            selectedParentFieldsRaw, selectedGrandchildrenRaw);
 
         // Build complete meta-prompt:
         // 1. Meta-prompt (6 sections with role, data, principles, toolkit, rules, directive)
@@ -832,8 +888,32 @@ public without sharing class Stage08_PromptAssembly implements IStage {
     /**
      * @description Builds merge field reference for meta-prompt mode
      * Shows LLM what fields are available and how to reference them
+     * V2.4: Enhanced to include parent lookup fields and proper grandchild chained paths
      */
-    private String buildMergeFieldReference(String rootObject, Map<String, Object> selectedFieldsRaw) {
+    private String buildMergeFieldReference(String rootObject, Map<String, Object> selectedFieldsRaw,
+            Map<String, Object> selectedParentFieldsRaw, List<Object> selectedGrandchildrenRaw) {
+
+        // Build grandchild lookup maps from selectedGrandchildrenRaw
+        // Maps: objectName -> parentObject (e.g., OpportunityContactRole -> Opportunity)
+        Map<String, String> grandchildParentMap = new Map<String, String>();
+        Map<String, String> grandchildRelNameMap = new Map<String, String>(); // objectName -> relationshipName on parent
+        if (selectedGrandchildrenRaw != null) {
+            for (Object gcObj : selectedGrandchildrenRaw) {
+                if (gcObj instanceof Map<String, Object>) {
+                    Map<String, Object> gcMap = (Map<String, Object>) gcObj;
+                    String objName = (String) gcMap.get('objectName');
+                    String parentObj = (String) gcMap.get('parentObject');
+                    String relName = (String) gcMap.get('relationshipName');
+                    if (String.isNotBlank(objName) && String.isNotBlank(parentObj)) {
+                        grandchildParentMap.put(objName, parentObj);
+                        if (String.isNotBlank(relName)) {
+                            grandchildRelNameMap.put(objName, relName);
+                        }
+                    }
+                }
+            }
+        }
+
         String ref = '=== AVAILABLE MERGE FIELDS ===\n\n';
         ref += 'Use these merge fields to reference Salesforce data in your HTML output.\n';
         ref += 'GPTfy will substitute these with actual values at runtime.\n\n';
@@ -845,25 +925,78 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             for (Object field : fields) {
                 ref += '  {{{' + String.valueOf(field) + '}}}\n';
             }
+
+            // V2.4: Add parent lookup fields for root object (e.g., Owner.Name, Owner.Email)
+            if (selectedParentFieldsRaw != null && selectedParentFieldsRaw.containsKey(rootObject)) {
+                ref += '  -- Parent Lookups --\n';
+                List<Object> parentFields = (List<Object>) selectedParentFieldsRaw.get(rootObject);
+                for (Object pf : parentFields) {
+                    // Convert OwnerId.Name → Owner.Name, ContactId.Title → Contact.Title
+                    String convertedPath = convertLookupToRelationship(String.valueOf(pf));
+                    ref += '  {{{' + convertedPath + '}}}\n';
+                }
+            }
             ref += '\n';
         }
 
-        // Child object fields
+        // Child and grandchild object fields
         for (String objName : selectedFieldsRaw.keySet()) {
             if (objName != rootObject) {
                 List<Object> fields = (List<Object>) selectedFieldsRaw.get(objName);
-                String relationshipName = getRelationshipNameForObject(objName, rootObject);
+                Boolean isGrandchild = grandchildParentMap.containsKey(objName);
 
-                ref += objName.toUpperCase() + ' (Child) - iterate with {{#' + relationshipName + '}}...{{/' + relationshipName + '}}:\n';
-                ref += '  Start iteration: {{#' + relationshipName + '}}\n';
-                for (Object field : fields) {
-                    String fieldName = String.valueOf(field);
-                    // GPTfy requires relationship prefix on child fields: {{{Events.Subject}}} not {{{Subject}}}
-                    ref += '    {{{' + relationshipName + '.' + fieldName + '}}}\n';
+                if (isGrandchild) {
+                    // GRANDCHILD: Needs chained path like Opportunities.OpportunityContactRoles
+                    String parentObjName = grandchildParentMap.get(objName);
+                    String parentRelName = getRelationshipNameForObject(parentObjName, rootObject);
+                    String gcRelName = grandchildRelNameMap.containsKey(objName)
+                        ? grandchildRelNameMap.get(objName)
+                        : getRelationshipNameForObject(objName, parentObjName);
+                    String chainedPath = parentRelName + '.' + gcRelName;
+
+                    ref += objName.toUpperCase() + ' (Grandchild of ' + parentObjName + '):\n';
+                    ref += '  Nested iteration: {{#' + parentRelName + '}}{{#' + chainedPath + '}}...{{/' + chainedPath + '}}{{/' + parentRelName + '}}\n';
+                    ref += '  Fields use chained path: {{{' + chainedPath + '.FieldName}}}\n';
+                    for (Object field : fields) {
+                        String fieldName = String.valueOf(field);
+                        ref += '    {{{' + chainedPath + '.' + fieldName + '}}}\n';
+                    }
+
+                    // V2.4: Add parent lookup fields for grandchild (e.g., Contact.Name via ContactId)
+                    if (selectedParentFieldsRaw != null && selectedParentFieldsRaw.containsKey(objName)) {
+                        ref += '    -- Parent Lookups --\n';
+                        List<Object> parentFields = (List<Object>) selectedParentFieldsRaw.get(objName);
+                        for (Object pf : parentFields) {
+                            String convertedPath = convertLookupToRelationship(String.valueOf(pf));
+                            ref += '    {{{' + chainedPath + '.' + convertedPath + '}}}\n';
+                        }
+                    }
+                    ref += '\n';
+                } else {
+                    // DIRECT CHILD: Simple relationship name
+                    String relationshipName = getRelationshipNameForObject(objName, rootObject);
+
+                    ref += objName.toUpperCase() + ' (Child) - iterate with {{#' + relationshipName + '}}...{{/' + relationshipName + '}}:\n';
+                    ref += '  Start iteration: {{#' + relationshipName + '}}\n';
+                    for (Object field : fields) {
+                        String fieldName = String.valueOf(field);
+                        ref += '    {{{' + relationshipName + '.' + fieldName + '}}}\n';
+                    }
+
+                    // V2.4: Add parent lookup fields for child object (e.g., Contact.Name via ContactId)
+                    if (selectedParentFieldsRaw != null && selectedParentFieldsRaw.containsKey(objName)) {
+                        ref += '    -- Parent Lookups --\n';
+                        List<Object> parentFields = (List<Object>) selectedParentFieldsRaw.get(objName);
+                        for (Object pf : parentFields) {
+                            String convertedPath = convertLookupToRelationship(String.valueOf(pf));
+                            ref += '    {{{' + relationshipName + '.' + convertedPath + '}}}\n';
+                        }
+                    }
+
+                    ref += '  End iteration: {{/' + relationshipName + '}}\n';
+                    ref += '  Empty check: {{^' + relationshipName + '}}No ' + objName + ' records{{/' + relationshipName + '}}\n';
+                    ref += '\n';
                 }
-                ref += '  End iteration: {{/' + relationshipName + '}}\n';
-                ref += '  Empty check: {{^' + relationshipName + '}}No ' + objName + ' records{{/' + relationshipName + '}}\n';
-                ref += '\n';
             }
         }
 
@@ -1034,6 +1167,11 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             fieldsByObject.put(objectName, fields);
         }
 
+        // NOTE: selectedParentFields are NOT added to DCM fieldsByObject.
+        // Parent lookup syntax (e.g., {{{Owner.Name}}}, {{{Contact.Name}}}) is only for the prompt template.
+        // GPTfy resolves parent lookups at runtime from Salesforce schema - no DCM configuration needed.
+        // The parent fields are used in buildMergeFieldReference() for the prompt, not here.
+
         // Build child objects ONLY from selectedFields (objects that actually have usable context).
         // This mirrors the shell script behavior: Stage 4 filters to non-empty objects, and DCM config
         // should not include empty/low-signal objects.
@@ -1182,6 +1320,46 @@ public without sharing class Stage08_PromptAssembly implements IStage {
     }
 
     /**
+     * @description Converts lookup field path to relationship name path
+     * V2.4: Used for parent field integration from Stage 5 traversals
+     * Examples:
+     *   "ContactId.Name" -> "Contact.Name"
+     *   "OwnerId.Email" -> "Owner.Email"
+     *   "Custom_Lookup__c.Name" -> "Custom_Lookup__r.Name"
+     * @param fieldPath The lookup field path (e.g., "ContactId.Name")
+     * @return The relationship name path (e.g., "Contact.Name")
+     */
+    private String convertLookupToRelationship(String fieldPath) {
+        if (String.isBlank(fieldPath) || !fieldPath.contains('.')) {
+            return fieldPath;
+        }
+
+        List<String> parts = fieldPath.split('\\.');
+        if (parts.size() < 2) {
+            return fieldPath;
+        }
+
+        String lookupField = parts[0];
+        String relationshipName;
+
+        // Convert lookup field to relationship name
+        if (lookupField.endsWith('__c')) {
+            // Custom lookup: My_Lookup__c -> My_Lookup__r
+            relationshipName = lookupField.removeEnd('__c') + '__r';
+        } else if (lookupField.endsWith('Id')) {
+            // Standard lookup: ContactId -> Contact, OwnerId -> Owner
+            relationshipName = lookupField.removeEnd('Id');
+        } else {
+            // Already a relationship name or unknown format
+            relationshipName = lookupField;
+        }
+
+        // Rebuild the path with relationship name
+        parts[0] = relationshipName;
+        return String.join(parts, '.');
+    }
+
+    /**
      * @description Returns true if the object has minimum meaningful fields.
      * "Meaningful" excludes Id and all *Id / *ById fields, since those do not provide LLM context.
      */
@@ -1241,9 +1419,14 @@ public without sharing class Stage08_PromptAssembly implements IStage {
 
         if (useMetaPrompt) {
             // V2.0: Full meta-prompt with merge field reference
+            // V2.4: Include parent lookup fields for merge field documentation
             Map<String, Object> selectedFieldsRaw = (Map<String, Object>) inputs.get('selectedFields');
+            Map<String, Object> selectedParentFieldsRaw = (Map<String, Object>) inputs.get('selectedParentFields');
+            if (selectedParentFieldsRaw == null) {
+                selectedParentFieldsRaw = new Map<String, Object>();
+            }
             finalPromptCommand = aiInstructions + '\n\n' + groundingRules + '\n\n' +
-                                buildMergeFieldReference(rootObject, selectedFieldsRaw);
+                                buildMergeFieldReference(rootObject, selectedFieldsRaw, selectedParentFieldsRaw);
             // Empty template - LLM generates the HTML
             finalHtmlTemplate = '';
         } else {
@@ -1339,8 +1522,8 @@ public without sharing class Stage08_PromptAssembly implements IStage {
         // Section 4: UI TOOLKIT
         metaPrompt += buildUIToolkitSection();
 
-        // Section 5: OUTPUT RULES
-        metaPrompt += buildOutputRulesSection();
+        // Section 5: OUTPUT RULES (V2.4: Load from builder)
+        metaPrompt += buildOutputRulesSection(runId);
 
         // Section 6: DIRECTIVE
         metaPrompt += buildDirectiveSection(rootObject, businessContext);
@@ -1524,7 +1707,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
                 SELECT Id, Name, ccai__Prompt_Command__c, ccai__Description__c
                 FROM ccai__AI_Prompt__c
                 WHERE RecordTypeId = :builderRtId
-                  AND Category__c = 'UI Component'
+                  AND ccai__Type__c = 'UI Component'
                   AND ccai__Status__c = 'Active'
                 ORDER BY Name
                 LIMIT 20
@@ -1537,8 +1720,9 @@ public without sharing class Stage08_PromptAssembly implements IStage {
 
     /**
      * @description Section 5: OUTPUT RULES - GPTfy compliance
+     * V2.4: Now loads merge field syntax from Output Rules builder
      */
-    private String buildOutputRulesSection() {
+    private String buildOutputRulesSection(Id runId) {
         String section = '=== OUTPUT RULES ===\n\n';
         section += 'CRITICAL GPTfy REQUIREMENTS:\n';
         section += '1. **SINGLE-LINE HTML ONLY** - Your ENTIRE output must be ONE continuous line with NO newlines, line breaks, or \\n characters. Compress all HTML into a single line.\n';
@@ -1553,12 +1737,19 @@ public without sharing class Stage08_PromptAssembly implements IStage {
         section += '- Do NOT format for readability - format for GPTfy compliance\n';
         section += '- Example: <div style="padding:20px;"><h2>Title</h2><p>Content</p></div>\n\n';
 
-        section += 'MERGE FIELD SYNTAX:\n';
-        section += '- Root object fields: {{{FieldName}}}\n';
-        section += '- Parent lookup fields: {{{Relationship.Field}}} (e.g., {{{Account.Name}}})\n';
-        section += '- Child iteration: {{#Collection}}...{{/Collection}}\n';
-        section += '- Child fields (inside iteration): {{{Collection.FieldName}}} (e.g., {{{Events.Subject}}})\n';
-        section += '- Empty check: {{^Collection}}No items{{/Collection}}\n\n';
+        // V2.4: Load merge field syntax from Output Rules builder
+        String outputRules = loadOutputRules(runId);
+        if (String.isNotBlank(outputRules)) {
+            section += outputRules + '\n\n';
+        } else {
+            // Fallback to hardcoded syntax if builder not found
+            section += 'MERGE FIELD SYNTAX:\n';
+            section += '- Root object fields: {{{FieldName}}}\n';
+            section += '- Parent lookup fields: {{{Relationship.Field}}} (e.g., {{{Account.Name}}})\n';
+            section += '- Child iteration: {{#Collection}}...{{/Collection}}\n';
+            section += '- Child fields (inside iteration): {{{Collection.FieldName}}} (e.g., {{{Events.Subject}}})\n';
+            section += '- Empty check: {{^Collection}}No items{{/Collection}}\n\n';
+        }
 
         section += 'STYLING:\n';
         section += '- Font: Salesforce Sans, system fonts fallback\n';
@@ -1639,7 +1830,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             SELECT ccai__Prompt_Command__c, Name
             FROM ccai__AI_Prompt__c
             WHERE RecordType.DeveloperName = 'Builder'
-              AND Category__c = 'Quality Rule'
+              AND ccai__Type__c = 'Quality Rule'
               AND ccai__Status__c = 'Active'
             ORDER BY Name ASC
             LIMIT 10
@@ -1673,7 +1864,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             SELECT ccai__Prompt_Command__c, Name, ccai__Object__c
             FROM ccai__AI_Prompt__c
             WHERE RecordType.DeveloperName = 'Builder'
-              AND Category__c = 'Pattern'
+              AND ccai__Type__c = 'Pattern'
               AND ccai__Status__c = 'Active'
             ORDER BY Name ASC
             LIMIT 10

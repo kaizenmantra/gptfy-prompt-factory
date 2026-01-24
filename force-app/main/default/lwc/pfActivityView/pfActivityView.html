@@ -42,9 +42,27 @@
                     <p class="slds-m-top_small slds-text-color_weak">
                         Processing stage... Check the activity log below for real-time updates.
                     </p>
-                    <p class="slds-text-body_small slds-text-color_weak slds-m-top_x-small">
-                        Run ID: {runId}
-                    </p>
+                    <!-- Run ID and Debug Links -->
+                    <div class="slds-m-top_small">
+                        <lightning-button-group>
+                            <lightning-button
+                                label="View Run Record"
+                                icon-name="utility:new_window"
+                                onclick={handleViewRun}
+                                variant="neutral"
+                                title="Opens in new tab">
+                            </lightning-button>
+                            <template if:true={showStateFileLink}>
+                                <lightning-button
+                                    label="View State File"
+                                    icon-name="utility:file"
+                                    onclick={handleViewStateFile}
+                                    variant="neutral"
+                                    title="Opens JSON state file in new tab">
+                                </lightning-button>
+                            </template>
+                        </lightning-button-group>
+                    </div>
                 </div>
             </div>
         </template>
@@ -113,6 +131,31 @@
                             </div>
                         </template>
                     </div>
+                </div>
+
+                <!-- Debug Links -->
+                <div class="slds-m-top_large">
+                    <h3 class="slds-text-heading_small slds-m-bottom_medium">
+                        Debug & Inspect
+                    </h3>
+                    <lightning-button-group>
+                        <lightning-button
+                            label="View Run Record"
+                            icon-name="utility:new_window"
+                            onclick={handleViewRun}
+                            variant="neutral"
+                            title="Opens in new tab">
+                        </lightning-button>
+                        <template if:true={showStateFileLink}>
+                            <lightning-button
+                                label="View State File"
+                                icon-name="utility:file"
+                                onclick={handleViewStateFile}
+                                variant="neutral"
+                                title="Opens JSON state file in new tab">
+                            </lightning-button>
+                        </template>
+                    </lightning-button-group>
                 </div>
 
                 <!-- Next Steps -->

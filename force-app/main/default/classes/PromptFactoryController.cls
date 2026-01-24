@@ -530,6 +530,42 @@ public with sharing class PromptFactoryController {
     }
 
     /**
+     * @description Gets the state file information for a run (V2.3)
+     * Returns ContentVersion ID and ContentDocument ID for the pipeline state JSON file
+     * @param runId ID of the PF_Run__c record
+     * @return Map containing fileId (ContentVersion), documentId (ContentDocument), exists flag
+     */
+    @AuraEnabled(cacheable=false)
+    public static Map<String, Object> getStateFileInfo(Id runId) {
+        try {
+            Map<String, Object> result = new Map<String, Object>{
+                'exists' => false,
+                'fileId' => null,
+                'documentId' => null
+            };
+
+            if (runId == null) {
+                return result;
+            }
+
+            // Use PipelineState helper to get file IDs
+            Id fileId = PipelineState.getFileId(runId);
+            Id documentId = PipelineState.getDocumentId(runId);
+
+            if (fileId != null) {
+                result.put('exists', true);
+                result.put('fileId', fileId);
+                result.put('documentId', documentId);
+            }
+
+            return result;
+
+        } catch (Exception e) {
+            throw createAuraException('Failed to get state file info: ' + e.getMessage(), e);
+        }
+    }
+
+    /**
      * @description Custom exception for controller errors
      */
     public class ControllerException extends Exception {}

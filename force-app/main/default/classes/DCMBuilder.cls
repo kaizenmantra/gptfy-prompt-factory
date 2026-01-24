@@ -451,16 +451,267 @@ public with sharing class DCMBuilder {
         }
 
         for (String objectName : config.fieldsByObject.keySet()) {
-            SchemaHelper.FieldValidationResult validation =
-                SchemaHelper.validateFields(objectName, config.fieldsByObject.get(objectName));
-            if (!validation.objectExists) errors.add('Object "' + objectName + '" does not exist');
-            if (!validation.invalidFields.isEmpty()) 
-                errors.add('Invalid fields on ' + objectName + ': ' + String.join(validation.invalidFields, ', '));
-            if (!validation.inaccessibleFields.isEmpty())
-                errors.add('Inaccessible fields on ' + objectName + ': ' + String.join(validation.inaccessibleFields, ', '));
+            // Separate direct fields from parent lookup fields (dot-notation like Owner.Name)
+            List<String> directFields = new List<String>();
+            List<String> parentLookupFields = new List<String>();
+
+            for (String fieldName : config.fieldsByObject.get(objectName)) {
+                if (fieldName.contains('.')) {
+                    parentLookupFields.add(fieldName);
+                } else {
+                    directFields.add(fieldName);
+                }
+            }
+
+            // Validate direct fields normally
+            if (!directFields.isEmpty()) {
+                SchemaHelper.FieldValidationResult validation =
+                    SchemaHelper.validateFields(objectName, directFields);
+                if (!validation.objectExists) errors.add('Object "' + objectName + '" does not exist');
+                if (!validation.invalidFields.isEmpty())
+                    errors.add('Invalid fields on ' + objectName + ': ' + String.join(validation.invalidFields, ', '));
+                if (!validation.inaccessibleFields.isEmpty())
+                    errors.add('Inaccessible fields on ' + objectName + ': ' + String.join(validation.inaccessibleFields, ', '));
+            }
+
+            // Validate parent lookup fields (e.g., Owner.Name, Contact.Title)
+            // These are traversal paths through lookup relationships
+            for (String lookupPath : parentLookupFields) {
+                String validationError = validateParentLookupField(objectName, lookupPath);
+                if (validationError != null) {
+                    errors.add(validationError);
+                }
+            }
         }
 
         return errors;
+    }
+
+    /**
+     * @description Validates a parent lookup field path (e.g., Owner.Name, Contact.Title)
+     * Checks that the relationship exists and the target field is accessible
+     * @param sourceObject The object containing the lookup field (e.g., Account, OpportunityContactRole)
+     * @param lookupPath The dot-notation path (e.g., Owner.Name, Contact.Title)
+     * @return Error message if invalid, null if valid
+     */
+    private static String validateParentLookupField(String sourceObject, String lookupPath) {
+        List<String> parts = lookupPath.split('\\.');
+        if (parts.size() != 2) {
+            return 'Invalid lookup path "' + lookupPath + '" on ' + sourceObject +
+                ' - expected format: RelationshipName.FieldName';
+        }
+
+        String relationshipName = parts[0];
+        String targetFieldName = parts[1];
+
+        // Find the lookup field that matches this relationship name
+        Schema.DescribeSObjectResult sourceDescribe = SchemaHelper.getObjectDescribe(sourceObject);
+        if (sourceDescribe == null) {
+            return 'Source object "' + sourceObject + '" not found';
+        }
+
+        // Look for a lookup field with matching relationship name
+        Map<String, Schema.SObjectField> fieldMap = sourceDescribe.fields.getMap();
+        String targetObjectName = null;
+
+        for (Schema.SObjectField field : fieldMap.values()) {
+            Schema.DescribeFieldResult fieldDesc = field.getDescribe();
+            if (fieldDesc.getType() == Schema.DisplayType.REFERENCE) {
+                String fieldRelName = fieldDesc.getRelationshipName();
+                if (fieldRelName != null && fieldRelName.equalsIgnoreCase(relationshipName)) {
+                    // Found the relationship - get the target object
+                    List<Schema.SObjectType> refs = fieldDesc.getReferenceTo();
+                    if (!refs.isEmpty()) {
+                        // Use first reference (for polymorphic fields, this may not be exact but GPTfy handles it)
+                        targetObjectName = refs[0].getDescribe().getName();
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (targetObjectName == null) {
+            return 'Relationship "' + relationshipName + '" not found on ' + sourceObject +
+                ' for lookup path "' + lookupPath + '"';
+        }
+
+        // Validate the target field exists on the target object
+        if (!SchemaHelper.isFieldAccessible(targetObjectName, targetFieldName)) {
+            return 'Field "' + targetFieldName + '" not accessible on ' + targetObjectName +
+                ' (via ' + sourceObject + '.' + lookupPath + ')';
+        }
+
+        return null; // Valid
+    }
+
+    /**
+     * @description Wrapper for parent lookup information
+     */
+    public class ParentLookupInfo {
+        public String lookupField;
+        public String targetObject;
+        public String relationshipName;
+
+        public ParentLookupInfo(String field, String target, String relName) {
+            this.lookupField = field;
+            this.targetObject = target;
+            this.relationshipName = relName;
+        }
+    }
+
+    /**
+     * @description Discovers all parent lookup fields on a child object
+     * @param childObject The object to analyze for lookup fields
+     * @param rootObject The root object to exclude from parent lookups
+     * @return List of parent lookup information
+     */
+    private static List<ParentLookupInfo> discoverParentLookups(String childObject, String rootObject) {
+        List<ParentLookupInfo> lookups = new List<ParentLookupInfo>();
+
+        Schema.DescribeSObjectResult childDescribe = SchemaHelper.getObjectDescribe(childObject);
+        if (childDescribe == null) return lookups;
+
+        Map<String, Schema.SObjectField> fieldMap = childDescribe.fields.getMap();
+
+        // Track which parent objects we've already added to avoid duplicates
+        Set<String> addedParentObjects = new Set<String>();
+
+        for (String fieldName : fieldMap.keySet()) {
+            Schema.DescribeFieldResult fieldDesc = fieldMap.get(fieldName).getDescribe();
+
+            // Only process reference (lookup) fields
+            if (fieldDesc.getType() != Schema.DisplayType.REFERENCE) continue;
+
+            // Get target objects
+            List<Schema.sObjectType> references = fieldDesc.getReferenceTo();
+            if (references.isEmpty()) continue;
+
+            // Skip polymorphic fields that reference many objects (e.g., WhatId with 35 targets)
+            // These cause "List index out of bounds" errors during bulk DCM creation
+            if (references.size() > 2) continue;
+
+            // For each target object
+            for (Schema.sObjectType targetType : references) {
+                String targetObject = targetType.getDescribe().getName();
+
+                // Skip if target is the root object (already connected via CHILD relationship)
+                if (targetObject == rootObject) continue;
+
+                // Skip system objects we don't want to traverse
+                if (isSystemObject(targetObject)) continue;
+
+                // Skip if we've already added this parent object (deduplication)
+                if (addedParentObjects.contains(targetObject)) continue;
+
+                // Only include high-value parent objects for DCM
+                if (!isHighValueParentObject(targetObject)) continue;
+
+                // Get relationship name
+                String relationshipName = fieldDesc.getRelationshipName();
+                if (String.isBlank(relationshipName)) {
+                    relationshipName = fieldName.replace('Id', '').replace('__c', '__r');
+                }
+
+                lookups.add(new ParentLookupInfo(
+                    fieldDesc.getName(),
+                    targetObject,
+                    relationshipName
+                ));
+                addedParentObjects.add(targetObject);
+            }
+        }
+
+        return lookups;
+    }
+
+    /**
+     * @description Checks if a parent object is high-value for DCM inclusion
+     * @param objectName Object to check
+     * @return true if high-value parent
+     */
+    private static Boolean isHighValueParentObject(String objectName) {
+        // Only include commonly useful parent objects that provide meaningful context
+        Set<String> highValueObjects = new Set<String>{
+            'Contact', 'Account', 'Lead', 'Opportunity', 'Case',
+            'Product2', 'Campaign', 'Contract', 'Order', 'User'
+        };
+        return highValueObjects.contains(objectName);
+    }
+
+    /**
+     * @description Returns standard fields to include for a parent object
+     * @param objectName The object to get standard fields for
+     * @return List of field names
+     */
+    private static List<String> getStandardFieldsForObject(String objectName) {
+        List<String> standardFields = new List<String>();
+
+        // Common fields for most objects
+        List<String> commonFields = new List<String>{
+            'Name', 'Title', 'Email', 'Phone', 'MobilePhone',
+            'Industry', 'Type', 'Status', 'Description'
+        };
+
+        Schema.DescribeSObjectResult objDescribe = SchemaHelper.getObjectDescribe(objectName);
+        if (objDescribe == null) return standardFields;
+
+        Map<String, Schema.SObjectField> fieldMap = objDescribe.fields.getMap();
+
+        for (String fieldName : commonFields) {
+            if (fieldMap.containsKey(fieldName.toLowerCase())) {
+                // Use actual field name (correct casing)
+                standardFields.add(fieldMap.get(fieldName.toLowerCase()).getDescribe().getName());
+            }
+        }
+
+        // Always include Id if available
+        if (fieldMap.containsKey('id')) {
+            standardFields.add(0, 'Id'); // Add at beginning
+        }
+
+        return standardFields;
+    }
+
+    /**
+     * @description Creates a PARENT_LOOKUP detail record
+     * @param dcmId Data Context Mapping ID
+     * @param childObject The child object containing the lookup
+     * @param lookupField The lookup field name
+     * @param parentObject The parent object being looked up
+     * @param relationshipName The relationship name for traversal
+     * @param parentDetailId The ID of the child detail record this parent lookup belongs to
+     * @return Detail record
+     */
+    private static SObject createParentLookupDetail(
+        Id dcmId, String childObject, String lookupField,
+        String parentObject, String relationshipName, Id parentDetailId) {
+
+        SObject detail = newSObject('ccai__AI_Data_Extraction_Detail__c');
+        detail.put('ccai__AI_Data_Extraction_Mapping__c', dcmId);
+        detail.put('ccai__Object_Name__c', parentObject); // Target parent object
+        detail.put('ccai__RelationshipField__c', lookupField);
+        detail.put('ccai__RelationshipName__c', relationshipName);
+        detail.put('ccai__Type__c', 'PARENT_LOOKUP');
+        detail.put('ccai__Record_Limit__c', 1); // Parent lookups are 1:1
+        // Link to parent child detail record
+        if (parentDetailId != null) {
+            detail.put('ccai__Parent_Detail__c', parentDetailId);
+        }
+
+        return detail;
+    }
+
+    /**
+     * @description Checks if an object is a system object to exclude from traversals
+     * @param objectName Object to check
+     * @return true if system object
+     */
+    private static Boolean isSystemObject(String objectName) {
+        Set<String> systemObjects = new Set<String>{
+            'User', 'Group', 'Profile', 'RecordType', 'Organization',
+            'PermissionSet', 'PermissionSetAssignment', 'UserRole'
+        };
+        return systemObjects.contains(objectName);
     }
 
     public class DCMBuilderException extends Exception {}

@@ -9,15 +9,15 @@ All architecture, decisions, tasks, and progress tracked here.
 
 | Model | Task | File Being Modified | Started |
 |-------|------|---------------------|---------|
-| Opus | 3.7+ | Stage classes | 2026-01-24 |
+| Opus | 4.1+ | Stage08, LWC | 2026-01-24 |
 
-**Status:** V2.3 IN PROGRESS - Phase 3A & 3B complete. Pipeline now uses PipelineState. Ready for Phase 3C (Stage Updates) or testing.
+**Status:** V2.4 IN PROGRESS - Builder refactoring and LWC enhancements. V2.3 merged to main.
 
 ---
 
 ## Release Strategy
 
-### Current Branch: `feature/v2.3-json-state`
+### Current Branch: `feature/v2.4-builder-refactor`
 **Status:** Active development
 
 ### Version History
@@ -28,7 +28,8 @@ All architecture, decisions, tasks, and progress tracked here.
 | V2.0 | feature/builder-improvements | ✅ Complete | Meta-prompt architecture, LLM metadata, field validation |
 | V2.1 | feature/v2.1-enhancements | ✅ Complete | Visual diversity, parent traversals, builder library |
 | V2.2 | feature/v2.2-schema-intelligence | ⚠️ Abandoned | Schema enrichment attempted, pipeline state passing broke. See Decision Log. |
-| V2.3 | feature/v2.3-json-state | 🔨 Active | JSON file-based state, then cherry-pick V2.2 features |
+| V2.3 | feature/v2.3-json-state | ✅ Complete | JSON file-based state (PipelineState.cls), merge field notation fixes |
+| V2.4 | feature/v2.4-builder-refactor | 🔨 Active | Builder Type migration, Output Rules builder, LWC enhancements |
 
 ### V2.2 Abandonment Note
 
@@ -251,26 +252,146 @@ Once the JSON state foundation is solid, we'll add back the valuable V2.2 featur
 
 ---
 
-## V2.4 Task Queue (Future - Knowledge Base)
+## V2.4 Task Queue (Builder Refactoring & LWC Enhancements)
 
-Moved from original V2.3 plan. Will tackle after V2.3 foundation is complete.
+**Goal:** Simplify builder prompt architecture by using `ccai__Type__c` instead of `Category__c`. Add Output Rules builder. Enhance LWC with state file link and new-tab navigation.
 
-### Phase 4A: Builder Prompt Library Expansion
+### Phase 4A: Builder Type Migration (Opus)
 
-| # | Task | Model | Status | Notes |
-|---|------|-------|--------|-------|
-| 4.1 | Research UI component best practices | Sonnet | not_started | Dashboard design patterns |
-| 4.2 | Create UI Component builders (8 new) | Sonnet | not_started | See Builder Library section below |
-| 4.3 | Research analysis pattern best practices | Sonnet | not_started | Account health, opp coaching, etc. |
-| 4.4 | Create Analysis Pattern builders (5 new) | Sonnet | not_started | See Builder Library section below |
-
-### Phase 4B: Smart Builder Selection
+Migrate from custom `Category__c` field to standard `ccai__Type__c` picklist for builder prompt categorization.
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 4.5 | Add Weight__c to builder selection logic | Sonnet | not_started | Higher weight = higher priority |
-| 4.6 | Add object-specific builder filtering | Sonnet | not_started | Only load Opportunity builders for Opportunity |
-| 4.7 | Add token budget awareness | Opus | not_started | Don't exceed prompt size limit |
+| 4.1 | Add new picklist values to `ccai__Type__c` | Opus | done | User added via Setup UI: Quality Rule, Pattern, UI Component, Context Template, Traversal, Output Rules, Apex Service |
+| 4.2 | Create "Output Rules" builder prompt | Opus | done | Created via scripts/apex/insert_output_rules_builder.apex (ID: a0DQH00000KZwnB2AT) |
+| 4.3 | Update `loadQualityRules()` to use Type | Opus | done | Changed to `ccai__Type__c = 'Quality Rule'` |
+| 4.4 | Update `loadPatterns()` to use Type | Opus | done | Changed to `ccai__Type__c = 'Pattern'` |
+| 4.5 | Update `loadUIComponents()` to use Type | Opus | done | Changed to `ccai__Type__c = 'UI Component'` |
+| 4.6 | Update `loadContextTemplates()` to use Type | Opus | done | Changed to `ccai__Type__c = 'Context Template'` |
+| 4.7 | Update `loadTraversals()` to use Type | Opus | done | Changed to `ccai__Type__c = 'Traversal'` |
+| 4.8 | Add `loadOutputRules()` method to Stage08 | Opus | done | Added method to load Output Rules builder content |
+| 4.9 | Remove hardcoded merge field syntax from Stage08 | Opus | done | buildOutputRulesSection() now calls loadOutputRules() with fallback |
+| 4.10 | Update existing builder records to use Type | Opus | done | Migrated 66 builders via scripts/apex/migrate_builders_to_type.apex |
+| 4.11 | Deprecate Category__c field | Opus | done | All code now uses ccai__Type__c - no Category__c references remain |
+| 4.12 | Test all builder loading | Manual | not_started | Verify all builder types load correctly with new Type field |
+
+### Phase 4A-Extra: Traversal Consolidation (Sonnet)
+
+Consolidate granular traversal records into comprehensive object-focused records for better LLM comprehension and performance.
+
+**Why Consolidation is Better:**
+1. **LLM Comprehension** - LLM sees all traversal options for an object in one place, making better field selection decisions
+2. **Performance** - Fewer SOQL queries (1 record instead of 3-5 per object), less JSON parsing overhead, smaller prompt size
+3. **Maintainability** - One record to update per object instead of hunting through multiple granular records
+
+**Strategy:** Pilot with Account and Opportunity first (highest usage), validate with end-to-end test, then expand to remaining objects.
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 4.13a | Create consolidation script for Account + Opportunity | Sonnet | done | Created scripts/apex/consolidate_traversals_pilot.apex |
+| 4.14a | Run consolidation script | Sonnet | done | Created 2 consolidated records, deactivated 4 old granular records |
+| 4.15a | Verify builder count and content | Sonnet | done | 67 builders total, 23 traversals (down from 25) |
+| 4.16a | Test consolidated traversals in pipeline | Manual | in_progress | Run full pipeline with Account or Opportunity root object, verify Stage 5 field selection quality |
+| 4.17a | Consolidate remaining objects | Sonnet | not_started | Case, Contact, Lead, Event, Task, Product (pending pilot test results) |
+
+### Phase 4B: LWC Enhancements (Opus)
+
+Add state file link and fix navigation to open in new browser tabs.
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 4.18 | Add State File link to Run Detail LWC | Opus | done | Added getStateFileInfo() Apex method + LWC buttons |
+| 4.19 | Make State File link open in new tab | Opus | done | Uses NavigationMixin.GenerateUrl + window.open() |
+| 4.20 | Fix Run Logs link to open in new tab | Opus | done | Fixed pfRunHistory.handleViewRun() to use new tab |
+| 4.21 | Add State File content preview | Opus | not_started | Optional: Show JSON content inline (collapsible) |
+| 4.22 | Test LWC navigation behavior | Manual | not_started | Verify both links open in new tabs |
+
+### Phase 4C: DCM & Prompt Quality Fixes (Sonnet)
+
+**Critical Issues Found During Testing:**
+
+1. **DCM Missing Parent Lookups** - OpportunityContactRole includes ContactId but not Contact.Name, Contact.Title, etc. LLM extracted names from Description field text instead of proper merge fields (unreliable).
+2. **Recommendation Card Template** - Hardcoded "Recommended Action" label causes redundancy in output.
+3. **3-Level Traversal Missing** - DCM only goes 2 levels (Opportunity → OpportunityContactRole) instead of 3 (Opportunity → OpportunityContactRole → Contact).
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 4.26 | Fix Recommendation Card template in Stage08 | Sonnet | done | Updated builder record (a0DQH00000KZQ9E2AX) with placeholder and better guidance |
+| 4.27 | Add parent lookup auto-discovery to DCMBuilder | Sonnet | done | **FIXED via Stage08 integration**: Reverted broken DCMBuilder auto-discovery. Parent fields now flow through Stage05 traversals → Stage08 `selectedParentFields` → DCMBuilder `fieldsByObject`. Format converted: `ContactId.Name` → `Contact.Name`. |
+| 4.28 | Update DCMBuilder to support 3-level traversals | Sonnet | done | Covered by 4.27 fix. Parent lookups are added as dot-notation FIELD records (e.g., Object=`OpportunityContactRole`, Field=`Contact.Name`), NOT as PARENT_LOOKUP detail records. This matches working DCM `a05QH000008RJTNYA4`. |
+| 4.29 | Test DCM with OpportunityContactRole → Contact | Manual | not_started | Unblocked - run new pipeline to test |
+| 4.30 | Test prompt quality with proper Contact merge fields | Manual | not_started | Unblocked - run new pipeline to test |
+
+**Implementation Summary (Tasks 4.27-4.28):**
+
+The parent lookup feature now works correctly using the **existing infrastructure**:
+
+1. **Stage05 (Field Selection)** - Already loads traversal builders and outputs `selectedParentFields`:
+   - Format: `{"OpportunityContactRole": ["ContactId.Name", "ContactId.Title"]}`
+
+2. **Stage08 (Prompt Assembly)** - NEW: Merges `selectedParentFields` into `fieldsByObject`:
+   - Converts lookup field to relationship name: `ContactId.Name` → `Contact.Name`
+   - Merges with existing fields for each object
+
+3. **DCMBuilder** - Receives `fieldsByObject` with parent fields already included:
+   - Creates FIELD records with dot-notation (e.g., Object=`OpportunityContactRole`, Field=`Contact.Name`)
+   - No auto-discovery needed - fields come from traversal definitions
+
+**Key Insight:** The working DCM (`a05QH000008RJTNYA4`) stores parent lookups as dot-notation FIELD records, NOT as PARENT_LOOKUP detail records. This is how GPTfy supports parent traversals.
+
+**Testing Instructions for 4.29-4.30:**
+
+1. **Create a NEW Pipeline Run**:
+   - Run pipeline for an Opportunity record that has OpportunityContactRoles
+   - The DCM should include fields like `Contact.Name`, `Contact.Title` on OpportunityContactRole object
+
+2. **Verify DCM Fields**:
+   ```sql
+   SELECT ccai__Object__c, ccai__Field_Name__c
+   FROM ccai__DCM_Field__c
+   WHERE ccai__DCM__c = '<new_dcm_id>'
+   AND ccai__Object__c = 'OpportunityContactRole'
+   ```
+   - Expected: Should see `Contact.Name`, `Contact.Title`, etc.
+
+3. **Verify Prompt Template**:
+   - Check that LLM uses merge fields like `{{{OpportunityContactRoles.Contact.Name}}}`
+   - NOT just `{{{OpportunityContactRoles.ContactId}}}`
+
+4. **Test Prompt Execution**:
+   - Run the prompt and verify Contact names appear in output
+   - Should use proper field data, not extract from Description text
+
+### Phase 4D: Documentation & Cleanup (Opus)
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 4.31 | Update PROMPT_GENERATION_RULES.md | Opus | done | Docs already match Output Rules builder content |
+| 4.32 | Update Decision Log | Opus | done | Already documented Type vs Category + Output Rules decisions |
+| 4.33 | Final testing | Manual | not_started | Full pipeline run with all V2.4 changes |
+
+---
+
+## V2.5 Task Queue (Future - Knowledge Base)
+
+Moved from original V2.3 plan. Will tackle after V2.4 is complete.
+
+### Phase 5A: Builder Prompt Library Expansion
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 5.1 | Research UI component best practices | Sonnet | not_started | Dashboard design patterns |
+| 5.2 | Create UI Component builders (8 new) | Sonnet | not_started | See Builder Library section below |
+| 5.3 | Research analysis pattern best practices | Sonnet | not_started | Account health, opp coaching, etc. |
+| 5.4 | Create Analysis Pattern builders (5 new) | Sonnet | not_started | See Builder Library section below |
+
+### Phase 5B: Smart Builder Selection
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 5.5 | Add Weight__c to builder selection logic | Sonnet | not_started | Higher weight = higher priority |
+| 5.6 | Add object-specific builder filtering | Sonnet | not_started | Only load Opportunity builders for Opportunity |
+| 5.7 | Add token budget awareness | Opus | not_started | Don't exceed prompt size limit |
 
 ---
 
@@ -362,6 +483,45 @@ public class PipelineState {
 7. **Visible in UI** - LWC can show file contents directly
 
 ---
+
+## Traversal Builder Consolidation
+
+### Consolidation Strategy (V2.4)
+
+**Problem:** Original approach created separate builder records for each traversal path (e.g., "Account to Opportunity", "Account to Contact", "Account to Case"). This fragmented the LLM's understanding - it saw pieces instead of the complete traversal map for an object.
+
+**Solution:** Consolidate all traversals for an object into a single comprehensive builder record.
+
+**Pilot Results (Account + Opportunity):**
+- **Account Traversals** (a0DQH00000KZwon2AD) - Consolidates: Opportunity, Contact, Case, Contract traversals
+- **Opportunity Traversals** (a0DQH00000KZwoo2AD) - Consolidates: Account, Owner, OpportunityContactRole traversals
+- Reduced from 7 granular records to 2 consolidated records
+- LLM now sees complete relationship map in one prompt section
+
+**Remaining Objects to Consolidate (Pending Pilot Test):**
+- Case, Contact, Lead, Event, Task, Product, User, Quote, Order
+
+### Example: Consolidated Account Traversals
+
+```
+PARENT RELATIONSHIPS (lookup from child objects back to Account):
+
+1. Opportunity → Account
+   - Traverse via: OpportunityId field
+   - Suggested fields: Account.Name, Account.Industry, Account.Type, Account.BillingCity, Account.AnnualRevenue
+
+2. Contact → Account
+   - Traverse via: AccountId field
+   - Suggested fields: Account.Name, Account.Industry, Account.Type
+
+3. Case → Account
+   - Traverse via: AccountId field
+   - Suggested fields: Account.Name, Account.Type, Account.Industry
+
+4. Contract → Account
+   - Traverse via: AccountId field
+   - Suggested fields: Account.Name, Account.BillingCity
+```
 
 ## Parent Traversal Catalog
 
@@ -557,6 +717,11 @@ Stage 5: Field Selection (Enhanced)
 | 2026-01-24 | Use JSON file (ContentVersion) for pipeline state | Single source of truth, no size limits, easy to debug (download and inspect), no FLS issues, simple read/write pattern. Replaces complex stage record accumulation. |
 | 2026-01-24 | Opus handles all V2.3 tasks | Foundation work is architectural - design and implement together. Cherry-pick features afterward. |
 | 2026-01-24 | Cherry-pick V2.2 features after foundation | Schema enrichment, parent fields, grandchild discovery code exists in V2.2 branch - will port once JSON state is solid |
+| 2026-01-24 | Use ccai__Type__c instead of Category__c | Simplify builder prompt architecture. Type field already exists on ccai__AI_Prompt__c. No need for separate Category__c field. Cleaner queries, less custom metadata. |
+| 2026-01-24 | Create Output Rules builder prompt | Move merge field syntax rules from hardcoded Stage08 text to a builder prompt. Easier to maintain, update without code deployment. |
+| 2026-01-24 | LWC links open in new tabs | State file and run logs should open in new browser tabs to preserve Factory LWC context. Better UX for debugging. |
+| 2026-01-24 | Consolidate traversal builders by object | When LLM sees all traversal options for an object in one place (vs. fragmented across 3-5 records), it makes better field selection decisions. Also improves performance (fewer SOQL queries) and maintainability (one record to update). Pilot with Account + Opportunity first. |
+| 2026-01-24 | DCMBuilder must create parent lookups for child objects | Testing revealed OpportunityContactRole includes ContactId but not Contact.Name/Title/Email. LLM was extracting names from Description field text (unreliable). DCMBuilder needs to auto-discover child object lookups and create PARENT_LOOKUP records for related fields. Enables 3-level traversals. |
 
 ---
 
@@ -593,6 +758,19 @@ Stage 5: Field Selection (Enhanced)
 | 2026-01-24 | V2.2 Analysis | Opus | Reviewed branch: 31 commits, 6125 insertions. Phase 2F (pass-through removal) broke pipeline. Phase 2A/2C/2G features are valuable and can be cherry-picked. |
 | 2026-01-24 | V2.3 Decision | Opus | Abandoned V2.2 branch. Created feature/v2.3-json-state from main. Will implement PipelineState.cls (JSON file approach) first, then cherry-pick V2.2 features. |
 | 2026-01-24 | V2.3 Planning | Opus | Documented full V2.3 task queue: 37 tasks across 8 phases. Includes PipelineState foundation, stage updates, LWC UI changes, and feature cherry-picks. |
+| 2026-01-24 | V2.3 Merge field fixes | Opus | Fixed Stage02 "string -" placeholder bug, Stage08 child field notation ({{{Events.Subject}}} format), updated PROMPT_GENERATION_RULES.md |
+| 2026-01-24 | V2.3 Merged to main | Opus | V2.3 complete: PipelineState.cls, StageJobHelper integration, merge field notation fixes. Merged feature/v2.3-json-state → main. |
+| 2026-01-24 | V2.4 Branch created | Opus | Created feature/v2.4-builder-refactor for Type migration, Output Rules builder, LWC enhancements |
+| 2026-01-24 | Tasks 4.1-4.8, 4.10-4.11 | Opus | Migrated all builder code from Category__c to ccai__Type__c. Updated Stage08, Stage05, BuilderDiagnostic, P_PromptBuilderController. Created Output Rules builder (a0DQH00000KZwnB2AT). Migrated 66 builders. Added loadOutputRules() method. |
+| 2026-01-24 | Task 4.9 | Opus | Updated buildOutputRulesSection(runId) to load Output Rules builder dynamically instead of hardcoded merge field syntax. Deployed to org. 67 builders now active. |
+| 2026-01-24 | Tasks 4.13a-4.15a: Traversal consolidation pilot | Sonnet | Created consolidate_traversals_pilot.apex script. Consolidated Account (4 records → 1) and Opportunity (3 records → 1) traversals. Deactivated old granular records. Builder count: 67 total, 23 traversals. Awaiting end-to-end test validation. |
+| 2026-01-24 | Task 4.16a: Pipeline testing - Critical issues found | Sonnet | Tested Opportunity pipeline (ID: 006QH00000HjgvlYAB). Found 3 issues: (1) DCM missing Contact parent lookups for OpportunityContactRole - LLM extracted names from Description text instead of merge fields (unreliable), (2) Recommendation Card template has redundant "Recommended Action" label, (3) 3-level traversals not working (Opportunity → OCR → Contact). Added Phase 4C tasks to fix DCMBuilder and Stage08. |
+| 2026-01-24 | Task 4.26: Fix Recommendation Card template | Sonnet | Updated builder record (a0DQH00000KZQ9E2AX) to remove hardcoded "Recommended Action" label. Changed to placeholder "[Specific action: who does what by when]" with improved "When to use" guidance. Script: scripts/apex/fix_recommendation_card_template.apex. |
+| 2026-01-24 | Tasks 4.27-4.28: Parent lookup auto-discovery | Sonnet | Implemented automatic parent lookup discovery in DCMBuilder. New methods: discoverParentLookups(), getStandardFieldsForObject(), createParentLookupDetail(), isSystemObject(). When child objects are added (e.g., OpportunityContactRole), DCM now auto-discovers lookups (ContactId → Contact) and creates PARENT_LOOKUP records with standard fields (Name, Title, Email, Phone). Enables 3-level traversals: Account → Opportunity → OpportunityContactRole → Contact. Deployed successfully. |
+| 2026-01-24 | Tasks 4.29-4.30: Testing verification | Sonnet | Created verify_parent_lookup_fix.apex script to validate parent lookup auto-discovery in new DCMs. Added comprehensive testing instructions to Phase 4C. Previous pipeline run (a0gQH000005GNozYAG) was created BEFORE the DCMBuilder fix deployment, so Contact.Name/Title/Email fields are missing. User needs to run NEW pipeline to test the fix. |
+| 2026-01-24 | Bug fix: PARENT_LOOKUP missing Parent_Detail__c | Sonnet | Fixed "List index out of bounds: 0" error in Stage 9. PARENT_LOOKUP detail records were missing Parent_Detail__c field to link them to their child object's detail record. Updated createParentLookupDetail() to accept parentDetailId parameter and set ccai__Parent_Detail__c field. Deployed successfully. User can now retry pipeline run. |
+| 2026-01-24 | DISABLED: PARENT_LOOKUP auto-discovery | Opus | GPTfy managed package doesn't support PARENT_LOOKUP type in DCM Details. Prompts with PARENT_LOOKUP records cause "Attempt to de-reference a null object" error on prompt detail page. Root cause: PARENT_LOOKUP is a custom type we created; GPTfy only supports CHILD and GRANDCHILD types. Fix: (1) Deleted 8 PARENT_LOOKUP records from broken DCM a05QH000008RKm1YAG, (2) Commented out PHASE 1.5 in DCMBuilder.createDCMWithGrandchildren(). TODO: Investigate if GPTfy has a supported way to enable parent lookup traversals or if this should be handled via prompt merge field syntax only. |
+| 2026-01-24 | FIXED: Parent lookup via Stage08 integration | Opus | Discovered working DCM (a05QH000008RJTNYA4) uses dot-notation FIELD records, NOT PARENT_LOOKUP details. Fix: (1) Reverted broken auto-discovery code from DCMBuilder PHASE 1.5, (2) Added `selectedParentFields` integration to Stage08's `buildDCMConfigForStage9()`, (3) Added `convertLookupToRelationship()` to convert `ContactId.Name` → `Contact.Name`. Parent fields now flow: Stage05 traversals → `selectedParentFields` → Stage08 → `fieldsByObject` → DCMBuilder. No more guessing fields - uses existing traversal definitions. |
 
 ---
 
