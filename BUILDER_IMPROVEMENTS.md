@@ -11,7 +11,7 @@ All architecture, decisions, tasks, and progress tracked here.
 |-------|------|---------------------|---------|
 | - | - | - | - |
 
-**Status:** V2.1 COMPLETE. V2.2 in progress (14/20 tasks done) - Phase 2A+2B+2D complete. Parent traversal (2C) and testing (2E) remaining.
+**Status:** V2.1 COMPLETE. V2.2 in progress (14/26 tasks done) - Phase 2A+2B+2D complete. Parent traversal syntax fixes (2C.5) CRITICAL, then testing (2E).
 
 ---
 
@@ -173,7 +173,20 @@ Make parent fields actually work in DCM and final output. V2.1 added suggestions
 | 2.10 | Update DCMBuilder for parent field syntax | Sonnet | done | Added createParentFieldRecord() and getParentObjectFromLookup() methods. Creates DCM field records with dot notation (e.g., "Owner.Name") |
 | 2.11 | Update Stage 9 to include parent fields in DCM creation | Sonnet | done | DCMBuilder.createDCMWithGrandchildren() now processes selectedParentFields and creates parent field records for root, children, and grandchildren |
 | 2.12 | Update merge field reference for parent fields | Sonnet | done | Stage08 buildMergeFieldReference() now shows parent field syntax: {{{Owner.Name}}} (from OwnerId.Name) for root and child objects |
-| 2.13 | Test parent traversal end-to-end | Manual | not_started | Verify `{{{Owner.Name}}}` resolves to actual user name in output |
+| 2.13 | **BLOCKED** - Fix merge syntax issues first | Manual | blocked | Requires fixes in 2.13a-2.13e below |
+
+#### Phase 2C.5: Parent Field Merge Syntax Corrections (CRITICAL)
+
+**Context:** Code review revealed we're using string manipulation instead of schema-provided relationship names, and training the LLM on wrong format (API names vs relationship names). See gap analysis for details.
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 2.13a | Use schema relationshipName in Stage 5 traversal prompts | Sonnet | not_started | Show `Owner.Name` not `OwnerId.Name` in LLM examples. Update buildFieldSelectionPrompt() lines 728-729 |
+| 2.13b | Update TraversalDefinition to include relationshipName | Sonnet | not_started | Add `relationshipName` field to TraversalDefinition class so LLM sees correct merge syntax |
+| 2.13c | Replace DCMBuilder string manipulation with schema lookup | Sonnet | not_started | Use SchemaHelper.getParentRelationships() instead of `.removeEnd('Id')` hack |
+| 2.13d | Eliminate Stage08 convertLookupToRelationship() conversion | Sonnet | not_started | If LLM outputs relationship names correctly, no conversion needed |
+| 2.13e | Add validation for edge cases (polymorphic, custom lookups) | Sonnet | not_started | Test WhoId→Who, WhatId→What, Custom__c→Custom__r |
+| 2.13f | Test parent traversal end-to-end | Manual | not_started | Verify `{{{Owner.Name}}}` resolves correctly in output after fixes |
 
 ### Phase 2D: LLM-Enhanced Field Selection
 
@@ -202,11 +215,12 @@ Send enriched metadata to LLM for smarter field selection.
 |-------|-------|-------|
 | 2A | 2.1-2.4 | Schema enrichment (helpText, picklist, parents, categories) |
 | 2B | 2.5-2.8 | Field density profiling (query records, calculate %) |
-| 2C | 2.9-2.13 | Parent traversal resolution (make it actually work) |
+| 2C | 2.9-2.12 | Parent traversal resolution (DCM creation) |
+| 2C.5 | 2.13a-2.13f | **CRITICAL:** Parent field merge syntax fixes (use schema, not string hacks) |
 | 2D | 2.14-2.17 | LLM-enhanced selection (use the enriched data) |
 | 2E | 2.18-2.20 | Testing & validation |
 
-**Total: 20 tasks** (was 13 in original plan)
+**Total: 26 tasks** (was 20, added 6 for merge syntax fixes)
 
 **Key Deliverables:**
 1. `SchemaHelper.FieldMetadata` enriched with helpText, picklistValues, category, usagePercent
@@ -472,6 +486,7 @@ Stage 5: Field Selection (Enhanced)
 | 2026-01-23 | Tasks 2.6, 2.8: Review Sonnet's Work | Opus | Reviewed calculateFieldDensity() implementation, verified Stage 5 integration. Tested: Opportunity 31 fields, Amount 92%, Description 84% |
 | 2026-01-23 | Sync Verification | Opus | Verified all Apex classes deployed to Salesforce org match codebase. Field density and enriched metadata working correctly |
 | 2026-01-23 | V2.2 Debug: Parent Traversal | Opus | Found root cause: Stage 5 LLM not returning selectedParentFields. Fixed by making parent field selection REQUIRED in prompt with explicit instructions |
+| 2026-01-23 | V2.2 Gap Analysis: Parent Field Merge Syntax | Sonnet | Comprehensive code review revealed critical issues: (1) Using string manipulation instead of schema relationshipName, (2) LLM trained on API names (OwnerId) instead of relationship names (Owner), (3) Conversion logic needed instead of correct format from start. Created Phase 2C.5 with 6 fix tasks |
 
 ---
 
