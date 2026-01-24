@@ -1,14 +1,80 @@
-import { LightningElement, api } from 'lwc';
+import { LightningElement, api, wire } from 'lwc';
+import { NavigationMixin } from 'lightning/navigation';
+import getStateFileInfo from '@salesforce/apex/PromptFactoryController.getStateFileInfo';
 
 /**
  * Activity View component - displays stage-specific content
  * Shows quality scorecard on completion, errors on failure
+ * V2.4: Added state file link and run record link (open in new tabs)
  */
-export default class PfActivityView extends LightningElement {
+export default class PfActivityView extends NavigationMixin(LightningElement) {
     @api runId = null;
     @api currentStage = 0;
     @api pipelineStatus = 'draft';
     @api qualityScorecard = null;
+
+    // State file info
+    stateFileExists = false;
+    stateFileId = null;
+    stateDocumentId = null;
+
+    /**
+     * Wire adapter to fetch state file info when runId changes
+     */
+    @wire(getStateFileInfo, { runId: '$runId' })
+    wiredStateFile({ error, data }) {
+        if (data) {
+            this.stateFileExists = data.exists;
+            this.stateFileId = data.fileId;
+            this.stateDocumentId = data.documentId;
+        } else if (error) {
+            console.warn('Could not load state file info:', error);
+            this.stateFileExists = false;
+        }
+    }
+
+    /**
+     * Open run record in new tab
+     */
+    handleViewRun() {
+        if (!this.runId) return;
+
+        this[NavigationMixin.GenerateUrl]({
+            type: 'standard__recordPage',
+            attributes: {
+                recordId: this.runId,
+                objectApiName: 'PF_Run__c',
+                actionName: 'view'
+            }
+        }).then(url => {
+            window.open(url, '_blank');
+        });
+    }
+
+    /**
+     * Open state file in new tab
+     */
+    handleViewStateFile() {
+        if (!this.stateDocumentId) return;
+
+        this[NavigationMixin.GenerateUrl]({
+            type: 'standard__recordPage',
+            attributes: {
+                recordId: this.stateDocumentId,
+                objectApiName: 'ContentDocument',
+                actionName: 'view'
+            }
+        }).then(url => {
+            window.open(url, '_blank');
+        });
+    }
+
+    /**
+     * Show state file link when file exists and run is active
+     */
+    get showStateFileLink() {
+        return this.stateFileExists && this.runId && this.pipelineStatus !== 'draft';
+    }
 
     // Stage content definitions
     stageInfo = [
