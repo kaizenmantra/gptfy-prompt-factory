@@ -291,8 +291,8 @@ Add state file link and fix navigation to open in new browser tabs.
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 4.18 | Update PROMPT_GENERATION_RULES.md | Opus | not_started | Ensure docs match Output Rules builder content |
-| 4.19 | Update Decision Log | Opus | not_started | Document Type vs Category decision |
+| 4.18 | Update PROMPT_GENERATION_RULES.md | Opus | done | Docs already match Output Rules builder content |
+| 4.19 | Update Decision Log | Opus | done | Already documented Type vs Category + Output Rules decisions |
 | 4.20 | Final testing | Manual | not_started | Full pipeline run with all V2.4 changes |
 
 ---
