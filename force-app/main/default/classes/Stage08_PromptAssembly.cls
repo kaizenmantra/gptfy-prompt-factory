@@ -7,18 +7,19 @@
  * =========================================================
  * This stage loads and injects Builder Prompts from ccai__AI_Prompt__c records
  * with RecordType.DeveloperName = 'Builder'. Builder prompts are queried by
- * Category__c field and injected into the final prompt:
+ * ccai__Type__c field and injected into the final prompt:
  *
- *   - Quality Rules     (Category__c = 'Quality Rule')
- *   - Patterns          (Category__c = 'Pattern')
- *   - UI Components     (Category__c = 'UI Component')
- *   - Context Templates (Category__c = 'Context Template')
- *   - Traversals        (Category__c = 'Traversal') - V2.1: Parent field mappings
+ *   - Quality Rules     (ccai__Type__c = 'Quality Rule')
+ *   - Patterns          (ccai__Type__c = 'Pattern')
+ *   - UI Components     (ccai__Type__c = 'UI Component')
+ *   - Context Templates (ccai__Type__c = 'Context Template')
+ *   - Traversals        (ccai__Type__c = 'Traversal') - V2.1: Parent field mappings
+ *   - Output Rules      (ccai__Type__c = 'Output Rules') - V2.4: Merge field syntax
  *
  * Requirements for Builder Prompts to be injected:
  *   1. RecordType must be 'Builder' (not 'Execution')
  *   2. ccai__Status__c must be 'Active'
- *   3. Category__c must match one of the above values
+ *   3. ccai__Type__c must match one of the above values
  *   4. For Patterns: ccai__Object__c should match rootObject or be null (global)
  *
  * Verification: Run ID a0gQH000005GHurYAG confirmed all 6 text-based builder
@@ -508,7 +509,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
                 SELECT Id, Name, ccai__Prompt_Command__c
                 FROM ccai__AI_Prompt__c
                 WHERE RecordTypeId = :builderRtId
-                  AND Category__c = 'Quality Rule'
+                  AND ccai__Type__c = 'Quality Rule'
                   AND ccai__Status__c = 'Active'
                 ORDER BY Name
             ];
@@ -555,7 +556,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
                 SELECT Id, Name, ccai__Prompt_Command__c
                 FROM ccai__AI_Prompt__c
                 WHERE RecordTypeId = :builderRtId
-                  AND Category__c = 'Pattern'
+                  AND ccai__Type__c = 'Pattern'
                   AND ccai__Status__c = 'Active'
                   AND (ccai__Object__c = :rootObject OR ccai__Object__c = null)
                 ORDER BY Name
@@ -602,7 +603,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
                 SELECT Id, Name, ccai__Prompt_Command__c
                 FROM ccai__AI_Prompt__c
                 WHERE RecordTypeId = :builderRtId
-                  AND Category__c = 'UI Component'
+                  AND ccai__Type__c = 'UI Component'
                   AND ccai__Status__c = 'Active'
                 ORDER BY Name
             ];
@@ -648,7 +649,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
                 SELECT Id, Name, ccai__Prompt_Command__c
                 FROM ccai__AI_Prompt__c
                 WHERE RecordTypeId = :builderRtId
-                  AND Category__c = 'Context Template'
+                  AND ccai__Type__c = 'Context Template'
                   AND ccai__Status__c = 'Active'
                 ORDER BY Name
             ];
@@ -695,7 +696,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
                 SELECT Id, Name, ccai__Prompt_Command__c, ccai__Object__c
                 FROM ccai__AI_Prompt__c
                 WHERE RecordTypeId = :builderRtId
-                  AND Category__c = 'Traversal'
+                  AND ccai__Type__c = 'Traversal'
                   AND ccai__Status__c = 'Active'
                   AND (ccai__Object__c = :rootObject OR ccai__Object__c = null)
                 ORDER BY Name
@@ -723,6 +724,43 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             System.debug(LoggingLevel.ERROR, errorMsg);
             // Return empty array on error (non-critical)
             return '[]';
+        }
+    }
+
+    /**
+     * @description V2.4: Load Output Rules from Builder Prompts
+     * Contains GPTfy merge field syntax rules for prompt generation
+     * @param runId PF_Run__c ID for logging
+     * @return Output rules content or empty string if not found
+     */
+    private String loadOutputRules(Id runId) {
+        try {
+            PromptFactoryLogger.info(runId, 8, 'Loading Output Rules builder');
+
+            Id builderRtId = Schema.SObjectType.ccai__AI_Prompt__c.getRecordTypeInfosByDeveloperName().get('Builder').getRecordTypeId();
+
+            List<ccai__AI_Prompt__c> outputRules = [
+                SELECT Id, Name, ccai__Prompt_Command__c
+                FROM ccai__AI_Prompt__c
+                WHERE RecordTypeId = :builderRtId
+                  AND ccai__Type__c = 'Output Rules'
+                  AND ccai__Status__c = 'Active'
+                ORDER BY Name
+                LIMIT 1
+            ];
+
+            if (outputRules.isEmpty()) {
+                PromptFactoryLogger.warning(runId, 8, 'No Output Rules builder found');
+                return '';
+            }
+
+            PromptFactoryLogger.info(runId, 8, 'Loaded Output Rules: ' + outputRules[0].Name + ' (' + outputRules[0].ccai__Prompt_Command__c.length() + ' chars)');
+            return outputRules[0].ccai__Prompt_Command__c;
+
+        } catch (Exception e) {
+            String errorMsg = 'Failed to load Output Rules: ' + e.getMessage();
+            System.debug(LoggingLevel.WARN, errorMsg);
+            return '';
         }
     }
 
@@ -1339,8 +1377,8 @@ public without sharing class Stage08_PromptAssembly implements IStage {
         // Section 4: UI TOOLKIT
         metaPrompt += buildUIToolkitSection();
 
-        // Section 5: OUTPUT RULES
-        metaPrompt += buildOutputRulesSection();
+        // Section 5: OUTPUT RULES (V2.4: Load from builder)
+        metaPrompt += buildOutputRulesSection(runId);
 
         // Section 6: DIRECTIVE
         metaPrompt += buildDirectiveSection(rootObject, businessContext);
@@ -1524,7 +1562,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
                 SELECT Id, Name, ccai__Prompt_Command__c, ccai__Description__c
                 FROM ccai__AI_Prompt__c
                 WHERE RecordTypeId = :builderRtId
-                  AND Category__c = 'UI Component'
+                  AND ccai__Type__c = 'UI Component'
                   AND ccai__Status__c = 'Active'
                 ORDER BY Name
                 LIMIT 20
@@ -1537,8 +1575,9 @@ public without sharing class Stage08_PromptAssembly implements IStage {
 
     /**
      * @description Section 5: OUTPUT RULES - GPTfy compliance
+     * V2.4: Now loads merge field syntax from Output Rules builder
      */
-    private String buildOutputRulesSection() {
+    private String buildOutputRulesSection(Id runId) {
         String section = '=== OUTPUT RULES ===\n\n';
         section += 'CRITICAL GPTfy REQUIREMENTS:\n';
         section += '1. **SINGLE-LINE HTML ONLY** - Your ENTIRE output must be ONE continuous line with NO newlines, line breaks, or \\n characters. Compress all HTML into a single line.\n';
@@ -1553,12 +1592,19 @@ public without sharing class Stage08_PromptAssembly implements IStage {
         section += '- Do NOT format for readability - format for GPTfy compliance\n';
         section += '- Example: <div style="padding:20px;"><h2>Title</h2><p>Content</p></div>\n\n';
 
-        section += 'MERGE FIELD SYNTAX:\n';
-        section += '- Root object fields: {{{FieldName}}}\n';
-        section += '- Parent lookup fields: {{{Relationship.Field}}} (e.g., {{{Account.Name}}})\n';
-        section += '- Child iteration: {{#Collection}}...{{/Collection}}\n';
-        section += '- Child fields (inside iteration): {{{Collection.FieldName}}} (e.g., {{{Events.Subject}}})\n';
-        section += '- Empty check: {{^Collection}}No items{{/Collection}}\n\n';
+        // V2.4: Load merge field syntax from Output Rules builder
+        String outputRules = loadOutputRules(runId);
+        if (String.isNotBlank(outputRules)) {
+            section += outputRules + '\n\n';
+        } else {
+            // Fallback to hardcoded syntax if builder not found
+            section += 'MERGE FIELD SYNTAX:\n';
+            section += '- Root object fields: {{{FieldName}}}\n';
+            section += '- Parent lookup fields: {{{Relationship.Field}}} (e.g., {{{Account.Name}}})\n';
+            section += '- Child iteration: {{#Collection}}...{{/Collection}}\n';
+            section += '- Child fields (inside iteration): {{{Collection.FieldName}}} (e.g., {{{Events.Subject}}})\n';
+            section += '- Empty check: {{^Collection}}No items{{/Collection}}\n\n';
+        }
 
         section += 'STYLING:\n';
         section += '- Font: Salesforce Sans, system fonts fallback\n';
@@ -1639,7 +1685,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             SELECT ccai__Prompt_Command__c, Name
             FROM ccai__AI_Prompt__c
             WHERE RecordType.DeveloperName = 'Builder'
-              AND Category__c = 'Quality Rule'
+              AND ccai__Type__c = 'Quality Rule'
               AND ccai__Status__c = 'Active'
             ORDER BY Name ASC
             LIMIT 10
@@ -1673,7 +1719,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             SELECT ccai__Prompt_Command__c, Name, ccai__Object__c
             FROM ccai__AI_Prompt__c
             WHERE RecordType.DeveloperName = 'Builder'
-              AND Category__c = 'Pattern'
+              AND ccai__Type__c = 'Pattern'
               AND ccai__Status__c = 'Active'
             ORDER BY Name ASC
             LIMIT 10

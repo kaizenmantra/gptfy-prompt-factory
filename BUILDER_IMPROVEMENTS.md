@@ -262,17 +262,17 @@ Migrate from custom `Category__c` field to standard `ccai__Type__c` picklist for
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 4.1 | Add new picklist values to `ccai__Type__c` | Opus | not_started | Add: 'Quality Rule', 'Pattern', 'UI Component', 'Context Template', 'Traversal', 'Output Rules' |
-| 4.2 | Create "Output Rules" builder prompt | Opus | not_started | Contains merge field syntax rules, moved from Stage08 hardcoded text |
-| 4.3 | Update `loadQualityRules()` to use Type | Opus | not_started | Change from `Category__c = 'Quality Rule'` to `ccai__Type__c = 'Quality Rule'` |
-| 4.4 | Update `loadPatterns()` to use Type | Opus | not_started | Change from `Category__c = 'Pattern'` to `ccai__Type__c = 'Pattern'` |
-| 4.5 | Update `loadUIComponents()` to use Type | Opus | not_started | Change from `Category__c = 'UI Component'` to `ccai__Type__c = 'UI Component'` |
-| 4.6 | Update `loadContextTemplates()` to use Type | Opus | not_started | Change from `Category__c = 'Context Template'` to `ccai__Type__c = 'Context Template'` |
-| 4.7 | Update `loadTraversals()` to use Type | Opus | not_started | Change from `Category__c = 'Traversal'` to `ccai__Type__c = 'Traversal'` |
-| 4.8 | Add `loadOutputRules()` method to Stage08 | Opus | not_started | Load Output Rules builder and inject into meta-prompt |
-| 4.9 | Remove hardcoded merge field syntax from Stage08 | Opus | not_started | Replace `buildMergeFieldReference()` hardcoded text with loaded builder content |
-| 4.10 | Update existing builder records to use Type | Opus | not_started | Migrate all builders from Category__c to ccai__Type__c |
-| 4.11 | Deprecate Category__c field | Opus | not_started | Remove field from code, mark for deletion |
+| 4.1 | Add new picklist values to `ccai__Type__c` | Opus | done | User added via Setup UI: Quality Rule, Pattern, UI Component, Context Template, Traversal, Output Rules, Apex Service |
+| 4.2 | Create "Output Rules" builder prompt | Opus | done | Created via scripts/apex/insert_output_rules_builder.apex (ID: a0DQH00000KZwnB2AT) |
+| 4.3 | Update `loadQualityRules()` to use Type | Opus | done | Changed to `ccai__Type__c = 'Quality Rule'` |
+| 4.4 | Update `loadPatterns()` to use Type | Opus | done | Changed to `ccai__Type__c = 'Pattern'` |
+| 4.5 | Update `loadUIComponents()` to use Type | Opus | done | Changed to `ccai__Type__c = 'UI Component'` |
+| 4.6 | Update `loadContextTemplates()` to use Type | Opus | done | Changed to `ccai__Type__c = 'Context Template'` |
+| 4.7 | Update `loadTraversals()` to use Type | Opus | done | Changed to `ccai__Type__c = 'Traversal'` |
+| 4.8 | Add `loadOutputRules()` method to Stage08 | Opus | done | Added method to load Output Rules builder content |
+| 4.9 | Remove hardcoded merge field syntax from Stage08 | Opus | done | buildOutputRulesSection() now calls loadOutputRules() with fallback |
+| 4.10 | Update existing builder records to use Type | Opus | done | Migrated 66 builders via scripts/apex/migrate_builders_to_type.apex |
+| 4.11 | Deprecate Category__c field | Opus | done | All code now uses ccai__Type__c - no Category__c references remain |
 | 4.12 | Test all builder loading | Manual | not_started | Verify all builder types load correctly with new Type field |
 
 ### Phase 4B: LWC Enhancements (Opus)
@@ -645,6 +645,8 @@ Stage 5: Field Selection (Enhanced)
 | 2026-01-24 | V2.3 Merge field fixes | Opus | Fixed Stage02 "string -" placeholder bug, Stage08 child field notation ({{{Events.Subject}}} format), updated PROMPT_GENERATION_RULES.md |
 | 2026-01-24 | V2.3 Merged to main | Opus | V2.3 complete: PipelineState.cls, StageJobHelper integration, merge field notation fixes. Merged feature/v2.3-json-state → main. |
 | 2026-01-24 | V2.4 Branch created | Opus | Created feature/v2.4-builder-refactor for Type migration, Output Rules builder, LWC enhancements |
+| 2026-01-24 | Tasks 4.1-4.8, 4.10-4.11 | Opus | Migrated all builder code from Category__c to ccai__Type__c. Updated Stage08, Stage05, BuilderDiagnostic, P_PromptBuilderController. Created Output Rules builder (a0DQH00000KZwnB2AT). Migrated 66 builders. Added loadOutputRules() method. |
+| 2026-01-24 | Task 4.9 | Opus | Updated buildOutputRulesSection(runId) to load Output Rules builder dynamically instead of hardcoded merge field syntax. Deployed to org. 67 builders now active. |
 
 ---
 
