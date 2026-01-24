@@ -63,6 +63,9 @@ public without sharing class Stage08_PromptAssembly implements IStage {
                 if (selectedParentFieldsRaw != null && !selectedParentFieldsRaw.isEmpty()) {
                     result.queueInfo(runId, STAGE_NUMBER,
                         'Auto-loaded parent fields from traversals: ' + JSON.serialize(selectedParentFieldsRaw));
+                    // CRITICAL: Put back into inputs so downstream methods can access it
+                    // (buildPromptConfigForStage9, buildDCMConfigForStage9 all read from inputs)
+                    inputs.put('selectedParentFields', selectedParentFieldsRaw);
                 }
             }
 
@@ -201,6 +204,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             result.outputs.put('businessObjectives', businessObjectivesRaw);
             result.outputs.put('htmlTemplate', htmlTemplate);
             result.outputs.put('selectedFields', selectedFieldsRaw);
+            result.outputs.put('selectedParentFields', selectedParentFieldsRaw);  // V2.2: Pass auto-loaded parent fields to Stage 9
             result.outputs.put('promptName', inputs.get('promptName'));
             result.outputs.put('sampleRecordId', inputs.get('sampleRecordId'));
             // Pass through selectedGrandchildren - already used in buildDCMConfigForStage9
