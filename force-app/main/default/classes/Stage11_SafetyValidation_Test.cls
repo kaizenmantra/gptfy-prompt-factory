@@ -15,7 +15,7 @@ private class Stage11_SafetyValidation_Test {
     static void testExecute_SafeHTML() {
         Account acc = [SELECT Id FROM Account LIMIT 1];
 
-        String safeHTML = '<div class="slds-card"><h1>Account Name</h1><p>This is safe content</p></div>';
+        String safeHTML = '<div class="slds-card"><h1>Account Name</h1><p>This is safe content that meets the minimum length requirement for quality validation checks by being sufficiently verbose.</p></div>';
         Map<String, Object> inputs = new Map<String, Object>{
             'outputHtml' => safeHTML,
             'promptId' => acc.Id,
@@ -165,28 +165,5 @@ private class Stage11_SafetyValidation_Test {
         System.assert(safetyScore >= 0 && safetyScore <= 100, 'Safety score should be between 0-100');
     }
 
-    @IsTest
-    static void testExecute_PassThroughInputs() {
-        Account acc = [SELECT Id FROM Account LIMIT 1];
-
-        String safeHTML = '<div>Safe content with sufficient text to pass validation checks successfully</div>';
-        Map<String, Object> inputs = new Map<String, Object>{
-            'outputHtml' => safeHTML,
-            'promptId' => acc.Id,
-            'sampleRecordId' => acc.Id,
-            'dcmId' => acc.Id,
-            'rootObject' => 'Account'
-        };
-
-        Test.startTest();
-        PF_Run__c run = new PF_Run__c(Root_Object__c = 'Account', Sample_Record_Id__c = acc.Id, Prompt_Name__c = 'Test Prompt', Status__c = 'Queued', Current_Stage__c = 1);
-        insert run;
-
-        Stage11_SafetyValidation stage = new Stage11_SafetyValidation();
-        StageResult result = stage.execute(run.Id, inputs);
-        Test.stopTest();
-
-        System.assertEquals(acc.Id, result.outputs.get('promptId'), 'Should pass through prompt ID');
-        System.assertEquals('Account', result.outputs.get('rootObject'), 'Should pass through root object');
-    }
+    // testExecute_PassThroughInputs removed (PHASE 2F: Accumulation handles data continuity)
 }

@@ -165,10 +165,8 @@ public with sharing class Stage09_CreateAndDeploy implements IStage {
             result.outputs.put('promptActivationError', promptActivationError);
             result.outputs.put('activationMessage', activationMessage);
 
-            // Pass through critical inputs
-            result.outputs.put('rootObject', rootObject);
-            result.outputs.put('promptName', promptName);
-            result.outputs.put('sampleRecordId', inputs.get('sampleRecordId'));
+            // PHASE 2F FIX: Removed manual pass-throughs.
+            // Outputs only: dcmId, promptId, promptRequestId, activation details.
 
             // Determine final status - DCM warning is OK, but prompt MUST be active
             if (dcmActivated && promptActivated) {

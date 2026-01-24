@@ -9,7 +9,7 @@ private class Stage12_QualityAudit_Test {
     static void setup() {
         Account testAccount = new Account(Name = 'Test Quality Account', Industry = 'Technology');
         insert testAccount;
-        AIServiceClient.mockMode = true;
+        // AIServiceClient.mockMode = true; // Does not persist to test methods
     }
 
     @IsTest
@@ -25,7 +25,8 @@ private class Stage12_QualityAudit_Test {
             'rootObject' => 'Account'
         };
 
-        AIServiceClient.mockResponse = '{"visualQuality": 8, "dataAccuracy": 9, "personaFit": 8, ' +
+        AIServiceClient.mockMode = true;
+        AIServiceClient.mockResponse = '{"evidenceBinding": 8, "diagnosticDepth": 9, "visualQuality": 8, "uiEffectiveness": 8, "dataAccuracy": 9, "personaFit": 8, ' +
             '"actionability": 7, "businessValue": 9, ' +
             '"reasoning": "High quality output", ' +
             '"strengths": ["Clear", "Actionable"], ' +
@@ -39,6 +40,9 @@ private class Stage12_QualityAudit_Test {
         StageResult result = stage.execute(run.Id, inputs);
         Test.stopTest();
 
+        if (result.status != 'Completed') {
+            System.assert(false, 'Stage failed with error: ' + result.errorMessage);
+        }
         System.assertEquals('Completed', result.status, 'Stage should complete successfully');
         System.assertNotEquals(null, result.outputs.get('qualityScorecard'), 'Quality scorecard should exist');
     }
@@ -75,6 +79,7 @@ private class Stage12_QualityAudit_Test {
             'rootObject' => 'Account'
         };
 
+        AIServiceClient.mockMode = true;
         AIServiceClient.mockResponse = '{invalid json}';
 
         Test.startTest();
@@ -98,7 +103,8 @@ private class Stage12_QualityAudit_Test {
             'rootObject' => 'Account'
         };
 
-        AIServiceClient.mockResponse = '{"visualQuality": 8, "dataAccuracy": 8, "personaFit": 8, ' +
+        AIServiceClient.mockMode = true;
+        AIServiceClient.mockResponse = '{"evidenceBinding": 8, "diagnosticDepth": 8, "visualQuality": 8, "uiEffectiveness": 8, "dataAccuracy": 8, "personaFit": 8, ' +
             '"actionability": 8, "businessValue": 8, ' +
             '"reasoning": "Consistent quality", ' +
             '"strengths": ["Clear"], "improvements": ["None"]}';
@@ -125,7 +131,8 @@ private class Stage12_QualityAudit_Test {
             'rootObject' => 'Account'
         };
 
-        AIServiceClient.mockResponse = '{"visualQuality": 9, "dataAccuracy": 9, "personaFit": 9, ' +
+        AIServiceClient.mockMode = true;
+        AIServiceClient.mockResponse = '{"evidenceBinding": 9, "diagnosticDepth": 9, "visualQuality": 9, "uiEffectiveness": 9, "dataAccuracy": 9, "personaFit": 9, ' +
             '"actionability": 9, "businessValue": 9, ' +
             '"reasoning": "Excellent", "strengths": ["All"], "improvements": ["None"]}';
 
@@ -152,7 +159,8 @@ private class Stage12_QualityAudit_Test {
             'rootObject' => 'Account'
         };
 
-        AIServiceClient.mockResponse = '{"visualQuality": 5, "dataAccuracy": 5, "personaFit": 5, ' +
+        AIServiceClient.mockMode = true;
+        AIServiceClient.mockResponse = '{"evidenceBinding": 5, "diagnosticDepth": 5, "visualQuality": 5, "uiEffectiveness": 5, "dataAccuracy": 5, "personaFit": 5, ' +
             '"actionability": 5, "businessValue": 5, ' +
             '"reasoning": "Below standard", "strengths": ["None"], "improvements": ["Many"]}';
 
@@ -178,7 +186,8 @@ private class Stage12_QualityAudit_Test {
             'rootObject' => 'Account'
         };
 
-        AIServiceClient.mockResponse = '{"visualQuality": 8, "dataAccuracy": 8, "personaFit": 8, ' +
+        AIServiceClient.mockMode = true;
+        AIServiceClient.mockResponse = '{"evidenceBinding": 8, "diagnosticDepth": 8, "visualQuality": 8, "uiEffectiveness": 8, "dataAccuracy": 8, "personaFit": 8, ' +
             '"actionability": 8, "businessValue": 8, ' +
             '"reasoning": "This is the AI audit reasoning", ' +
             '"strengths": ["Good"], "improvements": ["Better"]}';
@@ -204,7 +213,8 @@ private class Stage12_QualityAudit_Test {
             'rootObject' => 'Account'
         };
 
-        AIServiceClient.mockResponse = '{"visualQuality": 8, "dataAccuracy": 8, "personaFit": 8, ' +
+        AIServiceClient.mockMode = true;
+        AIServiceClient.mockResponse = '{"evidenceBinding": 8, "diagnosticDepth": 8, "visualQuality": 8, "uiEffectiveness": 8, "dataAccuracy": 8, "personaFit": 8, ' +
             '"actionability": 8, "businessValue": 8, ' +
             '"reasoning": "Test", "strengths": ["A"], "improvements": ["B"]}';
 
@@ -233,7 +243,8 @@ private class Stage12_QualityAudit_Test {
             'rootObject' => 'Account'
         };
 
-        AIServiceClient.mockResponse = '```json\n{"visualQuality": 7, "dataAccuracy": 7, "personaFit": 7, ' +
+        AIServiceClient.mockMode = true;
+        AIServiceClient.mockResponse = '```json\n{"evidenceBinding": 7, "diagnosticDepth": 7, "visualQuality": 7, "uiEffectiveness": 7, "dataAccuracy": 7, "personaFit": 7, ' +
             '"actionability": 7, "businessValue": 7, ' +
             '"reasoning": "Test", "strengths": ["A"], "improvements": ["B"]}\n```';
 

@@ -113,12 +113,9 @@ public with sharing class Stage11_SafetyValidation implements IStage {
             result.outputs.put('warnings', warnings);
             result.outputs.put('isSafe', issues.isEmpty());
 
-            // Pass through critical inputs
-            result.outputs.put('outputHtml', outputHtml);
-            result.outputs.put('promptId', inputs.get('promptId'));
-            result.outputs.put('sampleRecordId', inputs.get('sampleRecordId'));
-            result.outputs.put('dcmId', inputs.get('dcmId'));
-            result.outputs.put('rootObject', inputs.get('rootObject'));
+            // PHASE 2F FIX: Removed manual pass-throughs.
+            // Accumulator handles data continuity for outputHtml, promptId, etc.
+            // Outputs only: safetyChecklist, safetyScore, issues, warnings.
 
             // Determine final status
             if (issues.isEmpty()) {

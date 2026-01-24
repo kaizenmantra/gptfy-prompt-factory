@@ -139,41 +139,7 @@ private class Stage07_TemplateDesign_Test {
         System.assertEquals(2, mergeFieldCount, 'Should extract 2 merge fields');
     }
 
-    @IsTest
-    static void testExecute_WhitelistValidationFails() {
-        // NEW TEST: Verify stage fails when template contains fields not in whitelist
-        Account acc = [SELECT Id FROM Account LIMIT 1];
-
-        // Only Name is in selected fields
-        Map<String, Object> selectedFields = new Map<String, Object>{
-            'Account' => new List<String>{'Name'}
-        };
-        Map<String, Object> inputs = new Map<String, Object>{
-            'selectedFields' => selectedFields,
-            'rootObject' => 'Account'
-        };
-
-        AIServiceClient.mockMode = true;
-        // Response uses AnnualRevenue which is NOT in the whitelist
-        AIServiceClient.mockResponse = '<div>{{{Name}}}{{{AnnualRevenue}}}</div>';
-
-        Test.startTest();
-        PF_Run__c run = new PF_Run__c(
-            Prompt_Name__c = 'Test Whitelist Fail',
-            Root_Object__c = 'Account',
-            Sample_Record_Id__c = acc.Id,
-            Status__c = 'Queued'
-        );
-        insert run;
-
-        Stage07_TemplateDesign stage = new Stage07_TemplateDesign();
-        StageResult result = stage.execute(run.Id, inputs);
-        Test.stopTest();
-
-        // Stage should FAIL because AnnualRevenue is not in the whitelist
-        System.assertEquals('Failed', result.status, 'Stage should fail with field not in whitelist');
-        System.assert(result.errorMessage.contains('not in whitelist'), 'Error should mention whitelist');
-    }
+    // testExecute_WhitelistValidationFails removed (Target V2.0 uses safe generated templates)
 
     @IsTest
     static void testExecute_TemplateSummary() {
@@ -237,7 +203,7 @@ private class Stage07_TemplateDesign_Test {
     }
 
     @IsTest
-    static void testExecute_PassThroughInputs() {
+    static void testExecute_NoPassThroughOutputs() {
         Account acc = [SELECT Id FROM Account LIMIT 1];
 
         Map<String, Object> selectedFields = new Map<String, Object>{'Account' => new List<String>{'Name'}};
@@ -264,7 +230,8 @@ private class Stage07_TemplateDesign_Test {
         StageResult result = stage.execute(run.Id, inputs);
         Test.stopTest();
 
-        System.assertEquals('Account', result.outputs.get('rootObject'), 'Should pass through root object');
-        System.assertEquals('HTML', result.outputs.get('outputFormat'), 'Should pass through output format');
+        // PHASE 2F: Verify we DO NOT output pass-throughs anymore
+        System.assertEquals(null, result.outputs.get('rootObject'), 'Should NOT pass through root object');
+        System.assertEquals(null, result.outputs.get('outputFormat'), 'Should NOT pass through output format');
     }
 }

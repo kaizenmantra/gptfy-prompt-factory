@@ -197,18 +197,9 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             result.outputs.put('validationErrors', validationErrors);
             result.outputs.put('assemblySummary', assemblySummary);
 
-            // Pass through critical inputs for downstream stages
-            result.outputs.put('rootObject', rootObject);
-            result.outputs.put('businessContext', businessContext);
-            result.outputs.put('targetPersona', targetPersona);
-            result.outputs.put('businessObjectives', businessObjectivesRaw);
-            result.outputs.put('htmlTemplate', htmlTemplate);
-            result.outputs.put('selectedFields', selectedFieldsRaw);
-            result.outputs.put('selectedParentFields', selectedParentFieldsRaw);  // V2.2: Pass auto-loaded parent fields to Stage 9
-            result.outputs.put('promptName', inputs.get('promptName'));
-            result.outputs.put('sampleRecordId', inputs.get('sampleRecordId'));
-            // Pass through selectedGrandchildren - already used in buildDCMConfigForStage9
-            result.outputs.put('selectedGrandchildren', inputs.get('selectedGrandchildren'));
+            // PHASE 2F FIX: Removed manual pass-throughs.
+            // Accumulator handles data continuity.
+            // Outputs only: dcmConfig, promptConfig, aiInstructions, groundingRules, etc.
 
             // CRITICAL: Fail if ANY invalid merge fields detected
             // This prevents creating DCM/Prompt with mismatched field references

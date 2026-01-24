@@ -77,10 +77,8 @@ public with sharing class Stage12_QualityAudit implements IStage {
             result.outputs.put('qualityScoreId', qualityScoreId);
             result.outputs.put('auditReasoningJson', aiResponse.content);
 
-            // Pass through critical inputs
-            result.outputs.put('outputHtml', outputHtml);
-            result.outputs.put('promptId', inputs.get('promptId'));
-            result.outputs.put('dcmId', inputs.get('dcmId'));
+            // PHASE 2F FIX: Removed manual pass-throughs.
+            // This is the final stage, so no downstream dependencies require these outputs.
 
             // Set AI reasoning for UI display
             result.aiReasoning = (String) qualityScorecard.get('reasoning');

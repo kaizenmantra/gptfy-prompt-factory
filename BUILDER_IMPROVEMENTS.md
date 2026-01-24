@@ -238,12 +238,12 @@ Each stage currently has ~10-20 lines of boilerplate copying inputs to outputs. 
 | 2.23a | Prototype: Remove pass-through from Stage 6 only | Gemini | done | Test in sandbox, verify no regressions, learn lessons before touching other stages |
 | 2.24 | Audit Stage06_xxx.cls for pass-through code | Gemini | done | Identify `result.outputs.put` patterns AND verify no downstream dependencies on them |
 | 2.25 | Remove pass-through from Stage06_xxx.cls | Gemini | done | Keep only outputs Stage 6 creates (e.g., validationChecklist) |
-| 2.26 | Remove pass-through from Stage07_TemplateDesign.cls | Gemini | not_started | Keep only: htmlTemplate, analysisBrief, mergeFields |
-| 2.27 | Remove pass-through from Stage08_PromptAssembly.cls | Gemini | not_started | Keep only: dcmConfig, promptConfig, validatedFields |
-| 2.28 | Remove pass-through from Stage09_CreateAndDeploy.cls | Gemini | not_started | Keep only: createdPromptId, createdDcmId |
-| 2.29 | Remove pass-through from Stage10_xxx.cls | Gemini | not_started | Keep only Stage 10's own outputs |
-| 2.30 | Remove pass-through from Stage11_xxx.cls | Gemini | not_started | Keep only Stage 11's own outputs |
-| 2.31 | Remove pass-through from Stage12_xxx.cls | Gemini | not_started | Keep only Stage 12's own outputs |
+| 2.26 | Remove pass-through from Stage07_TemplateDesign.cls | Gemini | done | Keep only: htmlTemplate, analysisBrief, mergeFields. Also removed obsolete test. |
+| 2.27 | Remove pass-through from Stage08_PromptAssembly.cls | Gemini | done | Keep only: dcmConfig, promptConfig, validatedFields |
+| 2.28 | Remove pass-through from Stage09_CreateAndDeploy.cls | Gemini | done | Keep only: createdPromptId, createdDcmId |
+| 2.29 | Remove pass-through from Stage10_xxx.cls | Gemini | not_started | (Scope check: Stage 10 usually handled by flow? Verified no pass-throughs needed) |
+| 2.30 | Remove pass-through from Stage11_SafetyValidation.cls | Gemini | done | Keep only Stage 11's own outputs |
+| 2.31 | Remove pass-through from Stage12_QualityAudit.cls | Gemini | done | Keep only Stage 12's own outputs. Tests updated (Mock Mode fix). |
 
 #### Sub-Phase 2F.3: Update loadStageInputs() for Accumulation
 
