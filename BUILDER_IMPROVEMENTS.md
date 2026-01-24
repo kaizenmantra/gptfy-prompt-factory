@@ -317,7 +317,7 @@ Add state file link and fix navigation to open in new browser tabs.
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
 | 4.26 | Fix Recommendation Card template in Stage08 | Sonnet | done | Updated builder record (a0DQH00000KZQ9E2AX) with placeholder and better guidance |
-| 4.27 | Add parent lookup auto-discovery to DCMBuilder | Sonnet | not_started | When adding child object, detect its lookups and create PARENT_LOOKUP records for related fields |
+| 4.27 | Add parent lookup auto-discovery to DCMBuilder | Sonnet | in_progress | When adding child object, detect its lookups and create PARENT_LOOKUP records for related fields. Confirmed: OpportunityContactRole missing Contact parent lookup in both Opportunity and Account DCMs. |
 | 4.28 | Update DCMBuilder to support 3-level traversals | Sonnet | not_started | Account → Opportunity → OpportunityContactRole → Contact hierarchy |
 | 4.29 | Test DCM with OpportunityContactRole → Contact | Manual | not_started | Verify Contact.Name, Contact.Title appear in prompt merge fields section |
 | 4.30 | Test prompt quality with proper Contact merge fields | Manual | not_started | Verify LLM uses {{{OpportunityContactRoles.Contact.Name}}} instead of parsing Description text |
