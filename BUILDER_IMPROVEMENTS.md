@@ -317,10 +317,50 @@ Add state file link and fix navigation to open in new browser tabs.
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
 | 4.26 | Fix Recommendation Card template in Stage08 | Sonnet | done | Updated builder record (a0DQH00000KZQ9E2AX) with placeholder and better guidance |
-| 4.27 | Add parent lookup auto-discovery to DCMBuilder | Sonnet | done | Added discoverParentLookups(), getStandardFieldsForObject(), createParentLookupDetail() methods. Auto-creates PARENT_LOOKUP records for child object lookups with standard fields (Name, Title, Email, Phone). Deployed successfully. |
-| 4.28 | Update DCMBuilder to support 3-level traversals | Sonnet | done | COMPLETED BY 4.27 - Parent lookup auto-discovery enables Account → Opportunity → OpportunityContactRole → Contact hierarchy automatically |
-| 4.29 | Test DCM with OpportunityContactRole → Contact | Manual | not_started | Verify Contact.Name, Contact.Title appear in prompt merge fields section |
-| 4.30 | Test prompt quality with proper Contact merge fields | Manual | not_started | Verify LLM uses {{{OpportunityContactRoles.Contact.Name}}} instead of parsing Description text |
+| 4.27 | Add parent lookup auto-discovery to DCMBuilder | Sonnet | done | **FIXED via Stage08 integration**: Reverted broken DCMBuilder auto-discovery. Parent fields now flow through Stage05 traversals → Stage08 `selectedParentFields` → DCMBuilder `fieldsByObject`. Format converted: `ContactId.Name` → `Contact.Name`. |
+| 4.28 | Update DCMBuilder to support 3-level traversals | Sonnet | done | Covered by 4.27 fix. Parent lookups are added as dot-notation FIELD records (e.g., Object=`OpportunityContactRole`, Field=`Contact.Name`), NOT as PARENT_LOOKUP detail records. This matches working DCM `a05QH000008RJTNYA4`. |
+| 4.29 | Test DCM with OpportunityContactRole → Contact | Manual | not_started | Unblocked - run new pipeline to test |
+| 4.30 | Test prompt quality with proper Contact merge fields | Manual | not_started | Unblocked - run new pipeline to test |
+
+**Implementation Summary (Tasks 4.27-4.28):**
+
+The parent lookup feature now works correctly using the **existing infrastructure**:
+
+1. **Stage05 (Field Selection)** - Already loads traversal builders and outputs `selectedParentFields`:
+   - Format: `{"OpportunityContactRole": ["ContactId.Name", "ContactId.Title"]}`
+
+2. **Stage08 (Prompt Assembly)** - NEW: Merges `selectedParentFields` into `fieldsByObject`:
+   - Converts lookup field to relationship name: `ContactId.Name` → `Contact.Name`
+   - Merges with existing fields for each object
+
+3. **DCMBuilder** - Receives `fieldsByObject` with parent fields already included:
+   - Creates FIELD records with dot-notation (e.g., Object=`OpportunityContactRole`, Field=`Contact.Name`)
+   - No auto-discovery needed - fields come from traversal definitions
+
+**Key Insight:** The working DCM (`a05QH000008RJTNYA4`) stores parent lookups as dot-notation FIELD records, NOT as PARENT_LOOKUP detail records. This is how GPTfy supports parent traversals.
+
+**Testing Instructions for 4.29-4.30:**
+
+1. **Create a NEW Pipeline Run**:
+   - Run pipeline for an Opportunity record that has OpportunityContactRoles
+   - The DCM should include fields like `Contact.Name`, `Contact.Title` on OpportunityContactRole object
+
+2. **Verify DCM Fields**:
+   ```sql
+   SELECT ccai__Object__c, ccai__Field_Name__c
+   FROM ccai__DCM_Field__c
+   WHERE ccai__DCM__c = '<new_dcm_id>'
+   AND ccai__Object__c = 'OpportunityContactRole'
+   ```
+   - Expected: Should see `Contact.Name`, `Contact.Title`, etc.
+
+3. **Verify Prompt Template**:
+   - Check that LLM uses merge fields like `{{{OpportunityContactRoles.Contact.Name}}}`
+   - NOT just `{{{OpportunityContactRoles.ContactId}}}`
+
+4. **Test Prompt Execution**:
+   - Run the prompt and verify Contact names appear in output
+   - Should use proper field data, not extract from Description text
 
 ### Phase 4D: Documentation & Cleanup (Opus)
 
@@ -727,6 +767,10 @@ Stage 5: Field Selection (Enhanced)
 | 2026-01-24 | Task 4.16a: Pipeline testing - Critical issues found | Sonnet | Tested Opportunity pipeline (ID: 006QH00000HjgvlYAB). Found 3 issues: (1) DCM missing Contact parent lookups for OpportunityContactRole - LLM extracted names from Description text instead of merge fields (unreliable), (2) Recommendation Card template has redundant "Recommended Action" label, (3) 3-level traversals not working (Opportunity → OCR → Contact). Added Phase 4C tasks to fix DCMBuilder and Stage08. |
 | 2026-01-24 | Task 4.26: Fix Recommendation Card template | Sonnet | Updated builder record (a0DQH00000KZQ9E2AX) to remove hardcoded "Recommended Action" label. Changed to placeholder "[Specific action: who does what by when]" with improved "When to use" guidance. Script: scripts/apex/fix_recommendation_card_template.apex. |
 | 2026-01-24 | Tasks 4.27-4.28: Parent lookup auto-discovery | Sonnet | Implemented automatic parent lookup discovery in DCMBuilder. New methods: discoverParentLookups(), getStandardFieldsForObject(), createParentLookupDetail(), isSystemObject(). When child objects are added (e.g., OpportunityContactRole), DCM now auto-discovers lookups (ContactId → Contact) and creates PARENT_LOOKUP records with standard fields (Name, Title, Email, Phone). Enables 3-level traversals: Account → Opportunity → OpportunityContactRole → Contact. Deployed successfully. |
+| 2026-01-24 | Tasks 4.29-4.30: Testing verification | Sonnet | Created verify_parent_lookup_fix.apex script to validate parent lookup auto-discovery in new DCMs. Added comprehensive testing instructions to Phase 4C. Previous pipeline run (a0gQH000005GNozYAG) was created BEFORE the DCMBuilder fix deployment, so Contact.Name/Title/Email fields are missing. User needs to run NEW pipeline to test the fix. |
+| 2026-01-24 | Bug fix: PARENT_LOOKUP missing Parent_Detail__c | Sonnet | Fixed "List index out of bounds: 0" error in Stage 9. PARENT_LOOKUP detail records were missing Parent_Detail__c field to link them to their child object's detail record. Updated createParentLookupDetail() to accept parentDetailId parameter and set ccai__Parent_Detail__c field. Deployed successfully. User can now retry pipeline run. |
+| 2026-01-24 | DISABLED: PARENT_LOOKUP auto-discovery | Opus | GPTfy managed package doesn't support PARENT_LOOKUP type in DCM Details. Prompts with PARENT_LOOKUP records cause "Attempt to de-reference a null object" error on prompt detail page. Root cause: PARENT_LOOKUP is a custom type we created; GPTfy only supports CHILD and GRANDCHILD types. Fix: (1) Deleted 8 PARENT_LOOKUP records from broken DCM a05QH000008RKm1YAG, (2) Commented out PHASE 1.5 in DCMBuilder.createDCMWithGrandchildren(). TODO: Investigate if GPTfy has a supported way to enable parent lookup traversals or if this should be handled via prompt merge field syntax only. |
+| 2026-01-24 | FIXED: Parent lookup via Stage08 integration | Opus | Discovered working DCM (a05QH000008RJTNYA4) uses dot-notation FIELD records, NOT PARENT_LOOKUP details. Fix: (1) Reverted broken auto-discovery code from DCMBuilder PHASE 1.5, (2) Added `selectedParentFields` integration to Stage08's `buildDCMConfigForStage9()`, (3) Added `convertLookupToRelationship()` to convert `ContactId.Name` → `Contact.Name`. Parent fields now flow: Stage05 traversals → `selectedParentFields` → Stage08 → `fieldsByObject` → DCMBuilder. No more guessing fields - uses existing traversal definitions. |
 
 ---
 

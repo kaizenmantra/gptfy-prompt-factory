@@ -56,6 +56,18 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             Map<String, Object> selectedFieldsRaw = (Map<String, Object>) inputs.get('selectedFields');
             List<Object> businessObjectivesRaw = (List<Object>) inputs.get('businessObjectives');
 
+            // V2.4: Extract selected parent fields (e.g., Owner.Name, Contact.Title)
+            Map<String, Object> selectedParentFieldsRaw = (Map<String, Object>) inputs.get('selectedParentFields');
+            if (selectedParentFieldsRaw == null) {
+                selectedParentFieldsRaw = new Map<String, Object>();
+            }
+
+            // V2.4: Extract grandchild info for proper merge field path generation
+            List<Object> selectedGrandchildrenRaw = (List<Object>) inputs.get('selectedGrandchildren');
+            if (selectedGrandchildrenRaw == null) {
+                selectedGrandchildrenRaw = new List<Object>();
+            }
+
             // NEW: Extract Strategic Context from Stage 2
             // CRITICAL: Use companyIntelligence (actual research) over companyProfile (AI summary)
             String companyIntelligence = (String) inputs.get('companyIntelligence');
@@ -133,7 +145,8 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             Map<String, Object> promptConfig;
             if (useMetaPrompt) {
                 promptConfig = assembleMetaPromptConfiguration(
-                    aiInstructions, groundingRules, rootObject, selectedFieldsRaw);
+                    aiInstructions, groundingRules, rootObject, selectedFieldsRaw,
+                    selectedParentFieldsRaw, selectedGrandchildrenRaw);
             } else {
                 promptConfig = assemblePromptConfiguration(
                     aiInstructions, htmlTemplate, groundingRules, rootObject);
@@ -833,16 +846,21 @@ public without sharing class Stage08_PromptAssembly implements IStage {
      * @param groundingRules Grounding rules for AI behavior
      * @param rootObject The root Salesforce object
      * @param selectedFieldsRaw Map of object to field list
+     * @param selectedParentFieldsRaw V2.4: Map of object to parent lookup fields
+     * @param selectedGrandchildrenRaw V2.4: List of grandchild configs for proper path generation
      * @return Map containing the complete prompt configuration
      */
     private Map<String, Object> assembleMetaPromptConfiguration(
             String aiInstructions,
             String groundingRules,
             String rootObject,
-            Map<String, Object> selectedFieldsRaw) {
+            Map<String, Object> selectedFieldsRaw,
+            Map<String, Object> selectedParentFieldsRaw,
+            List<Object> selectedGrandchildrenRaw) {
 
-        // Build merge field reference section
-        String mergeFieldReference = buildMergeFieldReference(rootObject, selectedFieldsRaw);
+        // Build merge field reference section (V2.4: includes parent lookup fields and grandchildren)
+        String mergeFieldReference = buildMergeFieldReference(rootObject, selectedFieldsRaw,
+            selectedParentFieldsRaw, selectedGrandchildrenRaw);
 
         // Build complete meta-prompt:
         // 1. Meta-prompt (6 sections with role, data, principles, toolkit, rules, directive)
@@ -870,8 +888,32 @@ public without sharing class Stage08_PromptAssembly implements IStage {
     /**
      * @description Builds merge field reference for meta-prompt mode
      * Shows LLM what fields are available and how to reference them
+     * V2.4: Enhanced to include parent lookup fields and proper grandchild chained paths
      */
-    private String buildMergeFieldReference(String rootObject, Map<String, Object> selectedFieldsRaw) {
+    private String buildMergeFieldReference(String rootObject, Map<String, Object> selectedFieldsRaw,
+            Map<String, Object> selectedParentFieldsRaw, List<Object> selectedGrandchildrenRaw) {
+
+        // Build grandchild lookup maps from selectedGrandchildrenRaw
+        // Maps: objectName -> parentObject (e.g., OpportunityContactRole -> Opportunity)
+        Map<String, String> grandchildParentMap = new Map<String, String>();
+        Map<String, String> grandchildRelNameMap = new Map<String, String>(); // objectName -> relationshipName on parent
+        if (selectedGrandchildrenRaw != null) {
+            for (Object gcObj : selectedGrandchildrenRaw) {
+                if (gcObj instanceof Map<String, Object>) {
+                    Map<String, Object> gcMap = (Map<String, Object>) gcObj;
+                    String objName = (String) gcMap.get('objectName');
+                    String parentObj = (String) gcMap.get('parentObject');
+                    String relName = (String) gcMap.get('relationshipName');
+                    if (String.isNotBlank(objName) && String.isNotBlank(parentObj)) {
+                        grandchildParentMap.put(objName, parentObj);
+                        if (String.isNotBlank(relName)) {
+                            grandchildRelNameMap.put(objName, relName);
+                        }
+                    }
+                }
+            }
+        }
+
         String ref = '=== AVAILABLE MERGE FIELDS ===\n\n';
         ref += 'Use these merge fields to reference Salesforce data in your HTML output.\n';
         ref += 'GPTfy will substitute these with actual values at runtime.\n\n';
@@ -883,25 +925,78 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             for (Object field : fields) {
                 ref += '  {{{' + String.valueOf(field) + '}}}\n';
             }
+
+            // V2.4: Add parent lookup fields for root object (e.g., Owner.Name, Owner.Email)
+            if (selectedParentFieldsRaw != null && selectedParentFieldsRaw.containsKey(rootObject)) {
+                ref += '  -- Parent Lookups --\n';
+                List<Object> parentFields = (List<Object>) selectedParentFieldsRaw.get(rootObject);
+                for (Object pf : parentFields) {
+                    // Convert OwnerId.Name → Owner.Name, ContactId.Title → Contact.Title
+                    String convertedPath = convertLookupToRelationship(String.valueOf(pf));
+                    ref += '  {{{' + convertedPath + '}}}\n';
+                }
+            }
             ref += '\n';
         }
 
-        // Child object fields
+        // Child and grandchild object fields
         for (String objName : selectedFieldsRaw.keySet()) {
             if (objName != rootObject) {
                 List<Object> fields = (List<Object>) selectedFieldsRaw.get(objName);
-                String relationshipName = getRelationshipNameForObject(objName, rootObject);
+                Boolean isGrandchild = grandchildParentMap.containsKey(objName);
 
-                ref += objName.toUpperCase() + ' (Child) - iterate with {{#' + relationshipName + '}}...{{/' + relationshipName + '}}:\n';
-                ref += '  Start iteration: {{#' + relationshipName + '}}\n';
-                for (Object field : fields) {
-                    String fieldName = String.valueOf(field);
-                    // GPTfy requires relationship prefix on child fields: {{{Events.Subject}}} not {{{Subject}}}
-                    ref += '    {{{' + relationshipName + '.' + fieldName + '}}}\n';
+                if (isGrandchild) {
+                    // GRANDCHILD: Needs chained path like Opportunities.OpportunityContactRoles
+                    String parentObjName = grandchildParentMap.get(objName);
+                    String parentRelName = getRelationshipNameForObject(parentObjName, rootObject);
+                    String gcRelName = grandchildRelNameMap.containsKey(objName)
+                        ? grandchildRelNameMap.get(objName)
+                        : getRelationshipNameForObject(objName, parentObjName);
+                    String chainedPath = parentRelName + '.' + gcRelName;
+
+                    ref += objName.toUpperCase() + ' (Grandchild of ' + parentObjName + '):\n';
+                    ref += '  Nested iteration: {{#' + parentRelName + '}}{{#' + chainedPath + '}}...{{/' + chainedPath + '}}{{/' + parentRelName + '}}\n';
+                    ref += '  Fields use chained path: {{{' + chainedPath + '.FieldName}}}\n';
+                    for (Object field : fields) {
+                        String fieldName = String.valueOf(field);
+                        ref += '    {{{' + chainedPath + '.' + fieldName + '}}}\n';
+                    }
+
+                    // V2.4: Add parent lookup fields for grandchild (e.g., Contact.Name via ContactId)
+                    if (selectedParentFieldsRaw != null && selectedParentFieldsRaw.containsKey(objName)) {
+                        ref += '    -- Parent Lookups --\n';
+                        List<Object> parentFields = (List<Object>) selectedParentFieldsRaw.get(objName);
+                        for (Object pf : parentFields) {
+                            String convertedPath = convertLookupToRelationship(String.valueOf(pf));
+                            ref += '    {{{' + chainedPath + '.' + convertedPath + '}}}\n';
+                        }
+                    }
+                    ref += '\n';
+                } else {
+                    // DIRECT CHILD: Simple relationship name
+                    String relationshipName = getRelationshipNameForObject(objName, rootObject);
+
+                    ref += objName.toUpperCase() + ' (Child) - iterate with {{#' + relationshipName + '}}...{{/' + relationshipName + '}}:\n';
+                    ref += '  Start iteration: {{#' + relationshipName + '}}\n';
+                    for (Object field : fields) {
+                        String fieldName = String.valueOf(field);
+                        ref += '    {{{' + relationshipName + '.' + fieldName + '}}}\n';
+                    }
+
+                    // V2.4: Add parent lookup fields for child object (e.g., Contact.Name via ContactId)
+                    if (selectedParentFieldsRaw != null && selectedParentFieldsRaw.containsKey(objName)) {
+                        ref += '    -- Parent Lookups --\n';
+                        List<Object> parentFields = (List<Object>) selectedParentFieldsRaw.get(objName);
+                        for (Object pf : parentFields) {
+                            String convertedPath = convertLookupToRelationship(String.valueOf(pf));
+                            ref += '    {{{' + relationshipName + '.' + convertedPath + '}}}\n';
+                        }
+                    }
+
+                    ref += '  End iteration: {{/' + relationshipName + '}}\n';
+                    ref += '  Empty check: {{^' + relationshipName + '}}No ' + objName + ' records{{/' + relationshipName + '}}\n';
+                    ref += '\n';
                 }
-                ref += '  End iteration: {{/' + relationshipName + '}}\n';
-                ref += '  Empty check: {{^' + relationshipName + '}}No ' + objName + ' records{{/' + relationshipName + '}}\n';
-                ref += '\n';
             }
         }
 
@@ -1072,6 +1167,11 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             fieldsByObject.put(objectName, fields);
         }
 
+        // NOTE: selectedParentFields are NOT added to DCM fieldsByObject.
+        // Parent lookup syntax (e.g., {{{Owner.Name}}}, {{{Contact.Name}}}) is only for the prompt template.
+        // GPTfy resolves parent lookups at runtime from Salesforce schema - no DCM configuration needed.
+        // The parent fields are used in buildMergeFieldReference() for the prompt, not here.
+
         // Build child objects ONLY from selectedFields (objects that actually have usable context).
         // This mirrors the shell script behavior: Stage 4 filters to non-empty objects, and DCM config
         // should not include empty/low-signal objects.
@@ -1220,6 +1320,46 @@ public without sharing class Stage08_PromptAssembly implements IStage {
     }
 
     /**
+     * @description Converts lookup field path to relationship name path
+     * V2.4: Used for parent field integration from Stage 5 traversals
+     * Examples:
+     *   "ContactId.Name" -> "Contact.Name"
+     *   "OwnerId.Email" -> "Owner.Email"
+     *   "Custom_Lookup__c.Name" -> "Custom_Lookup__r.Name"
+     * @param fieldPath The lookup field path (e.g., "ContactId.Name")
+     * @return The relationship name path (e.g., "Contact.Name")
+     */
+    private String convertLookupToRelationship(String fieldPath) {
+        if (String.isBlank(fieldPath) || !fieldPath.contains('.')) {
+            return fieldPath;
+        }
+
+        List<String> parts = fieldPath.split('\\.');
+        if (parts.size() < 2) {
+            return fieldPath;
+        }
+
+        String lookupField = parts[0];
+        String relationshipName;
+
+        // Convert lookup field to relationship name
+        if (lookupField.endsWith('__c')) {
+            // Custom lookup: My_Lookup__c -> My_Lookup__r
+            relationshipName = lookupField.removeEnd('__c') + '__r';
+        } else if (lookupField.endsWith('Id')) {
+            // Standard lookup: ContactId -> Contact, OwnerId -> Owner
+            relationshipName = lookupField.removeEnd('Id');
+        } else {
+            // Already a relationship name or unknown format
+            relationshipName = lookupField;
+        }
+
+        // Rebuild the path with relationship name
+        parts[0] = relationshipName;
+        return String.join(parts, '.');
+    }
+
+    /**
      * @description Returns true if the object has minimum meaningful fields.
      * "Meaningful" excludes Id and all *Id / *ById fields, since those do not provide LLM context.
      */
@@ -1279,9 +1419,14 @@ public without sharing class Stage08_PromptAssembly implements IStage {
 
         if (useMetaPrompt) {
             // V2.0: Full meta-prompt with merge field reference
+            // V2.4: Include parent lookup fields for merge field documentation
             Map<String, Object> selectedFieldsRaw = (Map<String, Object>) inputs.get('selectedFields');
+            Map<String, Object> selectedParentFieldsRaw = (Map<String, Object>) inputs.get('selectedParentFields');
+            if (selectedParentFieldsRaw == null) {
+                selectedParentFieldsRaw = new Map<String, Object>();
+            }
             finalPromptCommand = aiInstructions + '\n\n' + groundingRules + '\n\n' +
-                                buildMergeFieldReference(rootObject, selectedFieldsRaw);
+                                buildMergeFieldReference(rootObject, selectedFieldsRaw, selectedParentFieldsRaw);
             // Empty template - LLM generates the HTML
             finalHtmlTemplate = '';
         } else {
