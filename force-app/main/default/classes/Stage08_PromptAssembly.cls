@@ -857,7 +857,9 @@ public without sharing class Stage08_PromptAssembly implements IStage {
                 ref += objName.toUpperCase() + ' (Child) - iterate with {{#' + relationshipName + '}}...{{/' + relationshipName + '}}:\n';
                 ref += '  Start iteration: {{#' + relationshipName + '}}\n';
                 for (Object field : fields) {
-                    ref += '    {{{' + String.valueOf(field) + '}}}\n';
+                    String fieldName = String.valueOf(field);
+                    // GPTfy requires relationship prefix on child fields: {{{Events.Subject}}} not {{{Subject}}}
+                    ref += '    {{{' + relationshipName + '.' + fieldName + '}}}\n';
                 }
                 ref += '  End iteration: {{/' + relationshipName + '}}\n';
                 ref += '  Empty check: {{^' + relationshipName + '}}No ' + objName + ' records{{/' + relationshipName + '}}\n';
@@ -884,7 +886,8 @@ public without sharing class Stage08_PromptAssembly implements IStage {
         }
 
         if (String.isNotBlank(exampleChild) && String.isNotBlank(exampleField)) {
-            ref += '{{#' + exampleChild + '}}<div>{{{' + exampleField + '}}}</div>{{/' + exampleChild + '}}';
+            // GPTfy requires relationship prefix: {{{Events.Subject}}} not {{{Subject}}}
+            ref += '{{#' + exampleChild + '}}<div>{{{' + exampleChild + '.' + exampleField + '}}}</div>{{/' + exampleChild + '}}';
             ref += '{{^' + exampleChild + '}}<div>No records</div>{{/' + exampleChild + '}}';
         }
         ref += '</div>\n\n';
@@ -1551,8 +1554,10 @@ public without sharing class Stage08_PromptAssembly implements IStage {
         section += '- Example: <div style="padding:20px;"><h2>Title</h2><p>Content</p></div>\n\n';
 
         section += 'MERGE FIELD SYNTAX:\n';
-        section += '- Field values: {{{FieldName}}}\n';
+        section += '- Root object fields: {{{FieldName}}}\n';
+        section += '- Parent lookup fields: {{{Relationship.Field}}} (e.g., {{{Account.Name}}})\n';
         section += '- Child iteration: {{#Collection}}...{{/Collection}}\n';
+        section += '- Child fields (inside iteration): {{{Collection.FieldName}}} (e.g., {{{Events.Subject}}})\n';
         section += '- Empty check: {{^Collection}}No items{{/Collection}}\n\n';
 
         section += 'STYLING:\n';
