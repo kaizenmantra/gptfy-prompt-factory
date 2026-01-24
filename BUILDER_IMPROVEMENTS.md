@@ -306,13 +306,29 @@ Add state file link and fix navigation to open in new browser tabs.
 | 4.21 | Add State File content preview | Opus | not_started | Optional: Show JSON content inline (collapsible) |
 | 4.22 | Test LWC navigation behavior | Manual | not_started | Verify both links open in new tabs |
 
-### Phase 4C: Documentation & Cleanup (Opus)
+### Phase 4C: DCM & Prompt Quality Fixes (Sonnet)
+
+**Critical Issues Found During Testing:**
+
+1. **DCM Missing Parent Lookups** - OpportunityContactRole includes ContactId but not Contact.Name, Contact.Title, etc. LLM extracted names from Description field text instead of proper merge fields (unreliable).
+2. **Recommendation Card Template** - Hardcoded "Recommended Action" label causes redundancy in output.
+3. **3-Level Traversal Missing** - DCM only goes 2 levels (Opportunity → OpportunityContactRole) instead of 3 (Opportunity → OpportunityContactRole → Contact).
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 4.23 | Update PROMPT_GENERATION_RULES.md | Opus | done | Docs already match Output Rules builder content |
-| 4.24 | Update Decision Log | Opus | done | Already documented Type vs Category + Output Rules decisions |
-| 4.25 | Final testing | Manual | not_started | Full pipeline run with all V2.4 changes |
+| 4.26 | Fix Recommendation Card template in Stage08 | Sonnet | not_started | Remove hardcoded "Recommended Action" label, use actual action as title |
+| 4.27 | Add parent lookup auto-discovery to DCMBuilder | Sonnet | not_started | When adding child object, detect its lookups and create PARENT_LOOKUP records for related fields |
+| 4.28 | Update DCMBuilder to support 3-level traversals | Sonnet | not_started | Account → Opportunity → OpportunityContactRole → Contact hierarchy |
+| 4.29 | Test DCM with OpportunityContactRole → Contact | Manual | not_started | Verify Contact.Name, Contact.Title appear in prompt merge fields section |
+| 4.30 | Test prompt quality with proper Contact merge fields | Manual | not_started | Verify LLM uses {{{OpportunityContactRoles.Contact.Name}}} instead of parsing Description text |
+
+### Phase 4D: Documentation & Cleanup (Opus)
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 4.31 | Update PROMPT_GENERATION_RULES.md | Opus | done | Docs already match Output Rules builder content |
+| 4.32 | Update Decision Log | Opus | done | Already documented Type vs Category + Output Rules decisions |
+| 4.33 | Final testing | Manual | not_started | Full pipeline run with all V2.4 changes |
 
 ---
 
@@ -665,6 +681,7 @@ Stage 5: Field Selection (Enhanced)
 | 2026-01-24 | Create Output Rules builder prompt | Move merge field syntax rules from hardcoded Stage08 text to a builder prompt. Easier to maintain, update without code deployment. |
 | 2026-01-24 | LWC links open in new tabs | State file and run logs should open in new browser tabs to preserve Factory LWC context. Better UX for debugging. |
 | 2026-01-24 | Consolidate traversal builders by object | When LLM sees all traversal options for an object in one place (vs. fragmented across 3-5 records), it makes better field selection decisions. Also improves performance (fewer SOQL queries) and maintainability (one record to update). Pilot with Account + Opportunity first. |
+| 2026-01-24 | DCMBuilder must create parent lookups for child objects | Testing revealed OpportunityContactRole includes ContactId but not Contact.Name/Title/Email. LLM was extracting names from Description field text (unreliable). DCMBuilder needs to auto-discover child object lookups and create PARENT_LOOKUP records for related fields. Enables 3-level traversals. |
 
 ---
 
@@ -707,6 +724,7 @@ Stage 5: Field Selection (Enhanced)
 | 2026-01-24 | Tasks 4.1-4.8, 4.10-4.11 | Opus | Migrated all builder code from Category__c to ccai__Type__c. Updated Stage08, Stage05, BuilderDiagnostic, P_PromptBuilderController. Created Output Rules builder (a0DQH00000KZwnB2AT). Migrated 66 builders. Added loadOutputRules() method. |
 | 2026-01-24 | Task 4.9 | Opus | Updated buildOutputRulesSection(runId) to load Output Rules builder dynamically instead of hardcoded merge field syntax. Deployed to org. 67 builders now active. |
 | 2026-01-24 | Tasks 4.13a-4.15a: Traversal consolidation pilot | Sonnet | Created consolidate_traversals_pilot.apex script. Consolidated Account (4 records → 1) and Opportunity (3 records → 1) traversals. Deactivated old granular records. Builder count: 67 total, 23 traversals. Awaiting end-to-end test validation. |
+| 2026-01-24 | Task 4.16a: Pipeline testing - Critical issues found | Sonnet | Tested Opportunity pipeline (ID: 006QH00000HjgvlYAB). Found 3 issues: (1) DCM missing Contact parent lookups for OpportunityContactRole - LLM extracted names from Description text instead of merge fields (unreliable), (2) Recommendation Card template has redundant "Recommended Action" label, (3) 3-level traversals not working (Opportunity → OCR → Contact). Added Phase 4C tasks to fix DCMBuilder and Stage08. |
 
 ---
 
