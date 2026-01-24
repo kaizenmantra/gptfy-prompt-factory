@@ -2,6 +2,7 @@
  * @description Main orchestrator for the 12-stage Prompt Factory pipeline
  * Implements Queueable and Database.AllowsCallouts to execute stages asynchronously
  * Chains through all 12 stages, handling success/failure at each step
+ * FORCE RECOMPILE: 2026-01-24 03:51 - Added accumulation logic with debug logging
  *
  * IMPORTANT: This class is structured to minimize stack depth when calling
  * System.enqueueJob() to avoid "Maximum stack depth has been reached" errors.

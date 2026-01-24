@@ -11,7 +11,7 @@ All architecture, decisions, tasks, and progress tracked here.
 |-------|------|---------------------|---------|
 | - | - | - | - |
 
-**Status:** V2.1 COMPLETE. V2.2 in progress (27/51 tasks done) - Phase 2A+2B+2D complete. Phase 2F.1+2F.2+2F.3 complete. **REMAINING:** 2C.5 parent traversal syntax fixes (6 tasks), 2F.4 missing tests for retry/null-override (2 tasks), 2F.5 deployment (4 tasks).
+**Status:** V2.1 COMPLETE. V2.2 in progress (31/51 tasks done) - Phase 2A+2B+2D complete. Phase 2F.1+2F.2+2F.3 complete. **Phase 2G fix deployed** - Stage 3 grandchild selection now filters system objects. **REMAINING:** 2C.5 parent traversal syntax fixes (6 tasks), 2F.4 missing tests (2 tasks), 2G validation testing.
 
 ---
 
@@ -260,7 +260,7 @@ Each stage currently has ~10-20 lines of boilerplate copying inputs to outputs. 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
 | 2.36 | Unit test: Basic accumulation across stages | Gemini | done | ✅ testLoadStageInputs_Accumulation() at line 243 in PromptFactoryPipeline_Test.cls |
-| 2.37 | Unit test: Retry scenario (Ghost Data prevention) | Gemini | not_started | ⚠️ TEST MISSING: Need test that creates Stage 5 TWICE with different values, verifies LATEST wins. No such test found in PromptFactoryPipeline_Test.cls |
+| 2.37 | Unit test: Retry scenario (Ghost Data prevention) | Sonnet | in_progress | ⚠️ TEST MISSING: Need test that creates Stage 5 TWICE with different values, verifies LATEST wins. No such test found in PromptFactoryPipeline_Test.cls |
 | 2.38 | Unit test: Null override protection | Gemini | not_started | ⚠️ TEST MISSING: Need test where Stage 3 outputs foo="bar", Stage 5 outputs foo=null, verify foo="bar" persists. No such test found |
 | 2.39 | Unit test: Corrupt JSON handling | Gemini | done | ✅ testLoadStageInputs_MalformedJSON() at line 462 covers this scenario |
 | 2.39a | Unit test: Size Warning | Gemini | not_started | Inject >100KB data, verify warning log appears |
@@ -298,9 +298,126 @@ Each stage currently has ~10-20 lines of boilerplate copying inputs to outputs. 
 5. ✅ Rollback possible within 5 minutes if issues arise
 
 **Blocking Issues (Must Resolve Before Starting):**
-- [ ] Team agrees on Option B (remove pass-through) vs Option A (invalidate downstream)
-- [ ] Stakeholders understand revised timeline (11h vs original 4h estimate)
-- [ ] Sandbox environment available for prototyping
+- [x] Team agrees on Option B (remove pass-through) vs Option A (invalidate downstream) ✅ DONE
+- [x] Stakeholders understand revised timeline (11h vs original 4h estimate) ✅ DONE
+- [x] Sandbox environment available for prototyping ✅ DONE
+
+---
+
+### Phase 2G: Deep Schema Traversal Testing (3-4 Level DCM)
+
+**Goal:** Validate and enhance schema interrogation to support 3-4 levels of relationship depth in Data Context Mappings.
+
+**Target Relationship Chains:**
+1. Account → Opportunity → OpportunityContactRole → Contact (4 levels)
+2. Account → Opportunity → Task/Event (3 levels)
+3. Account → Case → CaseComment (3 levels)
+
+**Test Account:** `001gD000004K2TTQA0` (rich test data with Contacts, Opportunities, Activities, Cases)
+
+**Current Architecture:**
+- Stage 3 discovers children + grandchildren (2 levels DOWN)
+- Parent field traversals allow 1 level UP (e.g., OCR.ContactId → Contact.Name)
+- DCMBuilder supports CHILD and GRANDCHILD types
+
+**Investigation Questions:**
+1. Are childChain traversals properly configured in the org?
+2. Is Stage 3 selecting grandchildren correctly?
+3. Is Stage 5 selecting parent fields for grandchildren?
+4. Is DCMBuilder creating all expected records?
+5. ~~Does GPTfy DCM support 3+ levels (GREAT_GRANDCHILD type)?~~ ✅ YES - Uses GRANDCHILD type with ccai__Parent_Detail__c chaining for all levels 2+
+
+**Reference Implementation:** `/Users/sgupta/projects-sfdc/gptfy-claude-automation/scripts/`
+- `orchestrator.sh`: Schema discovery with SCHEMA_DEPTH variable (currently 2)
+- `update-dcm.sh`: DCM creation with parent Detail linking for nested relationships
+- Key pattern: All levels beyond 1 use Type='GRANDCHILD' + ccai__Parent_Detail__c chaining
+
+#### Phase 2G.1: Diagnostic & Testing
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 2G.1 | Create diagnostic script for Account 001gD000004K2TTQA0 | Opus | done | ✅ Created scripts/apex/diagnose_schema_depth.apex |
+| 2G.2 | Run Stage 3 in isolation and analyze output | Opus | blocked | ⚠️ FLS issue: PF_Run_Stage__c.Status__c/Output_Data__c not accessible |
+| 2G.3 | Run Stage 5 in isolation and analyze output | Opus | blocked | ⚠️ FLS issue: Cannot query stage outputs |
+| 2G.4 | Analyze DCM created for the test account | Opus | done | ✅ Existing DCMs only have CHILD type (no GRANDCHILD) - pipeline issue |
+| 2G.5 | Document current depth limitation | Opus | done | ✅ See findings below |
+| 2G.5a | Test DCMBuilder grandchild creation directly | Opus | done | ✅ DCMBuilder works! Created scripts/apex/test_dcm_grandchildren.apex |
+| 2G.5b | Fix Stage 3 grandchild selection filtering | Opus | done | ✅ Added system object filter + improved AI prompt |
+
+**Phase 2G.1 Key Findings:**
+
+1. **DCMBuilder GRANDCHILD support works correctly** (verified via test_dcm_grandchildren.apex):
+   - Creates CHILD objects: Contact, Opportunity
+   - Creates GRANDCHILD objects: OpportunityContactRole, OpportunityLineItem
+   - Links `ccai__Parent_Detail__c` properly between levels
+   - Parent fields (V2.2 dot notation) also work: Owner.Name, Contact.Name, Contact.Email
+
+2. **Existing Account DCMs only have CHILD type** (no GRANDCHILD records):
+   - Root cause: Grandchildren aren't being selected/passed through stage pipeline
+   - Stage 3 → Stage 4 → Stage 8 flow has a break somewhere
+
+3. **FLS Issue blocking diagnostics**:
+   - `PF_Run_Stage__c.Status__c` and `Output_Data__c` fields exist in Setup
+   - Fields are NOT accessible via API (FLS issue for running user)
+   - Cannot query stage outputs to trace where grandchildren get lost
+
+4. **Code architecture is correct**:
+   - Stage03_SchemaDiscovery.cls outputs `selectedGrandchildren` (line 176)
+   - Stage04_DataProfiling.cls passes through `selectedGrandchildren` (line 120)
+   - Stage08_PromptAssembly.cls reads `selectedGrandchildren` (line 1080)
+   - Stage08_PromptAssembly.buildChildObjectConfig() handles grandchildren correctly (lines 1248-1287)
+
+**~~Blocking Issue: FLS for PF_Run_Stage__c fields~~** - ✅ FIXED by user
+
+**ROOT CAUSE IDENTIFIED (2026-01-23):**
+
+Stage 3 AI selects WRONG grandchildren! Example from Run a0gQH000005GN5pYAG:
+- **Selected by AI:** FlowRecordRelation, EventRelation, EmailMessageRelation, OrderItem (system/infrastructure objects)
+- **Should select:** Objects from `childChains` traversals like OpportunityLineItem→Product2, OpportunityContactRole→Contact
+
+The `childChains` are correctly configured:
+```json
+[
+  {"chain": [OpportunityLineItem → Product2], "description": "Include products"},
+  {"chain": [OpportunityContactRole → Contact], "description": "Include stakeholders"}
+]
+```
+
+**Fix Applied (2026-01-23):**
+1. ✅ Added `excludedSystemObjects` filter to Stage03_SchemaDiscovery.cls (lines 129-140)
+   - Filters out: FlowRecordRelation, EntitySubscription, ContentDocumentLink, FeedItem, etc.
+2. ✅ Enhanced grandchild selection prompt with explicit selection criteria
+   - Prioritizes: people/stakeholders, products, activities, transactions
+   - Warns against system objects ending in "Relation"
+3. Deployed to agentictso org
+
+**Fix Applied (2026-01-24):**
+4. ✅ Fixed childChain processing to only add TRUE children, not lookup targets (lines 106-123)
+   - Root cause: childChain steps with `via` field are LOOKUP traversals (go UP), not children (go DOWN)
+   - Product2 and Contact were being added as children, causing grandchild discovery to find backwards relationships
+   - Now only adds steps where `step.via` is blank (true child relationships)
+   - Lookup targets (Product2, Contact) handled by parent field traversal in Stage 5
+5. Deployed to agentictso org
+
+#### Phase 2G.2: Enhancement (Required for 3+ Levels)
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 2G.6 | Extend Stage 3 for recursive depth discovery | Opus | not_started | Add SCHEMA_DEPTH config (like shell script), discover 3-5 levels |
+| 2G.7 | DCMBuilder already supports chaining | Opus | done | ✅ Uses parentObject + ccai__Parent_Detail__c - no changes needed |
+| 2G.8 | Port shell script detection patterns to Apex | Opus | not_started | detect_relationship_field() and get_relationship_name() logic |
+| 2G.9 | Create childChain traversals for Account test | Opus | not_started | OCR→Contact, Opp→Task chains in Builder records |
+| 2G.10 | Test end-to-end with 4-level DCM | Manual | not_started | Account→Opp→OCR→Contact via parent fields |
+
+#### Phase 2G.3: Validation
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 2G.11 | Validate Account → Opp → OCR → Contact chain | Manual | not_started | All 4 objects appear in prompt context |
+| 2G.12 | Validate Account → Case → CaseComment chain | Manual | not_started | Case comments appear in prompt context |
+| 2G.13 | Document final architecture and limitations | Opus | not_started | Update design docs with supported depth |
+
+**Total: 13 tasks** (2G.1-2G.13)
 
 ---
 
@@ -588,6 +705,7 @@ Stage 5: Field Selection (Enhanced)
 | 2026-01-23 | Pipeline Data Accumulation Fix Analysis | Opus | Identified critical bug: loadStageInputs() only loads previous stage (N-1), not all stages. Peer review found "Ghost Data" risk in partial retry scenarios. Created PRD at docs/PRD-pipeline-data-accumulation-fix.md. Added Phase 2F with 25 tasks. Recommended Option B: remove pass-through from Stages 6-12. Estimated effort: 11+ hours (2-3 days) |
 | 2026-01-23 | Phase 2F Implementation (Gemini) | Gemini | Completed Phase 2F.1 (logging), 2F.2 (pass-through removal from Stages 6-9, 11-12), 2F.3 (loadStageInputs accumulation). Added truncation detection, selectedFields trace logging |
 | 2026-01-23 | Phase 2F Code Review | Opus | Reviewed Gemini's Phase 2F implementation. Verified: (1) loadStageInputs() correctly accumulates from ALL stages, (2) Pass-through removed from 6 stage files, (3) Conflict detection, null handling, size warnings all working. Found 2 missing tests: 2.37 (retry scenario) and 2.38 (null override) marked done but not in test file. Updated tracker to reflect actual state |
+| 2026-01-24 | Phase 2G.5c: Fix childChain lookup targets | Opus | Analyzed Stage 3 output - found childChain processing was adding lookup targets (Product2, Contact) as children, causing backwards grandchild relationships (Product2→OLI). Fixed by checking `step.via` to only add true children. Deployed to org. |
 
 ---
 

@@ -104,11 +104,15 @@ public with sharing class Stage03_SchemaDiscovery implements IStage {
             List<ChildChainDefinition> childChains = loadChildChains(rootObject, runId, result);
 
             if (!childChains.isEmpty()) {
-                // Add all chain objects to selectedChildObjects if not already present
+                // Add child relationship objects from chains to selectedChildObjects
+                // Only add TRUE children (relationshipField set), NOT lookup targets (via set)
                 Set<String> selectedSet = new Set<String>(selectedChildObjects);
                 for (ChildChainDefinition chain : childChains) {
                     for (ChainStep step : chain.chain) {
-                        if (!selectedSet.contains(step.objectName) &&
+                        // Skip lookup traversals (via != null) - these are parent lookups, not children
+                        // They should be handled by parent field traversal in Stage 5
+                        if (String.isBlank(step.via) &&
+                            !selectedSet.contains(step.objectName) &&
                             SchemaHelper.isObjectAccessible(step.objectName)) {
                             selectedChildObjects.add(step.objectName);
                             selectedSet.add(step.objectName);
@@ -126,10 +130,27 @@ public with sharing class Stage03_SchemaDiscovery implements IStage {
             Map<String, List<SchemaHelper.ChildRelationship>> grandchildRelationships =
                 SchemaHelper.discoverGrandchildRelationships(rootObject, selectedChildObjects);
 
-            // Build list of available grandchildren for AI selection
+            // V2.2 Phase 2G: Filter out system/infrastructure objects that never provide business value
+            // These objects are Salesforce platform internals that clutter AI selection
+            Set<String> excludedSystemObjects = new Set<String>{
+                'FlowRecordRelation', 'FlowOrchestrationWorkItem', 'EntitySubscription',
+                'ContentDocumentLink', 'ContentVersion', 'ContentDistribution',
+                'FeedItem', 'FeedComment', 'TopicAssignment', 'UserDefinedLabelAssignment',
+                'ProcessInstance', 'ProcessInstanceHistory', 'RecordAction',
+                'Attachment', 'CombinedAttachment', 'NoteAndAttachment',
+                'CollaborationGroupRecord', 'UserPrioritizedRecord'
+            };
+
+            // Build list of available grandchildren for AI selection (excluding system objects)
             List<Map<String, String>> availableGrandchildren = new List<Map<String, String>>();
+            Integer skippedCount = 0;
             for (String parentChild : grandchildRelationships.keySet()) {
                 for (SchemaHelper.ChildRelationship gc : grandchildRelationships.get(parentChild)) {
+                    // Skip system objects that don't provide business context
+                    if (excludedSystemObjects.contains(gc.childObject)) {
+                        skippedCount++;
+                        continue;
+                    }
                     availableGrandchildren.add(new Map<String, String>{
                         'objectName' => gc.childObject,
                         'parentObject' => parentChild,
@@ -140,7 +161,7 @@ public with sharing class Stage03_SchemaDiscovery implements IStage {
             }
 
             result.queueInfo(runId, STAGE_NUMBER,
-                'Found ' + availableGrandchildren.size() + ' potential grandchild objects');
+                'Found ' + availableGrandchildren.size() + ' potential grandchild objects (filtered ' + skippedCount + ' system objects)');
 
             // Select grandchildren using AI if we have any candidates
             List<Map<String, String>> selectedGrandchildren = new List<Map<String, String>>();
@@ -347,12 +368,22 @@ public with sharing class Stage03_SchemaDiscovery implements IStage {
                'TARGET PERSONA: ' + targetPersona + '\n' +
                'BUSINESS CONTEXT:\n' + businessContext + '\n\n' +
                'AVAILABLE GRANDCHILD OBJECTS (Parent -> Child):\n' + String.join(grandchildList, '\n') + '\n\n' +
-               'Select 0-' + TARGET_GRANDCHILD_COUNT + ' grandchild objects that would provide valuable additional context.\n' +
-               'Only select objects that are HIGHLY relevant to the business context.\n' +
-               'Common valuable grandchildren:\n' +
-               '- Opportunity -> OpportunityContactRole (who is involved in deals)\n' +
+               'SELECTION CRITERIA:\n' +
+               '1. Select 0-' + TARGET_GRANDCHILD_COUNT + ' grandchild objects that provide BUSINESS context\n' +
+               '2. PRIORITIZE objects that contain:\n' +
+               '   - People/stakeholder data (roles, contacts, participants)\n' +
+               '   - Product/line item data (what is being sold/serviced)\n' +
+               '   - Activity details (meeting attendees, task assignees)\n' +
+               '   - Transaction details (order items, invoice lines)\n' +
+               '3. AVOID selecting:\n' +
+               '   - Objects ending in "Relation" unless they contain business roles (e.g., EventRelation for attendees is OK)\n' +
+               '   - Objects that only track system behavior\n\n' +
+               'EXAMPLES of valuable grandchildren:\n' +
+               '- Opportunity -> OpportunityContactRole (stakeholders in deals)\n' +
                '- Opportunity -> OpportunityLineItem (products in deals)\n' +
-               '- Case -> CaseComment (customer interactions)\n\n' +
+               '- Case -> CaseComment (customer interactions)\n' +
+               '- Event -> EventRelation (meeting attendees)\n' +
+               '- Order -> OrderItem (order line items)\n\n' +
                'Return ONLY valid JSON in this exact format:\n' +
                '{\n' +
                '  "selectedGrandchildren": [\n' +

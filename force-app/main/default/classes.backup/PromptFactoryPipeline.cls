@@ -23,6 +23,9 @@ public class PromptFactoryPipeline implements Queueable, Database.AllowsCallouts
         'fullRecord', 'fullRecordJson'
     };
 
+    // Test control to prevent infinite chaining in unit tests
+    @TestVisible private static Boolean stopChaining = false;
+
     /**
      * @description Simple enum-like class to track what action to take after stage execution
      * Using strings to avoid enum overhead
@@ -74,14 +77,14 @@ public class PromptFactoryPipeline implements Queueable, Database.AllowsCallouts
     public void execute(QueueableContext context) {
         // Stage routing for stages 5+ to dedicated Queueable wrappers
         if (currentStage >= 5) {
-            routeToStageJobInline();
+            if (!stopChaining) routeToStageJobInline();
             return;
         }
 
         // Execute stages 1-4 with standard chaining
         ExecutionDecision decision = executeStageAndGetDecision();
 
-        if (decision.action == 'CHAIN') {
+        if (decision.action == 'CHAIN' && !stopChaining) {
             Integer nextStage = currentStage + 1;
 
             if (nextStage == 5) {
@@ -104,10 +107,12 @@ public class PromptFactoryPipeline implements Queueable, Database.AllowsCallouts
         else if (currentStage == 6) System.enqueueJob(new Stage06_ConfigurationValidationJob(runId));
         else if (currentStage == 7) System.enqueueJob(new Stage07_TemplateDesignJob(runId));
         else if (currentStage == 8) System.enqueueJob(new Stage08_PromptAssemblyJob(runId));
+        /*
         else if (currentStage == 9) System.enqueueJob(new Stage09_CreateAndDeployJob(runId));
         else if (currentStage == 10) System.enqueueJob(new Stage10_TestExecutionJob(runId));
         else if (currentStage == 11) System.enqueueJob(new Stage11_SafetyValidationJob(runId));
         else if (currentStage == 12) System.enqueueJob(new Stage12_QualityAuditJob(runId));
+        */
     }
 
     /**
@@ -129,6 +134,7 @@ public class PromptFactoryPipeline implements Queueable, Database.AllowsCallouts
             when 8 {
                 System.enqueueJob(new Stage08_PromptAssemblyJob(runId));
             }
+            /*
             when 9 {
                 System.enqueueJob(new Stage09_CreateAndDeployJob(runId));
             }
@@ -141,6 +147,7 @@ public class PromptFactoryPipeline implements Queueable, Database.AllowsCallouts
             when 12 {
                 System.enqueueJob(new Stage12_QualityAuditJob(runId));
             }
+            */
         }
     }
 
@@ -156,6 +163,9 @@ public class PromptFactoryPipeline implements Queueable, Database.AllowsCallouts
         StageResult result = null;
         PF_Run__c run = null;
         Boolean shouldUpdateToInProgress = false;
+
+        // Enable log buffering to prevent "Uncommitted work pending" errors during input loading
+        PromptFactoryLogger.enableBuffering();
 
         try {
             // Load run record (query only - no DML yet)
@@ -201,6 +211,9 @@ public class PromptFactoryPipeline implements Queueable, Database.AllowsCallouts
                 updateCurrentStage(run, currentStage);
             }
 
+            // FLUSH LOGS: Write any logs accumulated during input loading (now that callouts are done)
+            PromptFactoryLogger.flushLogs();
+
             PromptFactoryLogger.info(runId, currentStage,
                 'Starting execution of Stage ' + currentStage);
 
@@ -238,6 +251,7 @@ public class PromptFactoryPipeline implements Queueable, Database.AllowsCallouts
 
         } catch (Exception e) {
             handleException(e);
+            PromptFactoryLogger.flushLogs(); // Ensure logs are flushed on error
             decision.action = 'ERROR';
             decision.errorMessage = e.getMessage();
         }
@@ -263,49 +277,135 @@ public class PromptFactoryPipeline implements Queueable, Database.AllowsCallouts
     }
 
     /**
-     * @description Loads inputs for the current stage from previous stage output
-     * For Stage 1, returns initial inputs from run record
-     * For subsequent stages, returns outputs from previous stage
+     * @description Loads inputs for the current stage from previous stages
+     * PHASE 2F FIX: Accumulates outputs from ALL previous completed stages to prevent data loss (Ghost Data)
+     * Includes conflict detection and size warnings.
      * @param stageNumber Current stage number
      * @return Map of input data
      */
+    @TestVisible
     private Map<String, Object> loadStageInputs(Integer stageNumber) {
         Map<String, Object> inputs = new Map<String, Object>();
 
+        // 1. [Safety Net] Always load base inputs from Run record first
+        PF_Run__c run = loadRunRecord();
+        if (run != null) {
+            if (String.isNotBlank(run.Root_Object__c)) inputs.put('rootObject', run.Root_Object__c);
+            if (run.Sample_Record_Id__c != null) inputs.put('sampleRecordId', run.Sample_Record_Id__c);
+            if (String.isNotBlank(run.Business_Context__c)) inputs.put('businessContext', run.Business_Context__c);
+            if (String.isNotBlank(run.Output_Format__c)) inputs.put('outputFormat', run.Output_Format__c);
+            if (String.isNotBlank(run.Prompt_Name__c)) inputs.put('targetPromptName', run.Prompt_Name__c);
+        }
+
         if (stageNumber == 1) {
-            // Stage 1 has no previous stage, load from run record
-            PF_Run__c run = loadRunRecord();
-            if (run != null) {
-                inputs.put('rootObject', run.Root_Object__c);
-                inputs.put('sampleRecordId', run.Sample_Record_Id__c);
-                inputs.put('businessContext', run.Business_Context__c);
-                inputs.put('outputFormat', run.Output_Format__c);
-                inputs.put('targetPromptName', run.Prompt_Name__c);
-            }
             return inputs;
         }
 
-        // Load outputs from previous stage
-        Integer previousStage = stageNumber - 1;
-        List<PF_Run_Stage__c> stages = [
-            SELECT Id, Stage_Number__c, Status__c, Output_Data__c
+        // 2. Query ALL previous completed stages
+        // Order by Stage Number ASC (process order), then CreatedDate DESC (latest retry first)
+        List<PF_Run_Stage__c> allStageRecords = [
+            SELECT Stage_Number__c, Output_Data__c, CreatedDate
             FROM PF_Run_Stage__c
             WHERE Run__c = :runId
-            AND Stage_Number__c = :previousStage
-            ORDER BY CreatedDate DESC
-            LIMIT 1
+            AND Stage_Number__c < :stageNumber
+            AND Status__c = 'Completed'
+            ORDER BY Stage_Number__c ASC, CreatedDate DESC
         ];
 
-        if (!stages.isEmpty() && String.isNotBlank(stages[0].Output_Data__c)) {
+        // 3. Deduplicate: Keep only the LATEST record for each stage number
+        Map<Integer, String> latestOutputByStage = new Map<Integer, String>();
+        for (PF_Run_Stage__c record : allStageRecords) {
+            Integer stageNum = Integer.valueOf(record.Stage_Number__c);
+            // Since we ordered by CreatedDate DESC, the first one we see is the latest
+            if (!latestOutputByStage.containsKey(stageNum)) {
+                latestOutputByStage.put(stageNum, record.Output_Data__c);
+            }
+        }
+
+        // 4. Merge outputs in Stage Order (1, 2, 3...)
+        // Later stages override earlier stages (Last Write Wins)
+        List<Integer> stageNumbers = new List<Integer>(latestOutputByStage.keySet());
+        stageNumbers.sort();
+
+        PromptFactoryLogger.logDebug(runId, stageNumber, 
+            'Accumulating inputs from ' + stageNumbers.size() + ' previous stages: ' + stageNumbers);
+
+        for (Integer stageNum : stageNumbers) {
+            String outputJson = latestOutputByStage.get(stageNum);
+            if (String.isBlank(outputJson)) continue;
+            
+            // DEBUG: Check for truncation
+            Boolean isTruncated = outputJson.contains('[TRUNCATED]');
+            if (isTruncated) {
+                 PromptFactoryLogger.logWarning(runId, stageNumber, 'Stage ' + stageNum + ' output is TRUNCATED. JSON parsing may fail.');
+            }
+
             try {
-                Object parsed = JSON.deserializeUntyped(stages[0].Output_Data__c);
+                Object parsed = JSON.deserializeUntyped(outputJson);
                 if (parsed instanceof Map<String, Object>) {
-                    inputs = (Map<String, Object>) parsed;
+                    Map<String, Object> stageOutputs = (Map<String, Object>) parsed;
+                    
+                    // DEBUG: Log keys contributed by this stage
+                    // PromptFactoryLogger.logDebug(runId, stageNumber, 'Stage ' + stageNum + ' keys: ' + stageOutputs.keySet());
+                    
+                    if (stageOutputs.containsKey('selectedFields')) {
+                        PromptFactoryLogger.logInfo(runId, stageNumber, 'Stage ' + stageNum + ' provides selectedFields');
+                    }
+
+                    for (String key : stageOutputs.keySet()) {
+                        Object value = stageOutputs.get(key);
+                        
+                        // Ignore nulls - they shouldn't wipe out existing data
+                        if (value == null) continue;
+
+                        // Task 2.21: Conflict Detection
+                        if (inputs.containsKey(key)) {
+                            Object existingValue = inputs.get(key);
+                            // Simple check: if values differ (check string representation for simplicity)
+                            String val1 = String.valueOf(existingValue);
+                            String val2 = String.valueOf(value);
+                            
+                            if (val1 != val2 && val1.length() < 100 && val2.length() < 100) {
+                                PromptFactoryLogger.logWarning(runId, stageNumber,
+                                    'Conflict: Stage ' + stageNum + ' overwrote "' + key + '". ' +
+                                    'Old: ' + val1 + ', New: ' + val2);
+                            }
+                        }
+
+                        inputs.put(key, value);
+                    }
                 }
             } catch (Exception e) {
-                PromptFactoryLogger.logException(runId, stageNumber,
-                    'Failed to parse previous stage outputs', e);
+                PromptFactoryLogger.logWarning(runId, stageNumber,
+                    'Failed to parse Stage ' + stageNum + ' outputs: ' + e.getMessage());
             }
+        }
+        
+        // DEBUG: Trace selectedFields presence
+        Boolean hasSelectedFields = inputs.containsKey('selectedFields');
+        Map<String, Object> sfMap = hasSelectedFields ? (Map<String, Object>)inputs.get('selectedFields') : null;
+        Integer sfSize = (sfMap != null) ? sfMap.size() : 0;
+        
+        PromptFactoryLogger.logDebug(runId, stageNumber, 
+            'Final Inputs Assembly: selectedFields present=' + hasSelectedFields + 
+            ', Objects=' + sfSize + 
+            ', Keys=' + inputs.keySet());
+
+        if (!hasSelectedFields && stageNumber >= 6) {
+             PromptFactoryLogger.logError(runId, stageNumber, 'CRITICAL: selectedFields MISSING in Stage ' + stageNumber + ' inputs!');
+        }
+
+        // Task 2.23: Size Warning
+        // Serialize inputs to check size
+        try {
+            String finalJson = JSON.serialize(inputs);
+            if (finalJson.length() > 100000) {
+                PromptFactoryLogger.logWarning(runId, stageNumber,
+                    '⚠️ Accumulated inputs size is LARGE: ' + finalJson.length() + 
+                    ' chars (Limit: 131072). Consider removing large fields from stage outputs.');
+            }
+        } catch(Exception e) {
+            // ignore serialization errors here
         }
 
         return inputs;
