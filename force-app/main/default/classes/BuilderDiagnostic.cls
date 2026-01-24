@@ -15,7 +15,7 @@ public without sharing class BuilderDiagnostic {
         res.builderNames = new List<String>();
         try {
             List<ccai__AI_Prompt__c> allBuilders = [
-                SELECT Id, Name, Category__c, RecordType.DeveloperName
+                SELECT Id, Name, ccai__Type__c, RecordType.DeveloperName
                 FROM ccai__AI_Prompt__c
                 WHERE RecordType.DeveloperName = 'Builder'
                 AND ccai__Status__c = 'Active'
@@ -29,12 +29,12 @@ public without sharing class BuilderDiagnostic {
             res.traversals = 0;
 
             for (ccai__AI_Prompt__c p : allBuilders) {
-                res.builderNames.add(p.Name + ' [' + p.Category__c + ']');
-                if (p.Category__c == 'Quality Rule') res.qualityRules++;
-                else if (p.Category__c == 'Pattern') res.patterns++;
-                else if (p.Category__c == 'UI Component') res.uiComponents++;
-                else if (p.Category__c == 'Context Template') res.contextTemplates++;
-                else if (p.Category__c == 'Traversal') res.traversals++;
+                res.builderNames.add(p.Name + ' [' + p.ccai__Type__c + ']');
+                if (p.ccai__Type__c == 'Quality Rule') res.qualityRules++;
+                else if (p.ccai__Type__c == 'Pattern') res.patterns++;
+                else if (p.ccai__Type__c == 'UI Component') res.uiComponents++;
+                else if (p.ccai__Type__c == 'Context Template') res.contextTemplates++;
+                else if (p.ccai__Type__c == 'Traversal') res.traversals++;
             }
         } catch (Exception e) {
             res.error = e.getMessage() + ' | ' + e.getStackTraceString();

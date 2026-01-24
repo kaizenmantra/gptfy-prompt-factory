@@ -320,12 +320,12 @@ public with sharing class P_PromptBuilderController {
     private static String loadBuilderGuidance() {
         try {
             List<ccai__AI_Prompt__c> builders = [
-                SELECT Id, Name, Category__c, ccai__Prompt_Command__c
+                SELECT Id, Name, ccai__Type__c, ccai__Prompt_Command__c
                 FROM ccai__AI_Prompt__c
                 WHERE RecordType.DeveloperName = 'Builder'
                   AND ccai__Status__c = 'Active'
-                  AND Category__c IN ('Quality Rule', 'Pattern')
-                ORDER BY Category__c, Name
+                  AND ccai__Type__c IN ('Quality Rule', 'Pattern')
+                ORDER BY ccai__Type__c, Name
             ];
             
             if (builders.isEmpty()) {

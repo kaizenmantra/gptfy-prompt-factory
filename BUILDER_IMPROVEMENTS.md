@@ -275,25 +275,44 @@ Migrate from custom `Category__c` field to standard `ccai__Type__c` picklist for
 | 4.11 | Deprecate Category__c field | Opus | done | All code now uses ccai__Type__c - no Category__c references remain |
 | 4.12 | Test all builder loading | Manual | not_started | Verify all builder types load correctly with new Type field |
 
+### Phase 4A-Extra: Traversal Consolidation (Sonnet)
+
+Consolidate granular traversal records into comprehensive object-focused records for better LLM comprehension and performance.
+
+**Why Consolidation is Better:**
+1. **LLM Comprehension** - LLM sees all traversal options for an object in one place, making better field selection decisions
+2. **Performance** - Fewer SOQL queries (1 record instead of 3-5 per object), less JSON parsing overhead, smaller prompt size
+3. **Maintainability** - One record to update per object instead of hunting through multiple granular records
+
+**Strategy:** Pilot with Account and Opportunity first (highest usage), validate with end-to-end test, then expand to remaining objects.
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 4.13a | Create consolidation script for Account + Opportunity | Sonnet | done | Created scripts/apex/consolidate_traversals_pilot.apex |
+| 4.14a | Run consolidation script | Sonnet | done | Created 2 consolidated records, deactivated 4 old granular records |
+| 4.15a | Verify builder count and content | Sonnet | done | 67 builders total, 23 traversals (down from 25) |
+| 4.16a | Test consolidated traversals in pipeline | Manual | in_progress | Run full pipeline with Account or Opportunity root object, verify Stage 5 field selection quality |
+| 4.17a | Consolidate remaining objects | Sonnet | not_started | Case, Contact, Lead, Event, Task, Product (pending pilot test results) |
+
 ### Phase 4B: LWC Enhancements (Opus)
 
 Add state file link and fix navigation to open in new browser tabs.
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 4.13 | Add State File link to Run Detail LWC | Opus | done | Added getStateFileInfo() Apex method + LWC buttons |
-| 4.14 | Make State File link open in new tab | Opus | done | Uses NavigationMixin.GenerateUrl + window.open() |
-| 4.15 | Fix Run Logs link to open in new tab | Opus | done | Fixed pfRunHistory.handleViewRun() to use new tab |
-| 4.16 | Add State File content preview | Opus | not_started | Optional: Show JSON content inline (collapsible) |
-| 4.17 | Test LWC navigation behavior | Manual | not_started | Verify both links open in new tabs |
+| 4.18 | Add State File link to Run Detail LWC | Opus | done | Added getStateFileInfo() Apex method + LWC buttons |
+| 4.19 | Make State File link open in new tab | Opus | done | Uses NavigationMixin.GenerateUrl + window.open() |
+| 4.20 | Fix Run Logs link to open in new tab | Opus | done | Fixed pfRunHistory.handleViewRun() to use new tab |
+| 4.21 | Add State File content preview | Opus | not_started | Optional: Show JSON content inline (collapsible) |
+| 4.22 | Test LWC navigation behavior | Manual | not_started | Verify both links open in new tabs |
 
 ### Phase 4C: Documentation & Cleanup (Opus)
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 4.18 | Update PROMPT_GENERATION_RULES.md | Opus | done | Docs already match Output Rules builder content |
-| 4.19 | Update Decision Log | Opus | done | Already documented Type vs Category + Output Rules decisions |
-| 4.20 | Final testing | Manual | not_started | Full pipeline run with all V2.4 changes |
+| 4.23 | Update PROMPT_GENERATION_RULES.md | Opus | done | Docs already match Output Rules builder content |
+| 4.24 | Update Decision Log | Opus | done | Already documented Type vs Category + Output Rules decisions |
+| 4.25 | Final testing | Manual | not_started | Full pipeline run with all V2.4 changes |
 
 ---
 
@@ -408,6 +427,45 @@ public class PipelineState {
 7. **Visible in UI** - LWC can show file contents directly
 
 ---
+
+## Traversal Builder Consolidation
+
+### Consolidation Strategy (V2.4)
+
+**Problem:** Original approach created separate builder records for each traversal path (e.g., "Account to Opportunity", "Account to Contact", "Account to Case"). This fragmented the LLM's understanding - it saw pieces instead of the complete traversal map for an object.
+
+**Solution:** Consolidate all traversals for an object into a single comprehensive builder record.
+
+**Pilot Results (Account + Opportunity):**
+- **Account Traversals** (a0DQH00000KZwon2AD) - Consolidates: Opportunity, Contact, Case, Contract traversals
+- **Opportunity Traversals** (a0DQH00000KZwoo2AD) - Consolidates: Account, Owner, OpportunityContactRole traversals
+- Reduced from 7 granular records to 2 consolidated records
+- LLM now sees complete relationship map in one prompt section
+
+**Remaining Objects to Consolidate (Pending Pilot Test):**
+- Case, Contact, Lead, Event, Task, Product, User, Quote, Order
+
+### Example: Consolidated Account Traversals
+
+```
+PARENT RELATIONSHIPS (lookup from child objects back to Account):
+
+1. Opportunity → Account
+   - Traverse via: OpportunityId field
+   - Suggested fields: Account.Name, Account.Industry, Account.Type, Account.BillingCity, Account.AnnualRevenue
+
+2. Contact → Account
+   - Traverse via: AccountId field
+   - Suggested fields: Account.Name, Account.Industry, Account.Type
+
+3. Case → Account
+   - Traverse via: AccountId field
+   - Suggested fields: Account.Name, Account.Type, Account.Industry
+
+4. Contract → Account
+   - Traverse via: AccountId field
+   - Suggested fields: Account.Name, Account.BillingCity
+```
 
 ## Parent Traversal Catalog
 
@@ -606,6 +664,7 @@ Stage 5: Field Selection (Enhanced)
 | 2026-01-24 | Use ccai__Type__c instead of Category__c | Simplify builder prompt architecture. Type field already exists on ccai__AI_Prompt__c. No need for separate Category__c field. Cleaner queries, less custom metadata. |
 | 2026-01-24 | Create Output Rules builder prompt | Move merge field syntax rules from hardcoded Stage08 text to a builder prompt. Easier to maintain, update without code deployment. |
 | 2026-01-24 | LWC links open in new tabs | State file and run logs should open in new browser tabs to preserve Factory LWC context. Better UX for debugging. |
+| 2026-01-24 | Consolidate traversal builders by object | When LLM sees all traversal options for an object in one place (vs. fragmented across 3-5 records), it makes better field selection decisions. Also improves performance (fewer SOQL queries) and maintainability (one record to update). Pilot with Account + Opportunity first. |
 
 ---
 
@@ -647,6 +706,7 @@ Stage 5: Field Selection (Enhanced)
 | 2026-01-24 | V2.4 Branch created | Opus | Created feature/v2.4-builder-refactor for Type migration, Output Rules builder, LWC enhancements |
 | 2026-01-24 | Tasks 4.1-4.8, 4.10-4.11 | Opus | Migrated all builder code from Category__c to ccai__Type__c. Updated Stage08, Stage05, BuilderDiagnostic, P_PromptBuilderController. Created Output Rules builder (a0DQH00000KZwnB2AT). Migrated 66 builders. Added loadOutputRules() method. |
 | 2026-01-24 | Task 4.9 | Opus | Updated buildOutputRulesSection(runId) to load Output Rules builder dynamically instead of hardcoded merge field syntax. Deployed to org. 67 builders now active. |
+| 2026-01-24 | Tasks 4.13a-4.15a: Traversal consolidation pilot | Sonnet | Created consolidate_traversals_pilot.apex script. Consolidated Account (4 records → 1) and Opportunity (3 records → 1) traversals. Deactivated old granular records. Builder count: 67 total, 23 traversals. Awaiting end-to-end test validation. |
 
 ---
 

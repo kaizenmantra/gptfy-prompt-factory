@@ -847,7 +847,7 @@ public with sharing class Stage05_FieldSelection implements IStage {
 
     /**
      * @description V2.1: Loads traversal builder definitions for the given objects
-     * Queries Builder prompts with Category__c = 'Traversal' that match the objects
+     * Queries Builder prompts with ccai__Type__c = 'Traversal' that match the objects
      * @param objectNames List of object API names to find traversals for
      * @param runId Run ID for logging
      * @param result StageResult for deferred logging
@@ -869,7 +869,7 @@ public with sharing class Stage05_FieldSelection implements IStage {
                 SELECT Id, Name, ccai__Prompt_Command__c, ccai__Object__c
                 FROM ccai__AI_Prompt__c
                 WHERE RecordTypeId = :builderRtId
-                  AND Category__c = 'Traversal'
+                  AND ccai__Type__c = 'Traversal'
                   AND ccai__Status__c = 'Active'
                   AND ccai__Object__c IN :objectSet
                 ORDER BY ccai__Object__c, Name
