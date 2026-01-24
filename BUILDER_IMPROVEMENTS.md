@@ -9,15 +9,15 @@ All architecture, decisions, tasks, and progress tracked here.
 
 | Model | Task | File Being Modified | Started |
 |-------|------|---------------------|---------|
-| Opus | 4.1+ | Stage08, LWC | 2026-01-24 |
+| Opus | 5.1+ | REST Test Harness, Python Scripts | 2026-01-24 |
 
-**Status:** V2.4 IN PROGRESS - Builder refactoring and LWC enhancements. V2.3 merged to main.
+**Status:** V2.5 IN PROGRESS - Test harness for autonomous prompt iteration. V2.4 merged to main.
 
 ---
 
 ## Release Strategy
 
-### Current Branch: `feature/v2.4-builder-refactor`
+### Current Branch: `feature/v2.5-simplified-merge-fields`
 **Status:** Active development
 
 ### Version History
@@ -29,7 +29,8 @@ All architecture, decisions, tasks, and progress tracked here.
 | V2.1 | feature/v2.1-enhancements | ✅ Complete | Visual diversity, parent traversals, builder library |
 | V2.2 | feature/v2.2-schema-intelligence | ⚠️ Abandoned | Schema enrichment attempted, pipeline state passing broke. See Decision Log. |
 | V2.3 | feature/v2.3-json-state | ✅ Complete | JSON file-based state (PipelineState.cls), merge field notation fixes |
-| V2.4 | feature/v2.4-builder-refactor | 🔨 Active | Builder Type migration, Output Rules builder, LWC enhancements |
+| V2.4 | feature/v2.4-builder-refactor | ✅ Complete | Builder Type migration, Output Rules builder, LWC enhancements |
+| V2.5 | feature/v2.5-simplified-merge-fields | 🔨 Active | REST test harness, Python orchestration, few-shot prompt generation |
 
 ### V2.2 Abandonment Note
 
@@ -372,26 +373,150 @@ The parent lookup feature now works correctly using the **existing infrastructur
 
 ---
 
-## V2.5 Task Queue (Future - Knowledge Base)
+## V2.5 Task Queue (Test Harness & Few-Shot Prompt Generation)
 
-Moved from original V2.3 plan. Will tackle after V2.4 is complete.
+**Goal:** Create an autonomous test harness that allows Claude to iterate on meta-prompt design without user intervention. The LLM should generate deterministic prompt templates (with merge fields) that match the quality of hand-crafted prompts.
 
-### Phase 5A: Builder Prompt Library Expansion
+**Core Problem Identified:** The current meta-prompt tells the LLM to "analyze data" which triggers analysis mode - LLM embeds actual values from sample JSON instead of using merge field placeholders. We tried prompt tweaks but they didn't work. The fundamental issue is that the LLM has never "seen" what a finished prompt looks like.
+
+**Solution:** Few-shot learning. Include 3-5 complete example prompts in the meta-prompt. The LLM will pattern-match and generate output in the same format. This requires:
+1. A REST test harness to query schema/data from Salesforce
+2. A Python orchestration script to iterate on meta-prompts
+3. Example prompts as few-shot patterns
+4. Automated evaluation of generated prompts
+
+### Phase 5A: REST Test Harness (Apex)
+
+Create REST endpoints that expose schema discovery and data retrieval capabilities. This allows Python scripts to call Salesforce and gather context without UI interaction.
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 5.1 | Research UI component best practices | Sonnet | not_started | Dashboard design patterns |
-| 5.2 | Create UI Component builders (8 new) | Sonnet | not_started | See Builder Library section below |
-| 5.3 | Research analysis pattern best practices | Sonnet | not_started | Account health, opp coaching, etc. |
-| 5.4 | Create Analysis Pattern builders (5 new) | Sonnet | not_started | See Builder Library section below |
+| 5.1 | Create `TestHarnessController.cls` REST resource | Opus | not_started | Base class with @RestResource annotation |
+| 5.2 | Add `/test-harness/schema/{objectName}` endpoint | Opus | not_started | Returns fields, child relationships, parent lookups |
+| 5.3 | Add `/test-harness/children/{objectName}` endpoint | Opus | not_started | Returns child objects with relationship names |
+| 5.4 | Add `/test-harness/grandchildren/{objectName}` endpoint | Opus | not_started | Returns grandchild discovery results |
+| 5.5 | Add `/test-harness/sample/{objectName}/{recordId}` endpoint | Opus | not_started | Returns sample record with related data (JSON) |
+| 5.6 | Add `/test-harness/dcm-config` POST endpoint | Opus | not_started | Builds DCM config from selected objects/fields |
+| 5.7 | Deploy and test REST endpoints | Opus | not_started | Verify all endpoints work via `sf` CLI |
 
-### Phase 5B: Smart Builder Selection
+### Phase 5B: Python Orchestration Script
+
+Create a Python script that orchestrates meta-prompt testing. Calls REST endpoints, builds meta-prompts, calls LLM API, evaluates output.
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 5.5 | Add Weight__c to builder selection logic | Sonnet | not_started | Higher weight = higher priority |
-| 5.6 | Add object-specific builder filtering | Sonnet | not_started | Only load Opportunity builders for Opportunity |
-| 5.7 | Add token budget awareness | Opus | not_started | Don't exceed prompt size limit |
+| 5.8 | Create `temp/prompt-lab/` directory structure | Opus | not_started | scripts/, examples/, outputs/, config/ |
+| 5.9 | Create `config.py` with Salesforce + LLM credentials | Opus | not_started | Load from env vars, support Claude + OpenAI |
+| 5.10 | Create `sf_client.py` to call REST endpoints | Opus | not_started | Uses `sf` CLI or requests with OAuth |
+| 5.11 | Create `llm_client.py` to call Claude/OpenAI API | Opus | not_started | Wrapper for API calls with retry logic |
+| 5.12 | Create `prompt_builder.py` to assemble meta-prompts | Opus | not_started | Combines context + examples + business requirements |
+| 5.13 | Create `evaluator.py` to validate generated prompts | Opus | not_started | Checks merge field syntax, structure, no hardcoded values |
+| 5.14 | Create `main.py` orchestration script | Opus | not_started | Full loop: gather context → build prompt → call LLM → evaluate |
+
+### Phase 5C: Example Prompts (Few-Shot Patterns)
+
+Extract and organize example prompts for few-shot learning. These show the LLM what good output looks like.
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 5.15 | Extract example prompts from `prepackaged_prompts_raw.json` | Opus | not_started | "Account 360 View - Reimagined" has good patterns |
+| 5.16 | Create `examples/account_360.txt` | Opus | not_started | Clean example with merge fields highlighted |
+| 5.17 | Create `examples/opportunity_dashboard.txt` | Opus | not_started | Example for Opportunity root object |
+| 5.18 | Create `examples/case_analysis.txt` | Opus | not_started | Example for Case root object |
+| 5.19 | Document example prompt patterns | Opus | not_started | What makes these examples good (structure, merge fields) |
+
+### Phase 5D: Meta-Prompt Iteration
+
+Use the test harness to iterate on meta-prompt design until generated prompts match hand-crafted quality.
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 5.20 | Run baseline test with current meta-prompt | Opus | not_started | Document failure modes (hardcoded values, missing merge fields) |
+| 5.21 | Add few-shot examples to meta-prompt | Opus | not_started | Include 2-3 example prompts in context |
+| 5.22 | Test with few-shot examples | Opus | not_started | Compare output quality |
+| 5.23 | Iterate on meta-prompt structure | Opus | not_started | Adjust based on results |
+| 5.24 | Document winning meta-prompt pattern | Opus | not_started | What worked, what didn't |
+| 5.25 | Port successful meta-prompt back to Stage08 | Opus | not_started | Update Apex code with proven approach |
+
+### Phase 5E: Interactive Refinement (Future)
+
+Enable user-driven refinement of generated prompts.
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 5.26 | Add interactive mode to Python script | Opus | not_started | User reviews output, requests changes |
+| 5.27 | Implement change requests (add section, modify field) | Opus | not_started | LLM applies user feedback |
+| 5.28 | Save final prompt to Salesforce | Opus | not_started | Create AI_Prompt__c record |
+
+---
+
+## Test Harness Architecture (V2.5)
+
+### REST Endpoint Design
+
+```
+@RestResource(urlMapping='/test-harness/*')
+global class TestHarnessController {
+
+    // GET /services/apexrest/test-harness/schema/Account
+    // Returns: { fields: [...], childRelationships: [...], parentLookups: [...] }
+    @HttpGet
+    global static Map<String, Object> getResource() { ... }
+
+    // POST /services/apexrest/test-harness/dcm-config
+    // Body: { rootObject, selectedFields, selectedChildren, ... }
+    // Returns: { dcmConfig: {...} }
+    @HttpPost
+    global static Map<String, Object> postResource() { ... }
+}
+```
+
+### Python Script Structure
+
+```
+temp/prompt-lab/
+├── config.py              # Credentials and settings
+├── sf_client.py           # Salesforce REST client
+├── llm_client.py          # Claude/OpenAI API wrapper
+├── prompt_builder.py      # Meta-prompt assembly
+├── evaluator.py           # Output validation
+├── main.py                # Orchestration entry point
+├── examples/
+│   ├── account_360.txt    # Few-shot example 1
+│   ├── opportunity.txt    # Few-shot example 2
+│   └── case_analysis.txt  # Few-shot example 3
+├── outputs/
+│   └── run_001/           # Output from each test run
+└── requirements.txt       # Python dependencies
+```
+
+### Evaluation Criteria
+
+A generated prompt passes if:
+1. **Merge Fields Used** - All dynamic values use `{{{FieldName}}}` syntax
+2. **No Hardcoded Values** - No actual data from sample JSON embedded
+3. **Iteration Blocks** - Child records use `{{#Collection}}...{{/Collection}}`
+4. **Valid Syntax** - Triple braces for values, double for blocks
+5. **Structure Matches** - Similar sections to example prompts
+6. **Single-Line HTML** - No newlines in output
+
+### Example Prompt Pattern (from prepackaged_prompts_raw.json)
+
+```html
+<table>
+  <tr>
+    <td><a href="/{{{Opportunities.Id}}}" target="_blank">{{{Opportunities.Name}}}</a></td>
+    <td>{{{Opportunities.Amount}}}</td>
+    <td>{{{Opportunities.CloseDate}}}</td>
+  </tr>
+</table>
+```
+
+Key patterns to teach the LLM:
+- `{{{Object.Field}}}` for child record fields
+- `/{{{Object.Id}}}` for Salesforce links
+- Table headers OUTSIDE the loop
+- Iteration block wraps table rows
 
 ---
 
@@ -722,6 +847,9 @@ Stage 5: Field Selection (Enhanced)
 | 2026-01-24 | LWC links open in new tabs | State file and run logs should open in new browser tabs to preserve Factory LWC context. Better UX for debugging. |
 | 2026-01-24 | Consolidate traversal builders by object | When LLM sees all traversal options for an object in one place (vs. fragmented across 3-5 records), it makes better field selection decisions. Also improves performance (fewer SOQL queries) and maintainability (one record to update). Pilot with Account + Opportunity first. |
 | 2026-01-24 | DCMBuilder must create parent lookups for child objects | Testing revealed OpportunityContactRole includes ContactId but not Contact.Name/Title/Email. LLM was extracting names from Description field text (unreliable). DCMBuilder needs to auto-discover child object lookups and create PARENT_LOOKUP records for related fields. Enables 3-level traversals. |
+| 2026-01-24 | Few-shot learning required for prompt generation | Tried prompt tweaks (TEMPLATE GENERATION MODE, WRONG vs CORRECT examples) but LLM still embedded hardcoded values. Root cause: LLM never saw what a finished prompt looks like. Solution: Include 3-5 complete example prompts as few-shot patterns. LLM will pattern-match and generate similar output. |
+| 2026-01-24 | Create REST test harness for autonomous iteration | User feedback: manual testing cycle too slow, Claude can iterate faster autonomously. Create REST endpoints to expose SchemaHelper, data retrieval, DCM config. Python script orchestrates: call Salesforce → build meta-prompt → call LLM → evaluate → iterate. No UI clicks needed. |
+| 2026-01-24 | Reset V2.5 branch to main | Previous V2.5 attempts (TEMPLATE GENERATION MODE) deployed to org but didn't solve the problem. Reset branch, redeploy main's code, start fresh with test harness approach. |
 
 ---
 
@@ -771,6 +899,8 @@ Stage 5: Field Selection (Enhanced)
 | 2026-01-24 | Bug fix: PARENT_LOOKUP missing Parent_Detail__c | Sonnet | Fixed "List index out of bounds: 0" error in Stage 9. PARENT_LOOKUP detail records were missing Parent_Detail__c field to link them to their child object's detail record. Updated createParentLookupDetail() to accept parentDetailId parameter and set ccai__Parent_Detail__c field. Deployed successfully. User can now retry pipeline run. |
 | 2026-01-24 | DISABLED: PARENT_LOOKUP auto-discovery | Opus | GPTfy managed package doesn't support PARENT_LOOKUP type in DCM Details. Prompts with PARENT_LOOKUP records cause "Attempt to de-reference a null object" error on prompt detail page. Root cause: PARENT_LOOKUP is a custom type we created; GPTfy only supports CHILD and GRANDCHILD types. Fix: (1) Deleted 8 PARENT_LOOKUP records from broken DCM a05QH000008RKm1YAG, (2) Commented out PHASE 1.5 in DCMBuilder.createDCMWithGrandchildren(). TODO: Investigate if GPTfy has a supported way to enable parent lookup traversals or if this should be handled via prompt merge field syntax only. |
 | 2026-01-24 | FIXED: Parent lookup via Stage08 integration | Opus | Discovered working DCM (a05QH000008RJTNYA4) uses dot-notation FIELD records, NOT PARENT_LOOKUP details. Fix: (1) Reverted broken auto-discovery code from DCMBuilder PHASE 1.5, (2) Added `selectedParentFields` integration to Stage08's `buildDCMConfigForStage9()`, (3) Added `convertLookupToRelationship()` to convert `ContactId.Name` → `Contact.Name`. Parent fields now flow: Stage05 traversals → `selectedParentFields` → Stage08 → `fieldsByObject` → DCMBuilder. No more guessing fields - uses existing traversal definitions. |
+| 2026-01-24 | V2.5: TEMPLATE GENERATION MODE attempt failed | Opus | Added "CRITICAL - TEMPLATE GENERATION MODE" section to directive, strengthened with WRONG vs CORRECT examples. Deployed and tested. Result: LLM output used ONE merge field ({{{Name}}}) but still embedded hardcoded values ($125,000, John Peterson, etc.). Prompt tweaks insufficient - need structural change. |
+| 2026-01-24 | V2.5: Reset branch and new approach | Opus | Deleted failed V2.5 branch, created fresh from main. Fixed buildMergeFieldReference 4-param bug in main. Documented new approach: REST test harness + Python orchestration + few-shot learning. Test harness allows Claude to iterate autonomously without manual UI testing. |
 
 ---
 
