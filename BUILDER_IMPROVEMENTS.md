@@ -9,21 +9,16 @@ All architecture, decisions, tasks, and progress tracked here.
 
 | Model | Task | File Being Modified | Started |
 |-------|------|---------------------|---------|
-| - | - | - | - |
+| Opus | 3.7+ | Stage classes | 2026-01-24 |
 
-**Status:** V2.1 COMPLETE - All Phase 1A, 1B, 1C tasks done. Ready for V2.2.
+**Status:** V2.3 IN PROGRESS - Phase 3A & 3B complete. Pipeline now uses PipelineState. Ready for Phase 3C (Stage Updates) or testing.
 
 ---
 
 ## Release Strategy
 
-### Current Branch: `feature/builder-improvements`
-**Status:** Ready to merge to `main`
-
-**V2.0 is complete and working.** Recommend:
-1. Merge `feature/builder-improvements` → `main`
-2. Create new branch `feature/v2.1-enhancements` for next phase
-3. Continue iterative development on new branch
+### Current Branch: `feature/v2.3-json-state`
+**Status:** Active development
 
 ### Version History
 
@@ -32,8 +27,21 @@ All architecture, decisions, tasks, and progress tracked here.
 | V1.1 | main | ✅ Released | Builder prompt injection (Run ID a0gQH000005GHurYAG) |
 | V2.0 | feature/builder-improvements | ✅ Complete | Meta-prompt architecture, LLM metadata, field validation |
 | V2.1 | feature/v2.1-enhancements | ✅ Complete | Visual diversity, parent traversals, builder library |
-| V2.2 | TBD | 📋 Planned | Field density profiling, bidirectional traversal |
-| V2.3 | TBD | 📋 Planned | Knowledge base expansion, smart builder selection |
+| V2.2 | feature/v2.2-schema-intelligence | ⚠️ Abandoned | Schema enrichment attempted, pipeline state passing broke. See Decision Log. |
+| V2.3 | feature/v2.3-json-state | 🔨 Active | JSON file-based state, then cherry-pick V2.2 features |
+
+### V2.2 Abandonment Note
+
+The V2.2 branch attempted to:
+1. Add schema enrichment (helpText, field density, categories)
+2. Add parent field traversal support
+3. Refactor pipeline data passing (remove pass-through pattern)
+
+**What broke:** The pipeline refactoring (Phase 2F) removed pass-through from stages and tried to accumulate data from all previous stage records. This was architecturally sound but fragile in practice - Stage 7 stopped receiving `selectedFields` from Stage 5.
+
+**Root cause:** Complex accumulation logic across 12 stage records, JSON serialization/deserialization, field limits, and no easy way to debug.
+
+**Solution:** V2.3 implements a simple JSON file approach. One file per run, all stages read/write to it. After this foundation is solid, we'll cherry-pick the valuable V2.2 features (schema enrichment, parent fields, grandchild discovery).
 
 ---
 
@@ -81,15 +89,30 @@ sf project deploy start -o agentictso -d force-app/main/default/classes/ClassNam
 ### Apex Classes
 | File | Purpose |
 |------|---------|
-| `Stage03_SchemaAnalysis.cls` | Object/field discovery (needs parent traversal) |
+| `PipelineState.cls` | **NEW V2.3** - JSON file state management (read/write/log) |
+| `PromptFactoryPipeline.cls` | Pipeline orchestrator (will use PipelineState) |
+| `Stage01_Init.cls` | Pipeline initialization |
+| `Stage02_Research.cls` | Company/industry research |
+| `Stage03_SchemaDiscovery.cls` | Object/field discovery |
 | `Stage04_DataProfiling.cls` | Sample data profiling, MultiSampleProfile |
 | `Stage05_FieldSelection.cls` | LLM-assisted field selection |
+| `Stage06_ConfigurationValidation.cls` | Validate FLS and access |
 | `Stage07_TemplateDesign.cls` | Analysis brief generation, prompt metadata |
 | `Stage08_PromptAssembly.cls` | Meta-prompt assembly, builder loading |
 | `Stage09_CreateAndDeploy.cls` | DCM and Prompt creation |
-| `SchemaHelper.cls` | Schema utilities (needs enhancement) |
+| `Stage10_TestExecution.cls` | Test prompt execution |
+| `Stage11_SafetyValidation.cls` | Safety checks |
+| `Stage12_QualityAudit.cls` | Quality scoring |
+| `SchemaHelper.cls` | Schema utilities |
 | `DCMBuilder.cls` | Data context mapping builder |
 | `PromptBuilder.cls` | AI Prompt record creation |
+
+### LWC Components
+| File | Purpose |
+|------|---------|
+| `pfRunDetail/` | Run detail view - **V2.3: Add State File tab** |
+| `pfInputForm/` | Pipeline input form |
+| `pfStageProgress/` | Stage progress indicator |
 
 ### Documentation
 | File | Purpose |
@@ -131,60 +154,212 @@ sf project deploy start -o agentictso -d force-app/main/default/classes/ClassNam
 
 ---
 
-## V2.2 Task Queue (Architecture)
+## V2.3 Task Queue (JSON State Foundation)
 
-### Phase 2A: Parent Traversal Implementation
+**Goal:** Replace fragile stage-record-based data passing with a simple JSON file attached to each run. Every stage reads from and writes to this single file. Simple, debuggable, reliable.
 
-| # | Task | Model | Status | Notes |
-|---|------|-------|--------|-------|
-| 2.1 | Design parent traversal architecture | Opus | not_started | How SchemaHelper discovers lookups |
-| 2.2 | Update SchemaHelper for lookup field detection | Sonnet | not_started | Identify AccountId, ContactId, OwnerId, etc. |
-| 2.3 | Update SchemaHelper for parent object mapping | Sonnet | not_started | Map lookup → target object |
-| 2.4 | Update DCMBuilder for parent field syntax | Sonnet | not_started | Support Contact.Name via ContactId |
-| 2.5 | Update Stage 5 to include parent candidates | Opus | not_started | Send parent fields to LLM for selection |
-| 2.6 | Test parent traversal end-to-end | Opus | not_started | Verify Contact.Name appears in output |
-
-### Phase 2B: Field Density Profiling
+### Phase 3A: PipelineState Foundation (Opus)
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 2.7 | Design field density profiling | Opus | not_started | Query 100+ records, calculate population % |
-| 2.8 | Update Stage 4 for density calculation | Sonnet | not_started | Add populationPercent to field metadata |
-| 2.9 | Prioritize long text / unstructured fields | Sonnet | not_started | Flag Description, Comments fields |
-| 2.10 | Update Stage 5 to use density in selection | Opus | not_started | Higher density = more relevant |
+| 3.1 | Create `PipelineState.cls` helper class | Opus | done | Core read/write/merge methods using ContentVersion. Deployed to org. |
+| 3.2 | Create `PipelineState_Test.cls` | Opus | done | 24 unit tests - all passing (100%). |
+| 3.3 | Deploy and verify PipelineState works | Opus | done | Deployed and tested via unit tests. |
 
-### Phase 2C: Metadata-Rich Selection
+### Phase 3B: Pipeline Integration (Opus)
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 2.11 | Extract field help text and descriptions | Sonnet | not_started | Include in field metadata |
-| 2.12 | Send metadata to LLM in Stage 5 | Opus | not_started | Help LLM understand field purpose |
-| 2.13 | Improve field relevance scoring | Opus | not_started | Combine density + metadata + type |
+| 3.4 | Update `PromptFactoryPipeline.cls` to use PipelineState | Opus | done | loadStageInputs() now uses PipelineState.read() with fallback |
+| 3.5 | Update `PromptFactoryPipeline.cls` save logic | Opus | done | saveStageResult() writes to PipelineState + stage record |
+| 3.6 | Test pipeline with new state management | Manual | not_started | Run full pipeline, verify all stages get data |
+
+### Phase 3C: Stage Updates (Opus)
+
+Update each stage to use PipelineState instead of inputs map. Simple pattern:
+```apex
+Map<String, Object> state = PipelineState.read(runId);
+// ... do stage work using state.get('key') ...
+state.put('myOutput', myValue);
+PipelineState.write(runId, state);
+```
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 3.7 | Update Stage 1 (Init) | Opus | not_started | First stage - creates the JSON file |
+| 3.8 | Update Stage 2 (Research) | Opus | not_started | |
+| 3.9 | Update Stage 3 (Schema) | Opus | not_started | |
+| 3.10 | Update Stage 4 (Profiling) | Opus | not_started | |
+| 3.11 | Update Stage 5 (Field Selection) | Opus | not_started | |
+| 3.12 | Update Stage 6 (Validation) | Opus | not_started | |
+| 3.13 | Update Stage 7 (Template) | Opus | not_started | |
+| 3.14 | Update Stage 8 (Assembly) | Opus | not_started | |
+| 3.15 | Update Stage 9 (Deploy) | Opus | not_started | |
+| 3.16 | Update Stage 10 (Test) | Opus | not_started | |
+| 3.17 | Update Stage 11 (Safety) | Opus | not_started | |
+| 3.18 | Update Stage 12 (Audit) | Opus | not_started | |
+| 3.19 | Full pipeline end-to-end test | Manual | not_started | Run complete pipeline, verify output |
+
+### Phase 3D: LWC UI Updates (Opus)
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 3.20 | Add "State File" tab to run detail view | Opus | not_started | Show JSON file content in UI |
+| 3.21 | Add download button for state file | Opus | not_started | Easy debugging - download and inspect |
+| 3.22 | Add refresh button | Opus | not_started | Reload current state |
+| 3.23 | Test UI with active run | Manual | not_started | Verify file appears and updates |
+
+### Phase 3E: Cleanup (Opus)
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 3.24 | Remove old loadStageInputs() code | Opus | not_started | Delete unused accumulation logic |
+| 3.25 | Remove pass-through remnants from stages | Opus | not_started | Clean up any leftover pass-through code |
+| 3.26 | Update documentation | Opus | not_started | Document new PipelineState approach |
 
 ---
 
-## V2.3 Task Queue (Knowledge Base)
+## V2.3 Phase 2: Cherry-Pick V2.2 Features (After Foundation)
 
-### Phase 3A: Builder Prompt Library Expansion
+Once the JSON state foundation is solid, we'll add back the valuable V2.2 features:
 
-| # | Task | Model | Status | Notes |
-|---|------|-------|--------|-------|
-| 3.1 | Research UI component best practices | Sonnet | not_started | Dashboard design patterns |
-| 3.2 | Create UI Component builders (8 new) | Sonnet | not_started | See Builder Library section below |
-| 3.3 | Research analysis pattern best practices | Sonnet | not_started | Account health, opp coaching, etc. |
-| 3.4 | Create Analysis Pattern builders (5 new) | Sonnet | not_started | See Builder Library section below |
-| 3.5 | Research output format best practices | Sonnet | not_started | Executive summary, action lists |
-| 3.6 | Create Output Format builders (4 new) | Sonnet | not_started | See Builder Library section below |
-| 3.7 | Create Industry Context templates (4 new) | Opus | not_started | See Builder Library section below |
-
-### Phase 3B: Smart Builder Selection
+### Phase 3F: Schema Enrichment (Cherry-pick from V2.2)
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 3.8 | Add Weight__c to builder selection logic | Sonnet | not_started | Higher weight = higher priority |
-| 3.9 | Add object-specific builder filtering | Sonnet | not_started | Only load Opportunity builders for Opportunity |
-| 3.10 | Add token budget awareness | Opus | not_started | Don't exceed prompt size limit |
-| 3.11 | Test smart builder selection | Opus | not_started | Verify relevant builders loaded |
+| 3.27 | Add helpText to SchemaHelper.FieldMetadata | Opus | not_started | Port from V2.2 branch |
+| 3.28 | Add field density calculation | Opus | not_started | Port calculateFieldDensity() from V2.2 |
+| 3.29 | Add field categories | Opus | not_started | Port categorizeField() from V2.2 |
+| 3.30 | Update Stage 5 prompt with enriched metadata | Opus | not_started | Port prompt enhancements from V2.2 |
+
+### Phase 3G: Parent Field Support (Cherry-pick from V2.2)
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 3.31 | Add parent field support to DCMBuilder | Opus | not_started | Port createParentFieldRecord() from V2.2 |
+| 3.32 | Add parent field merge syntax to Stage 8 | Opus | not_started | Port buildMergeFieldReference() changes from V2.2 |
+| 3.33 | Test parent field traversal end-to-end | Manual | not_started | Verify Owner.Name, Contact.Name work |
+
+### Phase 3H: Grandchild Discovery (Cherry-pick from V2.2)
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 3.34 | Add grandchild discovery to Stage 3 | Opus | not_started | Port discoverGrandchildRelationships() from V2.2 |
+| 3.35 | Add childChain traversal support | Opus | not_started | Port loadChildChains() from V2.2 |
+| 3.36 | Add GRANDCHILD type support to DCMBuilder | Opus | not_started | Port from V2.2 (already works, just need to integrate) |
+| 3.37 | Test 3-level DCM creation | Manual | not_started | Account → Opportunity → OCR with Contact lookup |
+
+---
+
+## V2.4 Task Queue (Future - Knowledge Base)
+
+Moved from original V2.3 plan. Will tackle after V2.3 foundation is complete.
+
+### Phase 4A: Builder Prompt Library Expansion
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 4.1 | Research UI component best practices | Sonnet | not_started | Dashboard design patterns |
+| 4.2 | Create UI Component builders (8 new) | Sonnet | not_started | See Builder Library section below |
+| 4.3 | Research analysis pattern best practices | Sonnet | not_started | Account health, opp coaching, etc. |
+| 4.4 | Create Analysis Pattern builders (5 new) | Sonnet | not_started | See Builder Library section below |
+
+### Phase 4B: Smart Builder Selection
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 4.5 | Add Weight__c to builder selection logic | Sonnet | not_started | Higher weight = higher priority |
+| 4.6 | Add object-specific builder filtering | Sonnet | not_started | Only load Opportunity builders for Opportunity |
+| 4.7 | Add token budget awareness | Opus | not_started | Don't exceed prompt size limit |
+
+---
+
+## PipelineState Architecture
+
+### Design Overview
+
+```
+PF_Run__c (a0gXXX)
+    │
+    └── ContentDocumentLink
+            │
+            └── ContentVersion
+                    ├── Title: "pipeline_state_a0gXXX.json"
+                    ├── PathOnClient: "pipeline_state.json"
+                    └── VersionData: { ... JSON state ... }
+```
+
+### JSON Structure
+
+```json
+{
+  "runId": "a0gXXX",
+  "createdAt": "2026-01-24T...",
+  "lastUpdatedAt": "2026-01-24T...",
+  "lastUpdatedByStage": 5,
+
+  "rootObject": "Opportunity",
+  "sampleRecordId": "006XXX",
+  "businessContext": "...",
+  "targetPersona": "...",
+  "outputFormat": "Narrative",
+
+  "selectedChildObjects": ["Task", "Event", "OpportunityContactRole"],
+  "selectedGrandchildren": [...],
+  "selectedFields": {
+    "Opportunity": ["Name", "Amount", "StageName"],
+    "Task": ["Subject", "Status"]
+  },
+  "selectedParentFields": {
+    "Opportunity": ["OwnerId.Name", "AccountId.Name"]
+  },
+
+  "analysisBrief": { ... },
+  "dcmConfig": { ... },
+  "promptConfig": { ... },
+
+  "logs": [
+    {"stage": 1, "ts": "...", "level": "INFO", "msg": "Starting pipeline"},
+    {"stage": 3, "ts": "...", "level": "INFO", "msg": "Found 15 child objects"},
+    ...
+  ]
+}
+```
+
+### PipelineState.cls API
+
+```apex
+public class PipelineState {
+
+    // Read current state (returns empty map if no file exists)
+    public static Map<String, Object> read(Id runId)
+
+    // Write state (merges with existing, creates file if needed)
+    public static void write(Id runId, Map<String, Object> data)
+
+    // Convenience: get a single key
+    public static Object get(Id runId, String key)
+
+    // Convenience: set a single key
+    public static void put(Id runId, String key, Object value)
+
+    // Append a log entry
+    public static void log(Id runId, Integer stage, String level, String message)
+
+    // Get the ContentVersion Id (for LWC to display)
+    public static Id getFileId(Id runId)
+}
+```
+
+### Benefits
+
+1. **Single source of truth** - One file, not 12 stage records
+2. **No size limits** - ContentVersion supports up to 2GB
+3. **Easy debugging** - Download JSON, open in any editor
+4. **Full history** - Each write creates a new version (can see changes)
+5. **No FLS issues** - ContentVersion is standard Salesforce
+6. **Simple code** - Read, modify, write. No complex accumulation logic.
+7. **Visible in UI** - LWC can show file contents directly
 
 ---
 
@@ -378,6 +553,10 @@ Stage 5: Field Selection (Enhanced)
 | 2026-01-23 | Merge V2.0 to main, create new branch for V2.1 | V2.0 stable, avoid branch divergence |
 | 2026-01-23 | Store traversal catalog as Static Resource | Easy to update, queryable by Apex |
 | 2026-01-23 | Sonnet handles implementation, Opus handles design | Play to model strengths |
+| 2026-01-24 | Abandon V2.2 branch, start fresh with V2.3 | V2.2 pipeline refactoring broke data passing. Complex accumulation logic across 12 stage records was fragile. Hours of debugging with no resolution. |
+| 2026-01-24 | Use JSON file (ContentVersion) for pipeline state | Single source of truth, no size limits, easy to debug (download and inspect), no FLS issues, simple read/write pattern. Replaces complex stage record accumulation. |
+| 2026-01-24 | Opus handles all V2.3 tasks | Foundation work is architectural - design and implement together. Cherry-pick features afterward. |
+| 2026-01-24 | Cherry-pick V2.2 features after foundation | Schema enrichment, parent fields, grandchild discovery code exists in V2.2 branch - will port once JSON state is solid |
 
 ---
 
@@ -410,6 +589,10 @@ Stage 5: Field Selection (Enhanced)
 | 2026-01-23 | Task 1.8: Stage 5 parent traversals | Opus | Wired traversal builders into field selection: loadTraversalsForObjects(), prompt section, selectedParentFields output |
 | 2026-01-23 | Tasks 1.4, 1.11: V2.1 End-to-End Testing | Manual | V2.1 fully validated - Stats Strip, Insight Cards, Recommendation Cards, personalization (names not titles), evidence citations, single-line HTML |
 | 2026-01-23 | Bug fix: Invalid merge field references | Opus | Fixed hardcoded Tasks example in buildMergeFieldReference(); now dynamic based on selected objects. Added CRITICAL RESTRICTION to prevent LLM from inventing merge fields |
+| 2026-01-24 | V2.2 Debugging | Opus | Investigated Stage 7 "No selected fields" error. Stage 5 outputs selectedFields but Stage 7 doesn't receive it. Root cause: Complex accumulation logic in loadStageInputs() is fragile. |
+| 2026-01-24 | V2.2 Analysis | Opus | Reviewed branch: 31 commits, 6125 insertions. Phase 2F (pass-through removal) broke pipeline. Phase 2A/2C/2G features are valuable and can be cherry-picked. |
+| 2026-01-24 | V2.3 Decision | Opus | Abandoned V2.2 branch. Created feature/v2.3-json-state from main. Will implement PipelineState.cls (JSON file approach) first, then cherry-pick V2.2 features. |
+| 2026-01-24 | V2.3 Planning | Opus | Documented full V2.3 task queue: 37 tasks across 8 phases. Includes PipelineState foundation, stage updates, LWC UI changes, and feature cherry-picks. |
 
 ---
 

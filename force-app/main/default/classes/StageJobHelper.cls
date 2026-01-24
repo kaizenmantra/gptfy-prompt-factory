@@ -220,12 +220,25 @@ public class StageJobHelper {
     }
 
     /**
-     * @description Loads inputs from a previous stage with error handling
+     * @description Loads inputs from PipelineState JSON file
+     * V2.3: Now uses PipelineState for reliable state passing
+     * Falls back to stage record if state file doesn't exist (legacy runs)
      * @param runId The PF_Run__c record ID
-     * @param previousStageNumber The stage number to load inputs from
+     * @param previousStageNumber The stage number (used for fallback only)
      * @return Map of input data, empty map if not found
      */
     public static Map<String, Object> loadInputsFromStage(Id runId, Integer previousStageNumber) {
+        // V2.3: Primary method - read from PipelineState JSON file
+        Map<String, Object> inputs = PipelineState.read(runId);
+
+        if (!inputs.isEmpty()) {
+            return inputs;
+        }
+
+        // Fallback: Legacy stage record loading for old runs without state file
+        System.debug(LoggingLevel.WARN,
+            'PipelineState file not found for run ' + runId + ', falling back to stage record');
+
         List<PF_Run_Stage__c> stages = [
             SELECT Output_Data__c
             FROM PF_Run_Stage__c
@@ -253,11 +266,32 @@ public class StageJobHelper {
 
     /**
      * @description Creates and inserts a PF_Run_Stage__c record with sanitized data
+     * V2.3: Also writes outputs to PipelineState JSON file for reliable state passing
      * @param runId The PF_Run__c record ID
      * @param stageNumber Stage number (1-12)
      * @param result StageResult from execution
      */
     public static void saveStageResult(Id runId, Integer stageNumber, StageResult result) {
+        // ========================================
+        // V2.3: Write outputs to PipelineState JSON file
+        // This is the primary mechanism for passing data between stages
+        // ========================================
+        if (result.outputs != null && !result.outputs.isEmpty()) {
+            try {
+                PipelineState.write(runId, result.outputs);
+                PipelineState.markStageComplete(runId, stageNumber);
+                PipelineState.log(runId, stageNumber, 'INFO',
+                    'Stage ' + stageNumber + ' completed: ' + result.status);
+            } catch (Exception e) {
+                // Log but don't fail - stage records are still available as backup
+                System.debug(LoggingLevel.WARN,
+                    'Failed to write to PipelineState: ' + e.getMessage());
+            }
+        }
+
+        // ========================================
+        // Continue saving to stage record (for debugging/audit)
+        // ========================================
         String outputsJson = serializeOutputs(result.outputs);
 
         PF_Run_Stage__c stageRecord = new PF_Run_Stage__c(

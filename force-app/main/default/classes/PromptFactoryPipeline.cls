@@ -267,9 +267,10 @@ public class PromptFactoryPipeline implements Queueable, Database.AllowsCallouts
     }
 
     /**
-     * @description Loads inputs for the current stage from previous stage output
-     * For Stage 1, returns initial inputs from run record
-     * For subsequent stages, returns outputs from previous stage
+     * @description Loads inputs for the current stage from PipelineState JSON file
+     * V2.3: Now uses PipelineState for reliable state passing instead of stage records
+     * For Stage 1, also loads initial inputs from run record into state
+     * For subsequent stages, returns accumulated state from all previous stages
      * @param stageNumber Current stage number
      * @return Map of input data
      */
@@ -277,7 +278,7 @@ public class PromptFactoryPipeline implements Queueable, Database.AllowsCallouts
         Map<String, Object> inputs = new Map<String, Object>();
 
         if (stageNumber == 1) {
-            // Stage 1 has no previous stage, load from run record
+            // Stage 1: Initialize PipelineState with run record data
             PF_Run__c run = loadRunRecord();
             if (run != null) {
                 inputs.put('rootObject', run.Root_Object__c);
@@ -285,11 +286,36 @@ public class PromptFactoryPipeline implements Queueable, Database.AllowsCallouts
                 inputs.put('businessContext', run.Business_Context__c);
                 inputs.put('outputFormat', run.Output_Format__c);
                 inputs.put('targetPromptName', run.Prompt_Name__c);
+
+                // Initialize the state file for this run
+                PipelineState.initialize(runId, inputs);
+                PipelineState.log(runId, 1, 'INFO', 'Pipeline state initialized');
             }
             return inputs;
         }
 
-        // Load outputs from previous stage
+        // V2.3: Load accumulated state from PipelineState JSON file
+        // This is the single source of truth for all pipeline data
+        inputs = PipelineState.read(runId);
+
+        if (inputs.isEmpty()) {
+            // Fallback: If state file doesn't exist (legacy runs), try old method
+            PromptFactoryLogger.warning(runId, stageNumber,
+                'PipelineState file not found, falling back to stage record');
+            inputs = loadStageInputsFromRecord(stageNumber);
+        }
+
+        return inputs;
+    }
+
+    /**
+     * @description LEGACY: Loads inputs from previous stage record (fallback for old runs)
+     * @param stageNumber Current stage number
+     * @return Map of input data from previous stage output
+     */
+    private Map<String, Object> loadStageInputsFromRecord(Integer stageNumber) {
+        Map<String, Object> inputs = new Map<String, Object>();
+
         Integer previousStage = stageNumber - 1;
         List<PF_Run_Stage__c> stages = [
             SELECT Id, Stage_Number__c, Status__c, Output_Data__c
@@ -316,11 +342,34 @@ public class PromptFactoryPipeline implements Queueable, Database.AllowsCallouts
     }
 
     /**
-     * @description Saves stage result to PF_Run_Stage__c and logs
+     * @description Saves stage result to PF_Run_Stage__c, PipelineState, and logs
+     * V2.3: Now also writes outputs to PipelineState JSON file for reliable state passing
      * @param result StageResult from stage execution
      */
     private void saveStageResult(StageResult result) {
         try {
+            // ========================================
+            // V2.3: Write outputs to PipelineState JSON file
+            // This is the primary mechanism for passing data between stages
+            // ========================================
+            if (result.outputs != null && !result.outputs.isEmpty()) {
+                try {
+                    // Write outputs to state (merges with existing data)
+                    PipelineState.write(runId, result.outputs);
+                    PipelineState.markStageComplete(runId, currentStage);
+                    PipelineState.log(runId, currentStage, 'INFO',
+                        'Stage ' + currentStage + ' completed: ' + result.status);
+                } catch (Exception e) {
+                    // Log but don't fail - stage records are still available as backup
+                    PromptFactoryLogger.warning(runId, currentStage,
+                        'Failed to write to PipelineState: ' + e.getMessage());
+                }
+            }
+
+            // ========================================
+            // Continue saving to stage record (for debugging/audit)
+            // ========================================
+
             // Safely serialize inputs/outputs:
             // - strip problematic keys (e.g., record snapshots)
             // - convert non-JSON-safe types (SObject, Blob, Schema types)

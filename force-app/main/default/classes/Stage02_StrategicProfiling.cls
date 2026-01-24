@@ -340,14 +340,14 @@ public with sharing class Stage02_StrategicProfiling implements IStage {
         
         prompt += 'Return ONLY valid JSON in this exact format:\n';
         prompt += '{\n';
-        prompt += '  "targetPersona": "string - specific role description",\n';
-        prompt += '  "businessObjectives": ["objective1", "objective2", "objective3"],\n';
-        prompt += '  "keyMetrics": ["metric1", "metric2", "metric3"],\n';
+        prompt += '  "targetPersona": "<specific role, e.g. Sales Rep managing enterprise accounts>",\n';
+        prompt += '  "businessObjectives": ["<objective1>", "<objective2>", "<objective3>"],\n';
+        prompt += '  "keyMetrics": ["<metric1>", "<metric2>", "<metric3>"],\n';
         prompt += '  "audienceLevel": "Executive|Manager|Practitioner",\n';
-        prompt += '  "companyProfile": "string - brief company summary if known",\n';
-        prompt += '  "industryContext": "string - industry-specific context and terminology",\n';
-        prompt += '  "strategicInsights": ["insight1 - what patterns to highlight", "insight2 - what recommendations to make", "insight3 - what trends to analyze"],\n';
-        prompt += '  "reasoning": "string - explanation of analysis"\n';
+        prompt += '  "companyProfile": "<company name and what they do>",\n';
+        prompt += '  "industryContext": "<industry-specific context and terminology>",\n';
+        prompt += '  "strategicInsights": ["<insight about patterns to highlight>", "<insight about recommendations>", "<insight about trends>"],\n';
+        prompt += '  "reasoning": "<2-3 sentence explanation of your analysis>"\n';
         prompt += '}';
         
         return prompt;
