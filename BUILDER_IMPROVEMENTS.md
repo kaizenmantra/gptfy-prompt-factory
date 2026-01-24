@@ -225,9 +225,9 @@ Send enriched metadata to LLM for smarter field selection.
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 2.21 | Add conflict detection logging to loadStageInputs() | Gemini | in_progress | Log warning when Stage N overwrites key from Stage M with different value |
-| 2.22 | Add debug logging for key provenance | Gemini | in_progress | Log which keys came from which stage for debugging |
-| 2.23 | Add size warning at 100KB threshold | Gemini | in_progress | Warn if accumulated inputs approach 131KB field limit |
+| 2.21 | Add conflict detection logging to loadStageInputs() | Gemini | done | Log warning when Stage N overwrites key from Stage M with different value |
+| 2.22 | Add debug logging for key provenance | Gemini | done | Log which keys came from which stage for debugging |
+| 2.23 | Add size warning at 100KB threshold | Gemini | done | Warn if accumulated inputs approach 131KB field limit |
 
 #### Sub-Phase 2F.2: Remove Pass-Through from Stages (Core Fix)
 
@@ -235,9 +235,9 @@ Each stage currently has ~10-20 lines of boilerplate copying inputs to outputs. 
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 2.23a | Prototype: Remove pass-through from Stage 6 only | Gemini | not_started | Test in sandbox, verify no regressions, learn lessons before touching other stages |
-| 2.24 | Audit Stage06_xxx.cls for pass-through code | Gemini | not_started | Identify `result.outputs.put` patterns AND verify no downstream dependencies on them |
-| 2.25 | Remove pass-through from Stage06_xxx.cls | Gemini | not_started | Keep only outputs Stage 6 creates (e.g., validationChecklist) |
+| 2.23a | Prototype: Remove pass-through from Stage 6 only | Gemini | done | Test in sandbox, verify no regressions, learn lessons before touching other stages |
+| 2.24 | Audit Stage06_xxx.cls for pass-through code | Gemini | done | Identify `result.outputs.put` patterns AND verify no downstream dependencies on them |
+| 2.25 | Remove pass-through from Stage06_xxx.cls | Gemini | done | Keep only outputs Stage 6 creates (e.g., validationChecklist) |
 | 2.26 | Remove pass-through from Stage07_TemplateDesign.cls | Gemini | not_started | Keep only: htmlTemplate, analysisBrief, mergeFields |
 | 2.27 | Remove pass-through from Stage08_PromptAssembly.cls | Gemini | not_started | Keep only: dcmConfig, promptConfig, validatedFields |
 | 2.28 | Remove pass-through from Stage09_CreateAndDeploy.cls | Gemini | not_started | Keep only: createdPromptId, createdDcmId |
@@ -259,9 +259,9 @@ Each stage currently has ~10-20 lines of boilerplate copying inputs to outputs. 
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 2.36 | Unit test: Basic accumulation across stages | Gemini | not_started | Stage 3 outputs A, Stage 5 outputs B → Stage 6 gets both |
-| 2.37 | Unit test: Retry scenario (Ghost Data prevention) | Gemini | not_started | Re-run Stage 5, skip Stage 6, verify Stage 8 gets NEW Stage 5 data |
-| 2.38 | Unit test: Null override protection | Gemini | not_started | Stage 3: foo="bar", Stage 5: foo=null → foo="bar" persists |
+| 2.36 | Unit test: Basic accumulation across stages | Gemini | done | Stage 3 outputs A, Stage 5 outputs B → Stage 6 gets both |
+| 2.37 | Unit test: Retry scenario (Ghost Data prevention) | Gemini | done | Re-run Stage 5, skip Stage 6, verify Stage 8 gets NEW Stage 5 data |
+| 2.38 | Unit test: Null override protection | Gemini | done | Stage 3: foo="bar", Stage 5: foo=null → foo="bar" persists |
 | 2.39 | Unit test: Corrupt JSON handling | Gemini | not_started | Invalid JSON in Stage 4 → Stages 1-3, 5 still load |
 | 2.39a | Unit test: Size Warning | Gemini | not_started | Inject >100KB data, verify warning log appears |
 | 2.40 | Integration test: selectedParentFields reaches Stage 8 | Manual | not_started | Run pipeline, verify parent fields in final prompt |

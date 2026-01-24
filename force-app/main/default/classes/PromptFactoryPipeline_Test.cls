@@ -216,26 +216,52 @@ private class PromptFactoryPipeline_Test {
         );
         insert stage1;
 
-        AIServiceClient.mockMode = true;
-
         Test.startTest();
-        System.enqueueJob(new PromptFactoryPipeline(run.Id, 2));
+        // Call directly using @TestVisible
+        PromptFactoryPipeline pipeline = new PromptFactoryPipeline(run.Id, 2);
+        Map<String, Object> inputs = pipeline.loadStageInputs(2);
         Test.stopTest();
 
-        // Verify stage 2 has inputs from stage 1 outputs
-        List<PF_Run_Stage__c> stages = [
-            SELECT Stage_Number__c, Input_Data__c
-            FROM PF_Run_Stage__c
-            WHERE Run__c = :run.Id
-            AND Stage_Number__c = 2
-        ];
+        System.assertEquals('testValue', inputs.get('previousOutput'),
+            'Should load outputs from previous stage');
+    }
 
-        if (stages.size() > 0) {
-            Map<String, Object> inputs = (Map<String, Object>)
-                JSON.deserializeUntyped(stages[0].Input_Data__c);
-            System.assertEquals('testValue', inputs.get('previousOutput'),
-                'Should load outputs from previous stage');
-        }
+    /**
+     * @description Test loading inputs accumulating from ALL previous stages
+     * PHASE 2F: Validates that Stage 6 sees data from Stage 3 AND Stage 5
+     */
+    @IsTest
+    static void testLoadStageInputs_Accumulation() {
+        PF_Run__c run = createTestRun();
+
+        // Stage 3 output
+        insert new PF_Run_Stage__c(
+            Run__c = run.Id,
+            Stage_Number__c = 3,
+            Stage_Name__c = 'Stage 3',
+            Status__c = 'Completed',
+            Output_Data__c = '{"keyFromStage3": "value3"}',
+            Started_At__c = System.now()
+        );
+
+        // Stage 5 output
+        insert new PF_Run_Stage__c(
+            Run__c = run.Id,
+            Stage_Number__c = 5,
+            Stage_Name__c = 'Stage 5',
+            Status__c = 'Completed',
+            Output_Data__c = '{"keyFromStage5": "value5"}',
+            Started_At__c = System.now().addSeconds(1)
+        );
+
+        Test.startTest();
+        // Call directly using @TestVisible
+        PromptFactoryPipeline pipeline = new PromptFactoryPipeline(run.Id, 6); 
+        Map<String, Object> inputs = pipeline.loadStageInputs(6);
+        Test.stopTest();
+
+        System.assertEquals('value3', inputs.get('keyFromStage3'), 'Should have Stage 3 data');
+        System.assertEquals('value5', inputs.get('keyFromStage5'), 'Should have Stage 5 data');
     }
 
     /**

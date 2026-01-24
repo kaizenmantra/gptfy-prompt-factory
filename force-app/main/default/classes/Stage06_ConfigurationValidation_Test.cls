@@ -152,7 +152,7 @@ private class Stage06_ConfigurationValidation_Test {
     }
 
     @IsTest
-    static void testExecute_PassThroughInputs() {
+    static void testExecute_NoPassThroughOutputs() {
         Account acc = [SELECT Id FROM Account LIMIT 1];
 
         Map<String, Object> selectedFields = new Map<String, Object>{
@@ -162,8 +162,7 @@ private class Stage06_ConfigurationValidation_Test {
         Map<String, Object> inputs = new Map<String, Object>{
             'selectedFields' => selectedFields,
             'rootObject' => 'Account',
-            'businessContext' => 'Context',
-            'dataAvailability' => new Map<String, Integer>{'Account' => 10}
+            'businessContext' => 'Context'
         };
 
         Test.startTest();
@@ -174,7 +173,10 @@ private class Stage06_ConfigurationValidation_Test {
         StageResult result = stage.execute(run.Id, inputs);
         Test.stopTest();
 
-        System.assertEquals('Account', result.outputs.get('rootObject'), 'Should pass through root object');
+        // PHASE 2F: Verify we DO NOT output rootObject anymore
+        System.assertEquals(null, result.outputs.get('rootObject'), 'Should NOT pass through inputs manually');
+        // But validationChecklist should be present
+        System.assertNotEquals(null, result.outputs.get('validationChecklist'), 'Should have stage outputs');
     }
 
     @IsTest
