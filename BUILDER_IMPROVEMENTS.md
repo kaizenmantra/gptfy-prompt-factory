@@ -11,7 +11,7 @@ All architecture, decisions, tasks, and progress tracked here.
 |-------|------|---------------------|---------|
 | - | - | - | - |
 
-**Status:** V2.1 COMPLETE. V2.2 in progress (14/26 tasks done) - Phase 2A+2B+2D complete. Parent traversal syntax fixes (2C.5) CRITICAL, then testing (2E).
+**Status:** V2.1 COMPLETE. V2.2 in progress (14/51 tasks done) - Phase 2A+2B+2D complete. Parent traversal syntax fixes (2C.5) CRITICAL. **NEW:** Phase 2F added for pipeline data accumulation fix (25 tasks) - addresses Ghost Data bug in partial retry scenarios.
 
 ---
 
@@ -209,6 +209,101 @@ Send enriched metadata to LLM for smarter field selection.
 
 ---
 
+### Phase 2F: Pipeline Data Accumulation Fix (CRITICAL ARCHITECTURE)
+
+**Problem:** The `loadStageInputs()` method in `PromptFactoryPipeline.cls` only loads outputs from the immediately previous stage (N-1). This causes data like `selectedParentFields` from Stage 5 to be lost by the time Stage 8 runs, because intermediate stages don't pass it through.
+
+**Root Cause:** Stages 6-12 manually copy data from inputs to outputs ("pass-through pattern"). This is fragile and causes "Ghost Data" issues in partial retry scenarios where stale stage data overwrites fresh data.
+
+**Solution (Option B - Recommended):** Remove ALL manual pass-through from Stages 6-12 and update `loadStageInputs()` to accumulate outputs from ALL completed stages, not just the previous one.
+
+**Reference:** Full PRD at `docs/PRD-pipeline-data-accumulation-fix.md`
+
+**Estimated Effort:** 11+ hours (2-3 days with proper testing)
+
+#### Sub-Phase 2F.1: Logging & Monitoring (Pre-requisites)
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 2.21 | Add conflict detection logging to loadStageInputs() | Gemini | in_progress | Log warning when Stage N overwrites key from Stage M with different value |
+| 2.22 | Add debug logging for key provenance | Gemini | in_progress | Log which keys came from which stage for debugging |
+| 2.23 | Add size warning at 100KB threshold | Gemini | in_progress | Warn if accumulated inputs approach 131KB field limit |
+
+#### Sub-Phase 2F.2: Remove Pass-Through from Stages (Core Fix)
+
+Each stage currently has ~10-20 lines of boilerplate copying inputs to outputs. Remove all of these - each stage should ONLY output data it creates.
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 2.23a | Prototype: Remove pass-through from Stage 6 only | Gemini | not_started | Test in sandbox, verify no regressions, learn lessons before touching other stages |
+| 2.24 | Audit Stage06_xxx.cls for pass-through code | Gemini | not_started | Identify `result.outputs.put` patterns AND verify no downstream dependencies on them |
+| 2.25 | Remove pass-through from Stage06_xxx.cls | Gemini | not_started | Keep only outputs Stage 6 creates (e.g., validationChecklist) |
+| 2.26 | Remove pass-through from Stage07_TemplateDesign.cls | Gemini | not_started | Keep only: htmlTemplate, analysisBrief, mergeFields |
+| 2.27 | Remove pass-through from Stage08_PromptAssembly.cls | Gemini | not_started | Keep only: dcmConfig, promptConfig, validatedFields |
+| 2.28 | Remove pass-through from Stage09_CreateAndDeploy.cls | Gemini | not_started | Keep only: createdPromptId, createdDcmId |
+| 2.29 | Remove pass-through from Stage10_xxx.cls | Gemini | not_started | Keep only Stage 10's own outputs |
+| 2.30 | Remove pass-through from Stage11_xxx.cls | Gemini | not_started | Keep only Stage 11's own outputs |
+| 2.31 | Remove pass-through from Stage12_xxx.cls | Gemini | not_started | Keep only Stage 12's own outputs |
+
+#### Sub-Phase 2F.3: Update loadStageInputs() for Accumulation
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 2.32a | Base Value Safety Net | Gemini | not_started | Load inputs from PF_Run__c FIRST (rootObject, etc.) to ensure resilience |
+| 2.32 | Refactor loadStageInputs() to query ALL previous stages | Gemini | not_started | Query WHERE Stage_Number__c < :stageNumber AND Status__c = 'Completed' |
+| 2.33 | Add deduplication logic (latest record per stage wins) | Gemini | not_started | ORDER BY CreatedDate DESC, first-write-wins in map |
+| 2.34 | Add merge logic (later stage values override earlier) | Gemini | not_started | Merge in stage order: 1, 2, 3... Later wins, null doesn't override |
+| 2.35 | Add error handling for corrupt JSON | Gemini | not_started | Try-catch, log warning, continue with other stages |
+
+#### Sub-Phase 2F.4: Testing & Validation
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 2.36 | Unit test: Basic accumulation across stages | Gemini | not_started | Stage 3 outputs A, Stage 5 outputs B → Stage 6 gets both |
+| 2.37 | Unit test: Retry scenario (Ghost Data prevention) | Gemini | not_started | Re-run Stage 5, skip Stage 6, verify Stage 8 gets NEW Stage 5 data |
+| 2.38 | Unit test: Null override protection | Gemini | not_started | Stage 3: foo="bar", Stage 5: foo=null → foo="bar" persists |
+| 2.39 | Unit test: Corrupt JSON handling | Gemini | not_started | Invalid JSON in Stage 4 → Stages 1-3, 5 still load |
+| 2.39a | Unit test: Size Warning | Gemini | not_started | Inject >100KB data, verify warning log appears |
+| 2.40 | Integration test: selectedParentFields reaches Stage 8 | Manual | not_started | Run pipeline, verify parent fields in final prompt |
+| 2.41 | Integration test: Partial retry scenario | Manual | not_started | Re-run Stage 5 only, then Stage 8 → verify correct data flow |
+
+#### Sub-Phase 2F.5: Deployment
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 2.42 | Deploy to sandbox | Gemini | not_started | Deploy all modified stage classes + PromptFactoryPipeline |
+| 2.43 | Run 10 end-to-end tests in sandbox | Manual | not_started | Include retry scenarios |
+| 2.44 | Verify rollback works | Manual | not_started | Revert code, verify Stage 8 auto-load fallback still works |
+| 2.45 | Deploy to production (low-traffic hours) | Gemini | not_started | Extended monitoring for 48h due to architectural change |
+
+---
+
+### Phase 2F Summary
+
+| Sub-Phase | Tasks | Focus |
+|-----------|-------|-------|
+| 2F.1 | 2.21-2.23 | Logging & monitoring infrastructure |
+| 2F.2 | 2.24-2.31 | Remove pass-through from 7 stage files |
+| 2F.3 | 2.32-2.35 | Refactor loadStageInputs() accumulation logic |
+| 2F.4 | 2.36-2.41 | Comprehensive testing (unit + integration) |
+| 2F.5 | 2.42-2.45 | Careful deployment with rollback verification |
+
+**Total: 25 new tasks**
+
+**Critical Success Criteria:**
+1. ✅ Stage 8 receives `selectedParentFields` in 100% of runs (including retries)
+2. ✅ Partial retry scenario works: Re-run Stage 5 → Stage 8 gets NEW Stage 5 data
+3. ✅ No "Ghost Data" incidents (conflict warnings reviewed)
+4. ✅ No performance regression (±5% pipeline time)
+5. ✅ Rollback possible within 5 minutes if issues arise
+
+**Blocking Issues (Must Resolve Before Starting):**
+- [ ] Team agrees on Option B (remove pass-through) vs Option A (invalidate downstream)
+- [ ] Stakeholders understand revised timeline (11h vs original 4h estimate)
+- [ ] Sandbox environment available for prototyping
+
+---
+
 ### V2.2 Summary
 
 | Phase | Tasks | Focus |
@@ -219,8 +314,9 @@ Send enriched metadata to LLM for smarter field selection.
 | 2C.5 | 2.13a-2.13f | **CRITICAL:** Parent field merge syntax fixes (use schema, not string hacks) |
 | 2D | 2.14-2.17 | LLM-enhanced selection (use the enriched data) |
 | 2E | 2.18-2.20 | Testing & validation |
+| 2F | 2.21-2.45 | **CRITICAL:** Pipeline data accumulation fix (remove pass-through, fix Ghost Data) |
 
-**Total: 26 tasks** (was 20, added 6 for merge syntax fixes)
+**Total: 51 tasks** (was 26, added 25 for pipeline architecture fix)
 
 **Key Deliverables:**
 1. `SchemaHelper.FieldMetadata` enriched with helpText, picklistValues, category, usagePercent
@@ -447,6 +543,8 @@ Stage 5: Field Selection (Enhanced)
 | 2026-01-23 | Merge V2.0 to main, create new branch for V2.1 | V2.0 stable, avoid branch divergence |
 | 2026-01-23 | Store traversal catalog as Static Resource | Easy to update, queryable by Apex |
 | 2026-01-23 | Sonnet handles implementation, Opus handles design | Play to model strengths |
+| 2026-01-23 | Pipeline fix: Option B (remove pass-through) over Option A (invalidate downstream) | Cleaner long-term architecture, eliminates data redundancy, despite higher upfront effort (7 files vs 1 method) |
+| 2026-01-23 | Pipeline fix: 11+ hours estimate, not 4 hours | Peer review identified Ghost Data risk requiring pass-through removal from 7 stage files, comprehensive retry tests |
 
 ---
 
@@ -487,6 +585,7 @@ Stage 5: Field Selection (Enhanced)
 | 2026-01-23 | Sync Verification | Opus | Verified all Apex classes deployed to Salesforce org match codebase. Field density and enriched metadata working correctly |
 | 2026-01-23 | V2.2 Debug: Parent Traversal | Opus | Found root cause: Stage 5 LLM not returning selectedParentFields. Fixed by making parent field selection REQUIRED in prompt with explicit instructions |
 | 2026-01-23 | V2.2 Gap Analysis: Parent Field Merge Syntax | Sonnet | Comprehensive code review revealed critical issues: (1) Using string manipulation instead of schema relationshipName, (2) LLM trained on API names (OwnerId) instead of relationship names (Owner), (3) Conversion logic needed instead of correct format from start. Created Phase 2C.5 with 6 fix tasks |
+| 2026-01-23 | Pipeline Data Accumulation Fix Analysis | Opus | Identified critical bug: loadStageInputs() only loads previous stage (N-1), not all stages. Peer review found "Ghost Data" risk in partial retry scenarios. Created PRD at docs/PRD-pipeline-data-accumulation-fix.md. Added Phase 2F with 25 tasks. Recommended Option B: remove pass-through from Stages 6-12. Estimated effort: 11+ hours (2-3 days) |
 
 ---
 
@@ -505,3 +604,4 @@ Stage 5: Field Selection (Enhanced)
 - Consolidate UI Toolkit (Stage 8 section vs docs/UI_TOOLKIT.md)
 - Add unit tests for SchemaHelper enhancements
 - Performance optimization for 100+ record queries
+- **Phase 2F:** Remove manual pass-through pattern from Stages 6-12 (causes Ghost Data in retries)

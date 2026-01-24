@@ -16,6 +16,34 @@ public with sharing class PromptFactoryLogger {
     }
 
     /**
+     * @description Alias for info() to match standard naming conventions
+     */
+    public static void logInfo(Id runId, Integer stageNumber, String message) {
+        info(runId, stageNumber, message);
+    }
+
+    /**
+     * @description Alias for debug() to match standard naming conventions
+     */
+    public static void logDebug(Id runId, Integer stageNumber, String message) {
+        debug(runId, stageNumber, message);
+    }
+
+    /**
+     * @description Alias for warning() to match standard naming conventions
+     */
+    public static void logWarning(Id runId, Integer stageNumber, String message) {
+        warning(runId, stageNumber, message);
+    }
+
+    /**
+     * @description Alias for error() to match standard naming conventions
+     */
+    public static void logError(Id runId, Integer stageNumber, String message) {
+        error(runId, stageNumber, message);
+    }
+
+    /**
      * @description Creates a log entry with component and details
      * @param runId ID of the PF_Run__c record
      * @param stageNumber Stage number (1-12, or null for pipeline-level logs)
