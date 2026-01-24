@@ -869,9 +869,9 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             ref += rootObject.toUpperCase() + ' (Parent Fields via Lookup) - use {{{Relationship.Field}}}:\n';
             List<Object> parentFields = (List<Object>) selectedParentFieldsRaw.get(rootObject);
             for (Object parentFieldPath : parentFields) {
-                // Convert "OwnerId.Name" to "Owner.Name" (remove "Id" suffix from lookup field)
+                // Convert lookup field to relationship notation
                 String pathStr = String.valueOf(parentFieldPath);
-                String mergePath = pathStr.replace('Id.', '.');
+                String mergePath = convertLookupToRelationship(pathStr);
                 ref += '  {{{' + mergePath + '}}}  (from ' + pathStr + ')\n';
             }
             ref += '\n';
@@ -897,7 +897,10 @@ public without sharing class Stage08_PromptAssembly implements IStage {
                     List<Object> parentFields = (List<Object>) selectedParentFieldsRaw.get(objName);
                     for (Object parentFieldPath : parentFields) {
                         String pathStr = String.valueOf(parentFieldPath);
-                        String mergePath = pathStr.replace('Id.', '.');
+                        // Convert lookup field to relationship notation:
+                        // Standard: ContactId.Name → Contact.Name (remove Id suffix)
+                        // Custom: TSPC__Contact__c.Name → TSPC__Contact__r.Name (replace __c with __r)
+                        String mergePath = convertLookupToRelationship(pathStr);
                         ref += '    {{{' + mergePath + '}}}  (from ' + pathStr + ')\n';
                     }
                 }
@@ -960,6 +963,45 @@ public without sharing class Stage08_PromptAssembly implements IStage {
         }
         // Default to 131072 (128KB) for long text areas if describe fails
         return 131072;
+    }
+
+    /**
+     * @description Converts lookup field path to GPTfy relationship notation
+     * Standard lookups: ContactId.Name → Contact.Name (remove Id suffix)
+     * Custom lookups: TSPC__Contact__c.Name → TSPC__Contact__r.Name (replace __c with __r)
+     * @param lookupPath The lookup field path (e.g., "ContactId.Name" or "TSPC__Contact__c.Name")
+     * @return The relationship path for GPTfy merge fields
+     */
+    private String convertLookupToRelationship(String lookupPath) {
+        if (String.isBlank(lookupPath)) {
+            return lookupPath;
+        }
+
+        // Find the first dot to split field name from path
+        Integer dotIndex = lookupPath.indexOf('.');
+        if (dotIndex < 0) {
+            return lookupPath; // No dot, return as-is
+        }
+
+        String lookupField = lookupPath.substring(0, dotIndex);
+        String fieldPath = lookupPath.substring(dotIndex + 1);
+
+        String relationshipName;
+
+        // Custom lookup: ends with __c → replace with __r
+        if (lookupField.endsWith('__c')) {
+            relationshipName = lookupField.substring(0, lookupField.length() - 1) + 'r';
+        }
+        // Standard lookup: ends with Id → remove Id
+        else if (lookupField.endsWith('Id')) {
+            relationshipName = lookupField.substring(0, lookupField.length() - 2);
+        }
+        // Other cases: return as-is
+        else {
+            relationshipName = lookupField;
+        }
+
+        return relationshipName + '.' + fieldPath;
     }
 
     /**
