@@ -468,4 +468,57 @@ private class PromptFactoryLogger_Test {
         Integer logCount = [SELECT COUNT() FROM PF_Run_Log__c WHERE Run__c = :run.Id];
         System.assertEquals(250, logCount, 'Should create all 250 log entries');
     }
+
+    /**
+     * @description Test log buffering mechanism
+     */
+    @IsTest
+    static void testLogBuffering() {
+        // Use a unique run for this test to ensure clean counts
+        Account testAcc = new Account(Name = 'Buffering Test Account');
+        insert testAcc;
+        
+        PF_Run__c buffRun = new PF_Run__c(
+            Root_Object__c = 'Account',
+            Sample_Record_Id__c = testAcc.Id,
+            Business_Context__c = 'Test context',
+            Output_Format__c = 'HTML',
+            Prompt_Name__c = 'Buffering Test Prompt',
+            Status__c = 'In Progress',
+            Current_Stage__c = 1
+        );
+        insert buffRun;
+
+        Test.startTest();
+        
+        // Enable buffering
+        PromptFactoryLogger.enableBuffering();
+        
+        // Generate logs - these should NOT be inserted yet
+        PromptFactoryLogger.log(buffRun.Id, 1, 'INFO', 'Buffered Log 1');
+        PromptFactoryLogger.log(buffRun.Id, 1, 'INFO', 'Buffered Log 2');
+        
+        // Verify nothing inserted yet for this run
+        Integer countBeforeFlush = [SELECT COUNT() FROM PF_Run_Log__c WHERE Run__c = :buffRun.Id];
+        System.assertEquals(0, countBeforeFlush, 'Logs should not be inserted while buffering is enabled');
+        
+        // Flush logs
+        PromptFactoryLogger.flushLogs();
+        
+        Test.stopTest();
+        
+        // Verify logs inserted after flush
+        List<PF_Run_Log__c> logsAfterFlush = [SELECT Log_Message__c FROM PF_Run_Log__c WHERE Run__c = :buffRun.Id];
+        System.assertEquals(2, logsAfterFlush.size(), 'Logs should be inserted after flush');
+        
+        // Verify content manually since we can't filter by Long Text Area in SOQL
+        Boolean foundLog1 = false;
+        Boolean foundLog2 = false;
+        for(PF_Run_Log__c log : logsAfterFlush) {
+            if(log.Log_Message__c == 'Buffered Log 1') foundLog1 = true;
+            if(log.Log_Message__c == 'Buffered Log 2') foundLog2 = true;
+        }
+        System.assert(foundLog1, 'Should find Buffered Log 1');
+        System.assert(foundLog2, 'Should find Buffered Log 2');
+    }
 }

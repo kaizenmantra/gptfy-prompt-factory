@@ -23,6 +23,9 @@ public class PromptFactoryPipeline implements Queueable, Database.AllowsCallouts
         'fullRecord', 'fullRecordJson'
     };
 
+    // Test control to prevent infinite chaining in unit tests
+    @TestVisible private static Boolean stopChaining = false;
+
     /**
      * @description Simple enum-like class to track what action to take after stage execution
      * Using strings to avoid enum overhead
@@ -74,14 +77,14 @@ public class PromptFactoryPipeline implements Queueable, Database.AllowsCallouts
     public void execute(QueueableContext context) {
         // Stage routing for stages 5+ to dedicated Queueable wrappers
         if (currentStage >= 5) {
-            routeToStageJobInline();
+            if (!stopChaining) routeToStageJobInline();
             return;
         }
 
         // Execute stages 1-4 with standard chaining
         ExecutionDecision decision = executeStageAndGetDecision();
 
-        if (decision.action == 'CHAIN') {
+        if (decision.action == 'CHAIN' && !stopChaining) {
             Integer nextStage = currentStage + 1;
 
             if (nextStage == 5) {
@@ -161,6 +164,9 @@ public class PromptFactoryPipeline implements Queueable, Database.AllowsCallouts
         PF_Run__c run = null;
         Boolean shouldUpdateToInProgress = false;
 
+        // Enable log buffering to prevent "Uncommitted work pending" errors during input loading
+        PromptFactoryLogger.enableBuffering();
+
         try {
             // Load run record (query only - no DML yet)
             run = loadRunRecord();
@@ -205,6 +211,9 @@ public class PromptFactoryPipeline implements Queueable, Database.AllowsCallouts
                 updateCurrentStage(run, currentStage);
             }
 
+            // FLUSH LOGS: Write any logs accumulated during input loading (now that callouts are done)
+            PromptFactoryLogger.flushLogs();
+
             PromptFactoryLogger.info(runId, currentStage,
                 'Starting execution of Stage ' + currentStage);
 
@@ -242,6 +251,7 @@ public class PromptFactoryPipeline implements Queueable, Database.AllowsCallouts
 
         } catch (Exception e) {
             handleException(e);
+            PromptFactoryLogger.flushLogs(); // Ensure logs are flushed on error
             decision.action = 'ERROR';
             decision.errorMessage = e.getMessage();
         }
@@ -323,14 +333,24 @@ public class PromptFactoryPipeline implements Queueable, Database.AllowsCallouts
         for (Integer stageNum : stageNumbers) {
             String outputJson = latestOutputByStage.get(stageNum);
             if (String.isBlank(outputJson)) continue;
+            
+            // DEBUG: Check for truncation
+            Boolean isTruncated = outputJson.contains('[TRUNCATED]');
+            if (isTruncated) {
+                 PromptFactoryLogger.logWarning(runId, stageNumber, 'Stage ' + stageNum + ' output is TRUNCATED. JSON parsing may fail.');
+            }
 
             try {
                 Object parsed = JSON.deserializeUntyped(outputJson);
                 if (parsed instanceof Map<String, Object>) {
                     Map<String, Object> stageOutputs = (Map<String, Object>) parsed;
                     
-                    // Task 2.22: Debug logging for key provenance
-                    // PromptFactoryLogger.logDebug(runId, stageNumber, 'Stage ' + stageNum + ' contributes: ' + stageOutputs.keySet());
+                    // DEBUG: Log keys contributed by this stage
+                    // PromptFactoryLogger.logDebug(runId, stageNumber, 'Stage ' + stageNum + ' keys: ' + stageOutputs.keySet());
+                    
+                    if (stageOutputs.containsKey('selectedFields')) {
+                        PromptFactoryLogger.logInfo(runId, stageNumber, 'Stage ' + stageNum + ' provides selectedFields');
+                    }
 
                     for (String key : stageOutputs.keySet()) {
                         Object value = stageOutputs.get(key);
@@ -359,6 +379,20 @@ public class PromptFactoryPipeline implements Queueable, Database.AllowsCallouts
                 PromptFactoryLogger.logWarning(runId, stageNumber,
                     'Failed to parse Stage ' + stageNum + ' outputs: ' + e.getMessage());
             }
+        }
+        
+        // DEBUG: Trace selectedFields presence
+        Boolean hasSelectedFields = inputs.containsKey('selectedFields');
+        Map<String, Object> sfMap = hasSelectedFields ? (Map<String, Object>)inputs.get('selectedFields') : null;
+        Integer sfSize = (sfMap != null) ? sfMap.size() : 0;
+        
+        PromptFactoryLogger.logDebug(runId, stageNumber, 
+            'Final Inputs Assembly: selectedFields present=' + hasSelectedFields + 
+            ', Objects=' + sfSize + 
+            ', Keys=' + inputs.keySet());
+
+        if (!hasSelectedFields && stageNumber >= 6) {
+             PromptFactoryLogger.logError(runId, stageNumber, 'CRITICAL: selectedFields MISSING in Stage ' + stageNumber + ' inputs!');
         }
 
         // Task 2.23: Size Warning

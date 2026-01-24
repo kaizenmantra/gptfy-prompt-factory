@@ -4,6 +4,29 @@
  */
 public with sharing class PromptFactoryLogger {
 
+    // Buffer for logs when immediate DML is not allowed (e.g. before callouts)
+    private static List<PF_Run_Log__c> logBuffer = new List<PF_Run_Log__c>();
+    private static Boolean isBuffered = false;
+
+    /**
+     * @description Enables log buffering. Logs will be stored in memory until flushLogs() is called.
+     * Use this when performing logging before HTTP callouts.
+     */
+    public static void enableBuffering() {
+        isBuffered = true;
+    }
+
+    /**
+     * @description Flushes buffered logs to the database and disables buffering.
+     */
+    public static void flushLogs() {
+        if (!logBuffer.isEmpty()) {
+            bulkLog(logBuffer);
+            logBuffer.clear();
+        }
+        isBuffered = false;
+    }
+
     /**
      * @description Creates a log entry
      * @param runId ID of the PF_Run__c record
@@ -65,7 +88,11 @@ public with sharing class PromptFactoryLogger {
                 Details__c = truncate(details, 32000)
             );
 
-            insert logEntry;
+            if (isBuffered) {
+                logBuffer.add(logEntry);
+            } else {
+                insert logEntry;
+            }
         } catch (Exception e) {
             // Log errors should not break the pipeline
             System.debug(LoggingLevel.ERROR, 'Failed to create log entry: ' + e.getMessage());

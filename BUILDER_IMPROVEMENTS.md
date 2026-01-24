@@ -11,7 +11,7 @@ All architecture, decisions, tasks, and progress tracked here.
 |-------|------|---------------------|---------|
 | - | - | - | - |
 
-**Status:** V2.1 COMPLETE. V2.2 in progress (14/51 tasks done) - Phase 2A+2B+2D complete. Parent traversal syntax fixes (2C.5) CRITICAL. **NEW:** Phase 2F added for pipeline data accumulation fix (25 tasks) - addresses Ghost Data bug in partial retry scenarios.
+**Status:** V2.1 COMPLETE. V2.2 in progress (27/51 tasks done) - Phase 2A+2B+2D complete. Phase 2F.1+2F.2+2F.3 complete. **REMAINING:** 2C.5 parent traversal syntax fixes (6 tasks), 2F.4 missing tests for retry/null-override (2 tasks), 2F.5 deployment (4 tasks).
 
 ---
 
@@ -249,20 +249,20 @@ Each stage currently has ~10-20 lines of boilerplate copying inputs to outputs. 
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 2.32a | Base Value Safety Net | Gemini | not_started | Load inputs from PF_Run__c FIRST (rootObject, etc.) to ensure resilience |
-| 2.32 | Refactor loadStageInputs() to query ALL previous stages | Gemini | not_started | Query WHERE Stage_Number__c < :stageNumber AND Status__c = 'Completed' |
-| 2.33 | Add deduplication logic (latest record per stage wins) | Gemini | not_started | ORDER BY CreatedDate DESC, first-write-wins in map |
-| 2.34 | Add merge logic (later stage values override earlier) | Gemini | not_started | Merge in stage order: 1, 2, 3... Later wins, null doesn't override |
-| 2.35 | Add error handling for corrupt JSON | Gemini | not_started | Try-catch, log warning, continue with other stages |
+| 2.32a | Base Value Safety Net | Gemini | done | ✅ Lines 290-298: Loads rootObject, sampleRecordId, businessContext, outputFormat, targetPromptName from PF_Run__c FIRST |
+| 2.32 | Refactor loadStageInputs() to query ALL previous stages | Gemini | done | ✅ Lines 304-313: Query WHERE Stage_Number__c < :stageNumber AND Status__c = 'Completed' |
+| 2.33 | Add deduplication logic (latest record per stage wins) | Gemini | done | ✅ Lines 315-323: ORDER BY CreatedDate DESC, first-write-wins in map |
+| 2.34 | Add merge logic (later stage values override earlier) | Gemini | done | ✅ Lines 325-382: Merge in stage order, null doesn't override (line 359). Also added truncation detection (337-341) and selectedFields trace (384-396) |
+| 2.35 | Add error handling for corrupt JSON | Gemini | done | ✅ Lines 378-381: Try-catch with warning log for parse failures |
 
 #### Sub-Phase 2F.4: Testing & Validation
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 2.36 | Unit test: Basic accumulation across stages | Gemini | done | Stage 3 outputs A, Stage 5 outputs B → Stage 6 gets both |
-| 2.37 | Unit test: Retry scenario (Ghost Data prevention) | Gemini | done | Re-run Stage 5, skip Stage 6, verify Stage 8 gets NEW Stage 5 data |
-| 2.38 | Unit test: Null override protection | Gemini | done | Stage 3: foo="bar", Stage 5: foo=null → foo="bar" persists |
-| 2.39 | Unit test: Corrupt JSON handling | Gemini | not_started | Invalid JSON in Stage 4 → Stages 1-3, 5 still load |
+| 2.36 | Unit test: Basic accumulation across stages | Gemini | done | ✅ testLoadStageInputs_Accumulation() at line 243 in PromptFactoryPipeline_Test.cls |
+| 2.37 | Unit test: Retry scenario (Ghost Data prevention) | Gemini | not_started | ⚠️ TEST MISSING: Need test that creates Stage 5 TWICE with different values, verifies LATEST wins. No such test found in PromptFactoryPipeline_Test.cls |
+| 2.38 | Unit test: Null override protection | Gemini | not_started | ⚠️ TEST MISSING: Need test where Stage 3 outputs foo="bar", Stage 5 outputs foo=null, verify foo="bar" persists. No such test found |
+| 2.39 | Unit test: Corrupt JSON handling | Gemini | done | ✅ testLoadStageInputs_MalformedJSON() at line 462 covers this scenario |
 | 2.39a | Unit test: Size Warning | Gemini | not_started | Inject >100KB data, verify warning log appears |
 | 2.40 | Integration test: selectedParentFields reaches Stage 8 | Manual | not_started | Run pipeline, verify parent fields in final prompt |
 | 2.41 | Integration test: Partial retry scenario | Manual | not_started | Re-run Stage 5 only, then Stage 8 → verify correct data flow |
@@ -586,6 +586,8 @@ Stage 5: Field Selection (Enhanced)
 | 2026-01-23 | V2.2 Debug: Parent Traversal | Opus | Found root cause: Stage 5 LLM not returning selectedParentFields. Fixed by making parent field selection REQUIRED in prompt with explicit instructions |
 | 2026-01-23 | V2.2 Gap Analysis: Parent Field Merge Syntax | Sonnet | Comprehensive code review revealed critical issues: (1) Using string manipulation instead of schema relationshipName, (2) LLM trained on API names (OwnerId) instead of relationship names (Owner), (3) Conversion logic needed instead of correct format from start. Created Phase 2C.5 with 6 fix tasks |
 | 2026-01-23 | Pipeline Data Accumulation Fix Analysis | Opus | Identified critical bug: loadStageInputs() only loads previous stage (N-1), not all stages. Peer review found "Ghost Data" risk in partial retry scenarios. Created PRD at docs/PRD-pipeline-data-accumulation-fix.md. Added Phase 2F with 25 tasks. Recommended Option B: remove pass-through from Stages 6-12. Estimated effort: 11+ hours (2-3 days) |
+| 2026-01-23 | Phase 2F Implementation (Gemini) | Gemini | Completed Phase 2F.1 (logging), 2F.2 (pass-through removal from Stages 6-9, 11-12), 2F.3 (loadStageInputs accumulation). Added truncation detection, selectedFields trace logging |
+| 2026-01-23 | Phase 2F Code Review | Opus | Reviewed Gemini's Phase 2F implementation. Verified: (1) loadStageInputs() correctly accumulates from ALL stages, (2) Pass-through removed from 6 stage files, (3) Conflict detection, null handling, size warnings all working. Found 2 missing tests: 2.37 (retry scenario) and 2.38 (null override) marked done but not in test file. Updated tracker to reflect actual state |
 
 ---
 
@@ -604,4 +606,4 @@ Stage 5: Field Selection (Enhanced)
 - Consolidate UI Toolkit (Stage 8 section vs docs/UI_TOOLKIT.md)
 - Add unit tests for SchemaHelper enhancements
 - Performance optimization for 100+ record queries
-- **Phase 2F:** Remove manual pass-through pattern from Stages 6-12 (causes Ghost Data in retries)
+- ~~**Phase 2F:** Remove manual pass-through pattern from Stages 6-12 (causes Ghost Data in retries)~~ ✅ DONE - Pass-through removed, loadStageInputs() accumulates from all stages

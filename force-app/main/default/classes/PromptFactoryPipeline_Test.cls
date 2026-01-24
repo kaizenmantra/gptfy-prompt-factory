@@ -52,6 +52,11 @@ private class PromptFactoryPipeline_Test {
         AIServiceClient.mockResponse = '{"result": "test"}';
     }
 
+    private static void configureSettings() {
+        PromptFactoryPipeline.stopChaining = true;
+        AIServiceClient.mockMode = true;
+    }
+
     /**
      * @description Helper to create test run
      */
@@ -90,6 +95,7 @@ private class PromptFactoryPipeline_Test {
      */
     @IsTest
     static void testExecute_UpdatesRunStatus() {
+        configureSettings();
         PF_Run__c run = createTestRun();
         AIServiceClient.mockMode = true;
 
@@ -113,6 +119,7 @@ private class PromptFactoryPipeline_Test {
      */
     @IsTest
     static void testExecute_SavesStageResult() {
+        configureSettings();
         PF_Run__c run = createTestRun();
         AIServiceClient.mockMode = true;
 
@@ -139,6 +146,7 @@ private class PromptFactoryPipeline_Test {
      */
     @IsTest
     static void testExecute_HandlesAbort() {
+        configureSettings();
         PF_Run__c run = createTestRun();
         run.Status__c = 'Aborted';
         update run;
@@ -177,6 +185,7 @@ private class PromptFactoryPipeline_Test {
      */
     @IsTest
     static void testLoadStageInputs_Stage1() {
+        configureSettings();
         PF_Run__c run = createTestRun();
         AIServiceClient.mockMode = true;
 
@@ -269,6 +278,7 @@ private class PromptFactoryPipeline_Test {
      */
     @IsTest
     static void testExecute_StageFailure() {
+        configureSettings();
         PF_Run__c run = createTestRun();
         AIServiceClient.mockMode = true;
         AIServiceClient.mockResponse = 'FORCE_ERROR'; // Will cause parsing error
@@ -293,6 +303,7 @@ private class PromptFactoryPipeline_Test {
      */
     @IsTest
     static void testExecute_TruncatesLargeJSON() {
+        configureSettings();
         PF_Run__c run = createTestRun();
 
         // Create a large outputs map
@@ -328,6 +339,7 @@ private class PromptFactoryPipeline_Test {
      */
     @IsTest
     static void testExtractQualityScore() {
+        configureSettings();
         PF_Run__c run = createTestRun();
 
         // Create all 11 stages as completed
@@ -381,6 +393,7 @@ private class PromptFactoryPipeline_Test {
      */
     @IsTest
     static void testStageChaining() {
+        configureSettings();
         PF_Run__c run = createTestRun();
         AIServiceClient.mockMode = true;
 
@@ -404,6 +417,7 @@ private class PromptFactoryPipeline_Test {
      */
     @IsTest
     static void testExecute_ExceptionHandling() {
+        configureSettings();
         PF_Run__c run = createTestRun();
 
         // Force an exception by providing invalid data
@@ -423,6 +437,7 @@ private class PromptFactoryPipeline_Test {
      */
     @IsTest
     static void testExecute_BulkLogs() {
+        configureSettings();
         PF_Run__c run = createTestRun();
         AIServiceClient.mockMode = true;
 
@@ -481,6 +496,7 @@ private class PromptFactoryPipeline_Test {
      */
     @IsTest
     static void testPipelineStatusTracking() {
+        configureSettings();
         PF_Run__c run = createTestRun();
         AIServiceClient.mockMode = true;
 
@@ -504,6 +520,7 @@ private class PromptFactoryPipeline_Test {
      */
     @IsTest
     static void testCompletePipeline() {
+        configureSettings();
         PF_Run__c run = createTestRun();
 
         // Create stages 1-11 as completed
@@ -546,6 +563,7 @@ private class PromptFactoryPipeline_Test {
      */
     @IsTest
     static void testMultiplePipelineRuns() {
+        configureSettings();
         List<PF_Run__c> runs = new List<PF_Run__c>();
         Account acc = [SELECT Id FROM Account LIMIT 1];
 
