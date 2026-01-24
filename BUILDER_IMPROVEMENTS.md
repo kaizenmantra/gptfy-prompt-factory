@@ -316,7 +316,7 @@ Add state file link and fix navigation to open in new browser tabs.
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 4.26 | Fix Recommendation Card template in Stage08 | Sonnet | not_started | Remove hardcoded "Recommended Action" label, use actual action as title |
+| 4.26 | Fix Recommendation Card template in Stage08 | Sonnet | done | Updated builder record (a0DQH00000KZQ9E2AX) with placeholder and better guidance |
 | 4.27 | Add parent lookup auto-discovery to DCMBuilder | Sonnet | not_started | When adding child object, detect its lookups and create PARENT_LOOKUP records for related fields |
 | 4.28 | Update DCMBuilder to support 3-level traversals | Sonnet | not_started | Account → Opportunity → OpportunityContactRole → Contact hierarchy |
 | 4.29 | Test DCM with OpportunityContactRole → Contact | Manual | not_started | Verify Contact.Name, Contact.Title appear in prompt merge fields section |
@@ -725,6 +725,7 @@ Stage 5: Field Selection (Enhanced)
 | 2026-01-24 | Task 4.9 | Opus | Updated buildOutputRulesSection(runId) to load Output Rules builder dynamically instead of hardcoded merge field syntax. Deployed to org. 67 builders now active. |
 | 2026-01-24 | Tasks 4.13a-4.15a: Traversal consolidation pilot | Sonnet | Created consolidate_traversals_pilot.apex script. Consolidated Account (4 records → 1) and Opportunity (3 records → 1) traversals. Deactivated old granular records. Builder count: 67 total, 23 traversals. Awaiting end-to-end test validation. |
 | 2026-01-24 | Task 4.16a: Pipeline testing - Critical issues found | Sonnet | Tested Opportunity pipeline (ID: 006QH00000HjgvlYAB). Found 3 issues: (1) DCM missing Contact parent lookups for OpportunityContactRole - LLM extracted names from Description text instead of merge fields (unreliable), (2) Recommendation Card template has redundant "Recommended Action" label, (3) 3-level traversals not working (Opportunity → OCR → Contact). Added Phase 4C tasks to fix DCMBuilder and Stage08. |
+| 2026-01-24 | Task 4.26: Fix Recommendation Card template | Sonnet | Updated builder record (a0DQH00000KZQ9E2AX) to remove hardcoded "Recommended Action" label. Changed to placeholder "[Specific action: who does what by when]" with improved "When to use" guidance. Script: scripts/apex/fix_recommendation_card_template.apex. |
 
 ---
 
