@@ -9,15 +9,15 @@ All architecture, decisions, tasks, and progress tracked here.
 
 | Model | Task | File Being Modified | Started |
 |-------|------|---------------------|---------|
-| Opus | 3.7+ | Stage classes | 2026-01-24 |
+| Opus | 4.1+ | Stage08, LWC | 2026-01-24 |
 
-**Status:** V2.3 IN PROGRESS - Phase 3A & 3B complete. Pipeline now uses PipelineState. Ready for Phase 3C (Stage Updates) or testing.
+**Status:** V2.4 IN PROGRESS - Builder refactoring and LWC enhancements. V2.3 merged to main.
 
 ---
 
 ## Release Strategy
 
-### Current Branch: `feature/v2.3-json-state`
+### Current Branch: `feature/v2.4-builder-refactor`
 **Status:** Active development
 
 ### Version History
@@ -28,7 +28,8 @@ All architecture, decisions, tasks, and progress tracked here.
 | V2.0 | feature/builder-improvements | ✅ Complete | Meta-prompt architecture, LLM metadata, field validation |
 | V2.1 | feature/v2.1-enhancements | ✅ Complete | Visual diversity, parent traversals, builder library |
 | V2.2 | feature/v2.2-schema-intelligence | ⚠️ Abandoned | Schema enrichment attempted, pipeline state passing broke. See Decision Log. |
-| V2.3 | feature/v2.3-json-state | 🔨 Active | JSON file-based state, then cherry-pick V2.2 features |
+| V2.3 | feature/v2.3-json-state | ✅ Complete | JSON file-based state (PipelineState.cls), merge field notation fixes |
+| V2.4 | feature/v2.4-builder-refactor | 🔨 Active | Builder Type migration, Output Rules builder, LWC enhancements |
 
 ### V2.2 Abandonment Note
 
@@ -251,26 +252,71 @@ Once the JSON state foundation is solid, we'll add back the valuable V2.2 featur
 
 ---
 
-## V2.4 Task Queue (Future - Knowledge Base)
+## V2.4 Task Queue (Builder Refactoring & LWC Enhancements)
 
-Moved from original V2.3 plan. Will tackle after V2.3 foundation is complete.
+**Goal:** Simplify builder prompt architecture by using `ccai__Type__c` instead of `Category__c`. Add Output Rules builder. Enhance LWC with state file link and new-tab navigation.
 
-### Phase 4A: Builder Prompt Library Expansion
+### Phase 4A: Builder Type Migration (Opus)
 
-| # | Task | Model | Status | Notes |
-|---|------|-------|--------|-------|
-| 4.1 | Research UI component best practices | Sonnet | not_started | Dashboard design patterns |
-| 4.2 | Create UI Component builders (8 new) | Sonnet | not_started | See Builder Library section below |
-| 4.3 | Research analysis pattern best practices | Sonnet | not_started | Account health, opp coaching, etc. |
-| 4.4 | Create Analysis Pattern builders (5 new) | Sonnet | not_started | See Builder Library section below |
-
-### Phase 4B: Smart Builder Selection
+Migrate from custom `Category__c` field to standard `ccai__Type__c` picklist for builder prompt categorization.
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 4.5 | Add Weight__c to builder selection logic | Sonnet | not_started | Higher weight = higher priority |
-| 4.6 | Add object-specific builder filtering | Sonnet | not_started | Only load Opportunity builders for Opportunity |
-| 4.7 | Add token budget awareness | Opus | not_started | Don't exceed prompt size limit |
+| 4.1 | Add new picklist values to `ccai__Type__c` | Opus | not_started | Add: 'Quality Rule', 'Pattern', 'UI Component', 'Context Template', 'Traversal', 'Output Rules' |
+| 4.2 | Create "Output Rules" builder prompt | Opus | not_started | Contains merge field syntax rules, moved from Stage08 hardcoded text |
+| 4.3 | Update `loadQualityRules()` to use Type | Opus | not_started | Change from `Category__c = 'Quality Rule'` to `ccai__Type__c = 'Quality Rule'` |
+| 4.4 | Update `loadPatterns()` to use Type | Opus | not_started | Change from `Category__c = 'Pattern'` to `ccai__Type__c = 'Pattern'` |
+| 4.5 | Update `loadUIComponents()` to use Type | Opus | not_started | Change from `Category__c = 'UI Component'` to `ccai__Type__c = 'UI Component'` |
+| 4.6 | Update `loadContextTemplates()` to use Type | Opus | not_started | Change from `Category__c = 'Context Template'` to `ccai__Type__c = 'Context Template'` |
+| 4.7 | Update `loadTraversals()` to use Type | Opus | not_started | Change from `Category__c = 'Traversal'` to `ccai__Type__c = 'Traversal'` |
+| 4.8 | Add `loadOutputRules()` method to Stage08 | Opus | not_started | Load Output Rules builder and inject into meta-prompt |
+| 4.9 | Remove hardcoded merge field syntax from Stage08 | Opus | not_started | Replace `buildMergeFieldReference()` hardcoded text with loaded builder content |
+| 4.10 | Update existing builder records to use Type | Opus | not_started | Migrate all builders from Category__c to ccai__Type__c |
+| 4.11 | Deprecate Category__c field | Opus | not_started | Remove field from code, mark for deletion |
+| 4.12 | Test all builder loading | Manual | not_started | Verify all builder types load correctly with new Type field |
+
+### Phase 4B: LWC Enhancements (Opus)
+
+Add state file link and fix navigation to open in new browser tabs.
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 4.13 | Add State File link to Run Detail LWC | Opus | not_started | Show link to PipelineState JSON file (ContentVersion) |
+| 4.14 | Make State File link open in new tab | Opus | not_started | Use `target="_blank"` or `window.open()` |
+| 4.15 | Fix Run Logs link to open in new tab | Opus | not_started | Currently opens in same window, losing LWC context |
+| 4.16 | Add State File content preview | Opus | not_started | Optional: Show JSON content inline (collapsible) |
+| 4.17 | Test LWC navigation behavior | Manual | not_started | Verify both links open in new tabs |
+
+### Phase 4C: Documentation & Cleanup (Opus)
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 4.18 | Update PROMPT_GENERATION_RULES.md | Opus | not_started | Ensure docs match Output Rules builder content |
+| 4.19 | Update Decision Log | Opus | not_started | Document Type vs Category decision |
+| 4.20 | Final testing | Manual | not_started | Full pipeline run with all V2.4 changes |
+
+---
+
+## V2.5 Task Queue (Future - Knowledge Base)
+
+Moved from original V2.3 plan. Will tackle after V2.4 is complete.
+
+### Phase 5A: Builder Prompt Library Expansion
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 5.1 | Research UI component best practices | Sonnet | not_started | Dashboard design patterns |
+| 5.2 | Create UI Component builders (8 new) | Sonnet | not_started | See Builder Library section below |
+| 5.3 | Research analysis pattern best practices | Sonnet | not_started | Account health, opp coaching, etc. |
+| 5.4 | Create Analysis Pattern builders (5 new) | Sonnet | not_started | See Builder Library section below |
+
+### Phase 5B: Smart Builder Selection
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 5.5 | Add Weight__c to builder selection logic | Sonnet | not_started | Higher weight = higher priority |
+| 5.6 | Add object-specific builder filtering | Sonnet | not_started | Only load Opportunity builders for Opportunity |
+| 5.7 | Add token budget awareness | Opus | not_started | Don't exceed prompt size limit |
 
 ---
 
@@ -557,6 +603,9 @@ Stage 5: Field Selection (Enhanced)
 | 2026-01-24 | Use JSON file (ContentVersion) for pipeline state | Single source of truth, no size limits, easy to debug (download and inspect), no FLS issues, simple read/write pattern. Replaces complex stage record accumulation. |
 | 2026-01-24 | Opus handles all V2.3 tasks | Foundation work is architectural - design and implement together. Cherry-pick features afterward. |
 | 2026-01-24 | Cherry-pick V2.2 features after foundation | Schema enrichment, parent fields, grandchild discovery code exists in V2.2 branch - will port once JSON state is solid |
+| 2026-01-24 | Use ccai__Type__c instead of Category__c | Simplify builder prompt architecture. Type field already exists on ccai__AI_Prompt__c. No need for separate Category__c field. Cleaner queries, less custom metadata. |
+| 2026-01-24 | Create Output Rules builder prompt | Move merge field syntax rules from hardcoded Stage08 text to a builder prompt. Easier to maintain, update without code deployment. |
+| 2026-01-24 | LWC links open in new tabs | State file and run logs should open in new browser tabs to preserve Factory LWC context. Better UX for debugging. |
 
 ---
 
@@ -593,6 +642,9 @@ Stage 5: Field Selection (Enhanced)
 | 2026-01-24 | V2.2 Analysis | Opus | Reviewed branch: 31 commits, 6125 insertions. Phase 2F (pass-through removal) broke pipeline. Phase 2A/2C/2G features are valuable and can be cherry-picked. |
 | 2026-01-24 | V2.3 Decision | Opus | Abandoned V2.2 branch. Created feature/v2.3-json-state from main. Will implement PipelineState.cls (JSON file approach) first, then cherry-pick V2.2 features. |
 | 2026-01-24 | V2.3 Planning | Opus | Documented full V2.3 task queue: 37 tasks across 8 phases. Includes PipelineState foundation, stage updates, LWC UI changes, and feature cherry-picks. |
+| 2026-01-24 | V2.3 Merge field fixes | Opus | Fixed Stage02 "string -" placeholder bug, Stage08 child field notation ({{{Events.Subject}}} format), updated PROMPT_GENERATION_RULES.md |
+| 2026-01-24 | V2.3 Merged to main | Opus | V2.3 complete: PipelineState.cls, StageJobHelper integration, merge field notation fixes. Merged feature/v2.3-json-state → main. |
+| 2026-01-24 | V2.4 Branch created | Opus | Created feature/v2.4-builder-refactor for Type migration, Output Rules builder, LWC enhancements |
 
 ---
 
