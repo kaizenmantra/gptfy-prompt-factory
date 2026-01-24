@@ -9,9 +9,9 @@ All architecture, decisions, tasks, and progress tracked here.
 
 | Model | Task | File Being Modified | Started |
 |-------|------|---------------------|---------|
-| Opus | 3.4 | PromptFactoryPipeline.cls | 2026-01-24 |
+| Opus | 3.7+ | Stage classes | 2026-01-24 |
 
-**Status:** V2.3 IN PROGRESS - Phase 3A complete. Starting Phase 3B (Pipeline Integration).
+**Status:** V2.3 IN PROGRESS - Phase 3A & 3B complete. Pipeline now uses PipelineState. Ready for Phase 3C (Stage Updates) or testing.
 
 ---
 
@@ -170,9 +170,9 @@ sf project deploy start -o agentictso -d force-app/main/default/classes/ClassNam
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 3.4 | Update `PromptFactoryPipeline.cls` to use PipelineState | Opus | not_started | Replace loadStageInputs() with PipelineState.read() |
-| 3.5 | Update `PromptFactoryPipeline.cls` save logic | Opus | not_started | Replace stage record output with PipelineState.write() |
-| 3.6 | Test pipeline with new state management | Opus | not_started | Run full pipeline, verify all stages get data |
+| 3.4 | Update `PromptFactoryPipeline.cls` to use PipelineState | Opus | done | loadStageInputs() now uses PipelineState.read() with fallback |
+| 3.5 | Update `PromptFactoryPipeline.cls` save logic | Opus | done | saveStageResult() writes to PipelineState + stage record |
+| 3.6 | Test pipeline with new state management | Manual | not_started | Run full pipeline, verify all stages get data |
 
 ### Phase 3C: Stage Updates (Opus)
 
