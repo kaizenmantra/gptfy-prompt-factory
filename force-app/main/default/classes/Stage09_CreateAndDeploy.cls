@@ -36,6 +36,13 @@ public with sharing class Stage09_CreateAndDeploy implements IStage {
                 throw new StageException('DCM config and prompt config are required');
             }
 
+            // V2.5: Detect Meta-Generated Template Flow
+            String promptType = (String) promptConfigMap.get('promptType');
+            if (promptType == 'V2.5_Meta_Generated') {
+                PromptFactoryLogger.info(runId, STAGE_NUMBER, 'V2.5 Detection: Applying Merge Gate (Handlebars → Executable Prompt)');
+                executeV25TemplateFlow(runId, inputs, promptConfigMap);
+            }
+
             // Load user-selected AI Model from run record
             Id aiModelId = getAIModelFromRun(runId);
             if (aiModelId != null) {
@@ -542,6 +549,138 @@ public with sharing class Stage09_CreateAndDeploy implements IStage {
             PromptFactoryLogger.warning(null, STAGE_NUMBER,
                 'Failed to link DCM to Prompt: ' + e.getMessage());
         }
+    }
+
+    /**
+     * @description Orchestrates the V2.5 Merge Gate: Template -> Data Query -> render -> Executable Prompt
+     */
+    private void executeV25TemplateFlow(Id runId, Map<String, Object> inputs, Map<String, Object> promptConfigMap) {
+        try {
+            String rootObject = (String) inputs.get('rootObject');
+            Id recordId = (Id) inputs.get('sampleRecordId');
+            String template = (String) promptConfigMap.get('promptCommand');
+
+            if (recordId == null) {
+                PromptFactoryLogger.warning(runId, STAGE_NUMBER, 'V2.5: No sampleRecordId provided, skipping merge gate.');
+                return;
+            }
+
+            // 1. Build Dynamic SOQL
+            String soql = buildDynamicSOQL(rootObject, recordId, inputs);
+            PromptFactoryLogger.info(runId, STAGE_NUMBER, 'V2.5: Generated Dynamic SOQL for merge gate: ' + soql);
+
+            // 2. Query Data
+            SObject record = Database.query(soql);
+            PromptFactoryLogger.info(runId, STAGE_NUMBER, 'V2.5: Successfully queried record data for merge.');
+
+            // 3. Structure Data for Template
+            Map<String, Object> context = convertSObjectToMap(record, rootObject, inputs);
+
+            // 4. Render Template
+            String renderedPrompt = HandlebarsTemplateEngine.render(template, context);
+            PromptFactoryLogger.info(runId, STAGE_NUMBER, 'V2.5: Template rendered successfully (' + renderedPrompt.length() + ' chars)');
+
+            // 5. Update promptConfigMap with final string
+            promptConfigMap.put('promptCommand', renderedPrompt);
+            
+        } catch (Exception e) {
+            PromptFactoryLogger.error(runId, STAGE_NUMBER, 'V2.5 Merge Gate failed: ' + e.getMessage());
+            throw new StageException('V2.5 Merge Gate failure: ' + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * @description Builds a comprehensive SOQL query based on Stage 8 metadata
+     */
+    private String buildDynamicSOQL(String rootObject, Id recordId, Map<String, Object> inputs) {
+        Map<String, Object> selectedFieldsMap = (Map<String, Object>) inputs.get('selectedFields');
+        Map<String, Object> selectedParentFieldsMap = (Map<String, Object>) inputs.get('selectedParentFields');
+        List<Object> selectedGrandchildren = (List<Object>) inputs.get('selectedGrandchildren');
+
+        Set<String> rootFields = new Set<String>{'Id'};
+        if (selectedFieldsMap != null && selectedFieldsMap.containsKey(rootObject)) {
+            for (Object f : (List<Object>) selectedFieldsMap.get(rootObject)) {
+                rootFields.add(String.valueOf(f));
+            }
+        }
+
+        // Add parent lookups
+        if (selectedParentFieldsMap != null && selectedParentFieldsMap.containsKey(rootObject)) {
+            for (Object f : (List<Object>) selectedParentFieldsMap.get(rootObject)) {
+                rootFields.add(String.valueOf(f));
+            }
+        }
+
+        List<String> subqueries = new List<String>();
+        if (selectedFieldsMap != null) {
+            for (String objName : selectedFieldsMap.keySet()) {
+                if (objName == rootObject) continue;
+                
+                String relName = getChildRelationshipName(rootObject, objName);
+                if (String.isBlank(relName)) continue;
+
+                Set<String> childFields = new Set<String>{'Id'};
+                for (Object f : (List<Object>) selectedFieldsMap.get(objName)) {
+                    childFields.add(String.valueOf(f));
+                }
+                
+                // Add grandchild sub-subqueries if applicable
+                // Note: Standard SOQL only supports 1 level of nesting in subqueries
+                // For grandchildren, we might need a separate query, but for now we follow V2.0 logic
+                
+                subqueries.add('(SELECT ' + String.join(new List<String>(childFields), ', ') + ' FROM ' + relName + ')');
+            }
+        }
+
+        String query = 'SELECT ' + String.join(new List<String>(rootFields), ', ');
+        if (!subqueries.isEmpty()) {
+            query += ', ' + String.join(subqueries, ', ');
+        }
+        query += ' FROM ' + rootObject + ' WHERE Id = \'' + recordId + '\' LIMIT 1';
+        
+        return query;
+    }
+
+    /**
+     * @description Converts SObject to Map structure compatible with HandlebarsTemplateEngine
+     */
+    private Map<String, Object> convertSObjectToMap(SObject record, String rootObject, Map<String, Object> inputs) {
+        Map<String, Object> context = record.getPopulatedFieldsAsMap().clone();
+        
+        // Handle child relationships
+        Map<String, Object> selectedFieldsMap = (Map<String, Object>) inputs.get('selectedFields');
+        if (selectedFieldsMap != null) {
+            for (String objName : selectedFieldsMap.keySet()) {
+                if (objName == rootObject) continue;
+                
+                String relName = getChildRelationshipName(rootObject, objName);
+                if (String.isBlank(relName)) continue;
+
+                List<SObject> children = record.getSObjects(relName);
+                List<Map<String, Object>> childMaps = new List<Map<String, Object>>();
+                if (children != null) {
+                    for (SObject child : children) {
+                        childMaps.add(child.getPopulatedFieldsAsMap());
+                    }
+                }
+                context.put(relName, childMaps);
+            }
+        }
+        
+        return context;
+    }
+
+    /**
+     * @description Resolves relationship name for child object using SchemaHelper
+     */
+    private String getChildRelationshipName(String parentObj, String childObj) {
+        List<SchemaHelper.ChildRelationship> rels = SchemaHelper.getChildRelationships(parentObj);
+        for (SchemaHelper.ChildRelationship rel : rels) {
+            if (rel.childObject == childObj) {
+                return rel.relationshipName;
+            }
+        }
+        return null;
     }
 
     /**
