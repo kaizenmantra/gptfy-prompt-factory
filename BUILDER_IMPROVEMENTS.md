@@ -11,7 +11,7 @@ All architecture, decisions, tasks, and progress tracked here.
 |-------|------|---------------------|---------|
 | - | None | - | - |
 
-**Status:** V2.6 Phase 6F COMPLETE. Test achieved 100/100 score with v4 Quality Rules. Phase 6G pending (Stage 12 enhancement).
+**Status:** V2.6 Phase 6G COMPLETE. Stage 12 enhanced with 11 dimensions, threshold 9.0, JSON storage. Ready for testing.
 
 ---
 
@@ -598,12 +598,12 @@ Update `buildDirectiveSection()` to encourage story-driven layout.
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 6.37 | Add Date Analysis dimension to Stage 12 | Opus | not_started | Check for date calculations, overdue/stale language |
-| 6.38 | Add Forbidden Phrases check to Stage 12 | Opus | not_started | Detect generic advice, penalize score |
-| 6.39 | Add Customer Reference check to Stage 12 | Opus | not_started | Verify account/contact names are cited |
-| 6.40 | Raise quality threshold from 7.0 to 9.0 | Opus | not_started | Update DEFAULT_QUALITY_THRESHOLD constant |
-| 6.41 | Update AI audit prompt with new dimensions | Opus | not_started | Add Date Analysis, Forbidden Phrases to Claude prompt |
-| 6.42 | Update PF_Quality_Score__c fields if needed | Opus | not_started | Add fields for new dimensions |
+| 6.37 | Add Date Analysis dimension to Stage 12 | Opus | done | 15% weight, checks for "X months overdue" patterns |
+| 6.38 | Add Forbidden Phrases check to Stage 12 | Opus | done | 10% weight, penalizes "touch base", "ensure alignment" |
+| 6.39 | Add Customer Reference check to Stage 12 | Opus | done | 10% weight, rewards specific names over "stakeholder" |
+| 6.40 | Raise quality threshold from 7.0 to 9.0 | Opus | done | DEFAULT_QUALITY_THRESHOLD = 9.0 |
+| 6.41 | Update AI audit prompt with new dimensions | Opus | done | 11 dimensions now (was 8) |
+| 6.42 | Simplify to JSON-only storage | Opus | done | All scores in AI_Feedback__c JSON, no individual fields |
 | 6.43 | Test Stage 12 with enhanced scoring | Manual | not_started | Validate new dimensions are scored correctly |
 
 **Scoring Logic Location:** `force-app/main/default/classes/Stage12_QualityAudit.cls`
@@ -998,6 +998,7 @@ Stage 5: Field Selection (Enhanced)
 | 2026-01-26 | Task 6.26: Add current date to meta-prompt | Opus | Added TODAY'S DATE to buildRoleSection() in Stage08. Format: "TODAY'S DATE: 1/26/2026. Use this date to calculate if dates are PAST (overdue) or FUTURE." |
 | 2026-01-26 | Tasks 6.30-6.34: Test harness creation | Opus | Created `tests/v26/run_innovatek_test.py` - comprehensive test script that: (1) Starts pipeline via TestHarnessController REST API, (2) Polls for Stage 9 completion, (3) Gets promptId, (4) Calls GPTfy API directly, (5) Scores output for evidence, date analysis, forbidden phrases, colors, customer refs. Target: 90+ score. |
 | 2026-01-26 | Tasks 6.35-6.36: Test execution SUCCESS | Opus | Ran 4 iterations total. v3 Quality Rules scored 75-85/100. v4 Quality Rules scored **100/100**. Key improvements in v4: "ANALYZE EVERY RECORD", "FOR EACH OPPORTUNITY", "CHECK YOUR MATH", explicit checklist items. Output now shows "11 months overdue", "22 months overdue" for all opportunities. |
+| 2026-01-26 | Tasks 6.37-6.42: Stage 12 Enhancement | Opus | Enhanced Stage12_QualityAudit.cls: (1) Added 3 new dimensions: dateAnalysis (15%), forbiddenPhrases (10%), customerReferences (10%), (2) Raised threshold from 7.0 to 9.0, (3) Simplified to JSON-only storage in AI_Feedback__c, (4) Updated AI prompt with 11-dimension scoring. Schema version: v2.6-11-dimension-weighted. |
 
 ---
 
