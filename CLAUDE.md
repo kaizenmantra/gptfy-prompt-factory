@@ -4,7 +4,7 @@
 
 1. **READ EXISTING CODE FIRST** - Before writing ANY new code, search the codebase for existing implementations. This project has mature infrastructure - most patterns already exist.
 
-2. **Stay Within Scope** - Current work is V2.6 (visual richness). Do not add features outside this scope.
+2. **Stay Within Scope** - V2.6 is complete and released. Check BUILDER_IMPROVEMENTS.md for current work.
 
 3. **UPDATE PROJECT RESOURCES INDEX** - When you create ANY of the following, you MUST update the "Project Resources Index" section at the bottom of this file:
    - New test scripts or test harnesses
@@ -38,25 +38,15 @@
 
 7. **Commit Often** - After completing each task or group of related tasks, commit with gitcommit.sh.
 
-## V2.6 Scope (Current Work)
+## V2.6 Release (2026-01-26) ✅ COMPLETE
 
-Goal: Visual richness and creative freedom in generated dashboards.
-
-### Phase 6A: UI Components (Database) ✅ DONE
-- Created 10 new UI component builders (Progress Ring, Trend Indicator, etc.)
-- Total: 22 active UI Components
-
-### Phase 6B: Data-Driven Design (Code)
-- Add `buildDataDrivenDesignSection()` to Stage08
-- Pattern-based component selection guidance
-
-### Phase 6C: Remove Rigid Structure (Code)
-- Update `buildDirectiveSection()` for story-driven layouts
-- Encourage creative expression
-
-### Phase 6D: Testing
-- Test with Pinnacle Wealth Partners account
-- Compare V2.5 vs V2.6 output
+### What's New in V2.6:
+- **11-Dimension Quality Scoring** - Stage 12 now scores dateAnalysis, forbiddenPhrases, customerReferences
+- **Quality Threshold 9.0** - Raised from 7.0
+- **TODAY'S DATE in prompts** - Enables "X months overdue" calculations
+- **Quality Rules v4** - "ANALYZE EVERY RECORD" instructions
+- **Automated Test Harness** - `tests/v26/run_innovatek_test.py` achieved 100/100 score
+- **JSON-only scoring storage** - All scores in AI_Feedback__c
 
 ## Key Files
 
@@ -104,6 +94,8 @@ Goal: Visual richness and creative freedom in generated dashboards.
 | `insert_output_rules_builder.apex` | Insert Output Rules builder |
 | `migrate_builders_to_type.apex` | Migrate builders from Category__c to ccai__Type__c |
 | `consolidate_traversals_pilot.apex` | Consolidate traversal builders by object |
+| `insert_v26_ui_components.apex` | V2.6 UI components (Progress Ring, Gauge, etc.) |
+| `fix_builder_merge_field_examples.apex` | Fix merge field examples in builders |
 
 ### Temp Test Scripts (in `/tmp/`)
 

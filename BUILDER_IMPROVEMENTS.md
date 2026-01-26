@@ -11,18 +11,14 @@ All architecture, decisions, tasks, and progress tracked here.
 |-------|------|---------------------|---------|
 | - | None | - | - |
 
-**Status:** V2.6 Phase 6G COMPLETE. Stage 12 enhanced with 11 dimensions, threshold 9.0, JSON storage. Ready for testing.
+**Status:** V2.6 RELEASED to main (2026-01-26). All phases complete.
 
 ---
 
 ## Release Strategy
 
-### Current Branch: `feature/v2.5-clean`
-**Status:** Ready to merge to main (V2.6 Phase 6E+6F complete, 100/100 test score)
-
-**Next Steps:**
-1. Merge `feature/v2.5-clean` → `main`
-2. Create `feature/v2.6-stage12-enhancement` for Phase 6G
+### Current Branch: `main`
+**Status:** V2.6 Released (2026-01-26)
 
 ### Version History
 
@@ -35,7 +31,7 @@ All architecture, decisions, tasks, and progress tracked here.
 | V2.3 | feature/v2.3-json-state | ✅ Complete | JSON file-based state (PipelineState.cls), merge field notation fixes |
 | V2.4 | feature/v2.4-builder-refactor | ✅ Complete | Builder Type migration, Output Rules builder, LWC enhancements |
 | V2.5 | feature/v2.5-clean | ✅ Complete | Actual data in meta-prompt, information hierarchy, FieldName fix |
-| V2.6 | feature/v2.5-clean | 🔨 Active | Visual richness: expanded components, data-driven design, creative freedom |
+| V2.6 | main | ✅ Released | Visual richness, 11-dimension scoring, automated test harness, 100/100 quality |
 
 ### V2.2 Abandonment Note
 
