@@ -937,16 +937,8 @@ public without sharing class Stage08_PromptAssembly implements IStage {
                 ref += '  {{{' + String.valueOf(field) + '}}}\n';
             }
 
-            // V2.4: Add parent lookup fields for root object (e.g., Owner.Name, Owner.Email)
-            if (selectedParentFieldsRaw != null && selectedParentFieldsRaw.containsKey(rootObject)) {
-                ref += '  -- Parent Lookups --\n';
-                List<Object> parentFields = (List<Object>) selectedParentFieldsRaw.get(rootObject);
-                for (Object pf : parentFields) {
-                    // Convert OwnerId.Name → Owner.Name, ContactId.Title → Contact.Title
-                    String convertedPath = convertLookupToRelationship(String.valueOf(pf));
-                    ref += '  {{{' + convertedPath + '}}}\n';
-                }
-            }
+            // NOTE: Parent lookup fields removed from merge field reference
+            // GPTfy validates merge fields against DCM - only include fields that are in DCM field mapping
             ref += '\n';
         }
 
@@ -973,15 +965,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
                         ref += '    {{{' + chainedPath + '.' + fieldName + '}}}\n';
                     }
 
-                    // V2.4: Add parent lookup fields for grandchild (e.g., Contact.Name via ContactId)
-                    if (selectedParentFieldsRaw != null && selectedParentFieldsRaw.containsKey(objName)) {
-                        ref += '    -- Parent Lookups --\n';
-                        List<Object> parentFields = (List<Object>) selectedParentFieldsRaw.get(objName);
-                        for (Object pf : parentFields) {
-                            String convertedPath = convertLookupToRelationship(String.valueOf(pf));
-                            ref += '    {{{' + chainedPath + '.' + convertedPath + '}}}\n';
-                        }
-                    }
+                    // NOTE: Parent lookup fields removed - GPTfy validates against DCM field mapping
                     ref += '\n';
                 } else {
                     // DIRECT CHILD: Simple relationship name
@@ -994,15 +978,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
                         ref += '    {{{' + relationshipName + '.' + fieldName + '}}}\n';
                     }
 
-                    // V2.4: Add parent lookup fields for child object (e.g., Contact.Name via ContactId)
-                    if (selectedParentFieldsRaw != null && selectedParentFieldsRaw.containsKey(objName)) {
-                        ref += '    -- Parent Lookups --\n';
-                        List<Object> parentFields = (List<Object>) selectedParentFieldsRaw.get(objName);
-                        for (Object pf : parentFields) {
-                            String convertedPath = convertLookupToRelationship(String.valueOf(pf));
-                            ref += '    {{{' + relationshipName + '.' + convertedPath + '}}}\n';
-                        }
-                    }
+                    // NOTE: Parent lookup fields removed - GPTfy validates against DCM field mapping
 
                     ref += '  End iteration: {{/' + relationshipName + '}}\n';
                     ref += '  Empty check: {{^' + relationshipName + '}}No ' + objName + ' records{{/' + relationshipName + '}}\n';
@@ -1010,31 +986,6 @@ public without sharing class Stage08_PromptAssembly implements IStage {
                 }
             }
         }
-
-        // Generate dynamic example based on actual selected objects
-        ref += 'EXAMPLE USAGE:\n';
-        ref += '<div style="..."><h1>{{{Name}}}</h1>';
-
-        // Use first child object for example, if available
-        String exampleChild = null;
-        String exampleField = null;
-        for (String objName : selectedFieldsRaw.keySet()) {
-            if (objName != rootObject) {
-                exampleChild = getRelationshipNameForObject(objName, rootObject);
-                List<Object> fields = (List<Object>) selectedFieldsRaw.get(objName);
-                if (fields != null && !fields.isEmpty()) {
-                    exampleField = String.valueOf(fields[0]);
-                }
-                break;
-            }
-        }
-
-        if (String.isNotBlank(exampleChild) && String.isNotBlank(exampleField)) {
-            // GPTfy requires relationship prefix: {{{Events.Subject}}} not {{{Subject}}}
-            ref += '{{#' + exampleChild + '}}<div>{{{' + exampleChild + '.' + exampleField + '}}}</div>{{/' + exampleChild + '}}';
-            ref += '{{^' + exampleChild + '}}<div>No records</div>{{/' + exampleChild + '}}';
-        }
-        ref += '</div>\n\n';
 
         // CRITICAL: Enforce that ONLY listed merge fields can be used
         ref += 'CRITICAL RESTRICTION:\n';
@@ -2106,7 +2057,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
 
         section += '3. RECOMMENDED ACTIONS (2-4 items)\n';
         section += '   - Use Recommendation Cards\n';
-        section += '   - Be specific: "Schedule call with {{{Contact.Name}}}" not "Follow up"\n';
+        section += '   - Be specific: "Schedule call with Sarah Johnson" not "Follow up"\n';
         section += '   - Include urgency indicator\n\n';
 
         section += '4. SUPPORTING DATA (if warranted)\n';
@@ -2126,7 +2077,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
         section += '- Always use actual names, not titles or roles\n';
         section += '- Say "Sarah Johnson" not "the CFO"\n';
         section += '- Say "John Smith at Acme Corp" not "the customer"\n';
-        section += '- Use merge fields: {{{Contact.Name}}}, {{{Account.Name}}}, {{{Owner.Name}}}\n\n';
+        section += '- Use the merge fields from AVAILABLE MERGE FIELDS section for names\n\n';
 
         section += 'QUALITY CHECKLIST:\n';
         section += '[ ] Does the summary capture the key story?\n';
