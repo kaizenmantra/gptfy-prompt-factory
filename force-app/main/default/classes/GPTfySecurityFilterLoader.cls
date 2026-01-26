@@ -39,10 +39,12 @@ public with sharing class GPTfySecurityFilterLoader {
         'OtherPhone' => 'Phone',
         'AssistantPhone' => 'Phone',
 
-        // Name fields (company names that might trigger content filters)
-        'Name' => 'Company',
-        'CompanyName' => 'Company',
-        'Account.Name' => 'Company',
+        // Note: Company name masking disabled due to GPTfy PII restoration bug
+        // that replaces digit patterns globally instead of just the mask token.
+        // Re-enable when GPTfy fixes the Company{n} restoration logic.
+        // 'Name' => 'Company',
+        // 'CompanyName' => 'Company',
+        // 'Account.Name' => 'Company',
 
         // URL fields
         'Website' => 'URL',
