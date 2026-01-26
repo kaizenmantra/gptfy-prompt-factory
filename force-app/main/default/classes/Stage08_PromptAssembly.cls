@@ -1540,6 +1540,9 @@ public without sharing class Stage08_PromptAssembly implements IStage {
         // Section 3: ANALYSIS PRINCIPLES
         metaPrompt += buildAnalysisPrinciplesSection(rootObject, runId);
 
+        // Section 3.5: INFORMATION HIERARCHY (V2.5)
+        metaPrompt += buildInformationHierarchySection();
+
         // Section 4: UI TOOLKIT
         metaPrompt += buildUIToolkitSection();
 
@@ -1896,6 +1899,45 @@ public without sharing class Stage08_PromptAssembly implements IStage {
         if (String.isNotBlank(patterns)) {
             section += patterns + '\n\n';
         }
+
+        return section;
+    }
+
+    /**
+     * @description Section 3.5: INFORMATION HIERARCHY (V2.5)
+     * Guides the AI on how to structure information - what to lead with, what to minimize
+     */
+    private String buildInformationHierarchySection() {
+        String section = '=== INFORMATION HIERARCHY ===\n\n';
+        section += 'Structure your output following the inverted pyramid - most important first:\n\n';
+
+        section += '1. LEAD WITH INSIGHTS (top 20% of output)\n';
+        section += '   - Open with the single most important finding or recommendation\n';
+        section += '   - Use attention-grabbing metrics or alerts for critical issues\n';
+        section += '   - If there\'s a problem, say it immediately - don\'t bury it\n\n';
+
+        section += '2. KEY METRICS (next 20%)\n';
+        section += '   - 3-5 most important numbers in stat cards at the top\n';
+        section += '   - These should answer "what do I need to know at a glance?"\n';
+        section += '   - Use color coding: green (good), orange (warning), red (critical)\n\n';
+
+        section += '3. ANALYSIS & PATTERNS (next 40%)\n';
+        section += '   - Group related insights together\n';
+        section += '   - Use cards for each major finding\n';
+        section += '   - Include evidence (specific data points) with each insight\n';
+        section += '   - Prioritize actionable findings over observations\n\n';
+
+        section += '4. SUPPORTING DETAILS (bottom 20%)\n';
+        section += '   - Raw data tables go LAST, if needed at all\n';
+        section += '   - Consider: does the executive need to see every row?\n';
+        section += '   - If showing tables, limit to 5-10 most relevant rows\n';
+        section += '   - Tables should support your insights, not replace them\n\n';
+
+        section += 'ANTI-PATTERNS TO AVOID:\n';
+        section += '- Do NOT start with a data table and expect users to find insights\n';
+        section += '- Do NOT show all data when a summary statistic would suffice\n';
+        section += '- Do NOT use generic headers like "Overview" - be specific\n';
+        section += '- Do NOT repeat the same information in different formats\n\n';
 
         return section;
     }

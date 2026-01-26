@@ -438,7 +438,7 @@ Stage 9-10:
 | 5.8 | Revert Stage 8 to V2.0 base | Opus | done | Branch feature/v2.5-clean from main |
 | 5.9 | Add early data query to Stage 8 | Opus | done | Added buildActualDataSection() with SOQL queries |
 | 5.10 | Enhance UI Toolkit with richer examples | Opus | not_started | More component HTML, usage guidance |
-| 5.11 | Add information hierarchy section | Opus | not_started | "Lead with insights, tables last" |
+| 5.11 | Add information hierarchy section | Opus | done | buildInformationHierarchySection() - inverted pyramid |
 | 5.12 | Remove V2.5 template code from Stage 9 | Opus | not_started | Remove executeV25TemplateFlow, merge gate |
 | 5.13 | Test with 3 golden accounts | Manual | not_started | Compare output quality vs V2.0 |
 | 5.14 | Document V2.5 architecture | Opus | not_started | Update this file + create design doc |
