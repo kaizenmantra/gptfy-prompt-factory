@@ -169,10 +169,11 @@ export default class PfRunHistory extends NavigationMixin(LightningElement) {
     }
 
     /**
-     * Load this run into the wizard
+     * Load this run into the wizard Activity view
      */
     handleLoadRun(event) {
-        event.stopPropagation();
+        event.stopPropagation(); // Prevent triggering handleViewRun
+        event.preventDefault();
         const runId = event.currentTarget.dataset.id;
 
         // Dispatch event to parent to load this run

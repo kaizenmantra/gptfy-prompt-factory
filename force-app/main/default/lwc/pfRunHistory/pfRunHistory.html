@@ -72,7 +72,7 @@
                                     </div>
                                 </div>
 
-                                <div class="run-status">
+                                <div class="run-actions">
                                     <span class={run.statusClass}>
                                         <lightning-icon
                                             icon-name={run.statusIcon}
@@ -85,7 +85,7 @@
                                 </div>
                             </div>
 
-                            <!-- Run Stats Row -->
+                            <!-- Run Stats Row with Load Action -->
                             <div class="run-stats">
                                 <div class="stat-item">
                                     <span class="stat-label">Stage</span>
@@ -98,6 +98,20 @@
                                 <div class="stat-item">
                                     <span class="stat-label">By</span>
                                     <span class="stat-value">{run.createdByName}</span>
+                                </div>
+                                <div class="stat-item stat-action">
+                                    <a href="javascript:void(0);"
+                                       class="load-run-link"
+                                       data-id={run.id}
+                                       onclick={handleLoadRun}
+                                       title="Load this run into the Activity view">
+                                        <lightning-icon
+                                            icon-name="utility:upload"
+                                            size="xx-small"
+                                            class="slds-m-right_xx-small">
+                                        </lightning-icon>
+                                        Load
+                                    </a>
                                 </div>
                             </div>
                         </div>

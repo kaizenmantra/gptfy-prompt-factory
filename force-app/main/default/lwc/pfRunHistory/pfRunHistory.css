@@ -121,9 +121,42 @@
     color: #969492;
 }
 
-/* Status Badge */
-.run-status {
+/* Run Actions (status badge) */
+.run-actions {
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Load Run Link */
+.stat-action {
+    margin-left: auto;
+}
+
+.load-run-link {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #0176d3;
+    text-decoration: none;
+    background: #e5f2ff;
+    border: 1px solid #b8d4f0;
+    transition: all 0.15s ease;
+}
+
+.load-run-link:hover {
+    background: #d4ebff;
+    color: #014486;
+    text-decoration: none;
+}
+
+.load-run-link:active {
+    background: #0176d3;
+    color: #ffffff;
 }
 
 .status-badge {

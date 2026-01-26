@@ -126,7 +126,8 @@
                 <div if:true={isHistoryTab} class="slds-tabs_default__content slds-show" role="tabpanel">
                     <div class="slds-p-around_medium">
                         <c-pf-run-history
-                            record-limit="20">
+                            record-limit="20"
+                            onloadrun={handleLoadRun}>
                         </c-pf-run-history>
                     </div>
                 </div>

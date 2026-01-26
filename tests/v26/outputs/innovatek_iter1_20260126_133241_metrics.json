@@ -1,0 +1,22 @@
+{
+  "iteration": 1,
+  "timestamp": "20260126_133241",
+  "promptId": "a0DQH00000Kbi8D2AR",
+  "metrics": {
+    "outputLength": 4323,
+    "evidenceCitations": 12,
+    "dateAnalysis": 5,
+    "forbiddenPhrases": 0,
+    "forbiddenFound": [],
+    "colorDiversity": 3,
+    "customerReferences": 20,
+    "compositeScore": 100,
+    "scores": {
+      "evidence": 25,
+      "dateAnalysis": 25,
+      "forbidden": 20,
+      "colors": 15,
+      "customer": 15
+    }
+  }
+}

@@ -419,4 +419,85 @@ export default class PromptFactoryWizard extends LightningElement {
         const tabName = event.currentTarget.dataset.tab;
         this.activeTab = tabName;
     }
+
+    /**
+     * Handle loading a historical run into the wizard
+     * @param {CustomEvent} event - Contains runId to load
+     */
+    async handleLoadRun(event) {
+        const { runId } = event.detail;
+
+        if (!runId) {
+            return;
+        }
+
+        // Stop any existing polling
+        this.stopPolling();
+
+        // Set the run ID and switch to Activity tab
+        this.runId = runId;
+        this.activeTab = 'activity';
+        this.isLoading = true;
+
+        try {
+            // Fetch the run status to populate the wizard
+            const result = await getPipelineStatus({ runId: runId });
+
+            // Update state from the loaded run
+            this.currentStage = result.currentStage;
+            this.pipelineStatus = result.status?.toLowerCase() || 'pending';
+            this.logs = result.logs || [];
+            this.qualityScorecard = result.qualityScorecard ||
+                (result.qualityScore ? { overallScore: result.qualityScore } : null);
+
+            // Transform stages array into stageStatuses array
+            const newStageStatuses = Array(12).fill('pending');
+            if (result.stages && Array.isArray(result.stages)) {
+                result.stages.forEach(stage => {
+                    const idx = Math.floor(stage.stageNumber) - 1;
+                    if (idx >= 0 && idx < 12) {
+                        const status = stage.status?.toLowerCase() || 'pending';
+                        if (status === 'completed') {
+                            newStageStatuses[idx] = 'completed';
+                        } else if (status === 'in progress' || status === 'running') {
+                            newStageStatuses[idx] = 'running';
+                        } else if (status === 'failed') {
+                            newStageStatuses[idx] = 'failed';
+                        } else if (status === 'warning') {
+                            newStageStatuses[idx] = 'warning';
+                        } else if (status === 'skipped') {
+                            newStageStatuses[idx] = 'skipped';
+                        }
+                    }
+                });
+            }
+            this.stageStatuses = newStageStatuses;
+
+            // If the run is still in progress, start polling
+            const statusLower = this.pipelineStatus;
+            if (statusLower === 'in progress' || statusLower === 'running' || statusLower === 'queued') {
+                this.startPolling();
+            }
+
+            this.dispatchEvent(
+                new ShowToastEvent({
+                    title: 'Run Loaded',
+                    message: `Loaded run ${runId.substring(0, 15)}...`,
+                    variant: 'success'
+                })
+            );
+
+        } catch (error) {
+            this.errorMessage = error.body?.message || error.message || 'Failed to load run';
+            this.dispatchEvent(
+                new ShowToastEvent({
+                    title: 'Error Loading Run',
+                    message: this.errorMessage,
+                    variant: 'error'
+                })
+            );
+        } finally {
+            this.isLoading = false;
+        }
+    }
 }
