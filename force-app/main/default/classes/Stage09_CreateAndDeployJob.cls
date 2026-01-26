@@ -40,9 +40,20 @@ public class Stage09_CreateAndDeployJob implements Queueable, Database.AllowsCal
             return;
         }
 
-        // Chain to Stage 10
+        // Chain to Stages 10-12 (consolidated job)
         if (stageCompleted) {
-            System.enqueueJob(new Stage10_TestExecutionJob(runId));
+            // Get promptRequestId and sampleRecordId from Stage 9 outputs
+            Map<String, Object> stage9Outputs = StageJobHelper.loadInputsFromStage(runId, 9);
+            String promptRequestId = (String) stage9Outputs.get('promptRequestId');
+            Id sampleRecordId = (Id) stage9Outputs.get('sampleRecordId');
+
+            System.debug('Stage09_CreateAndDeployJob: Enqueueing consolidated job for Stages 10-12');
+            System.debug('Stage09_CreateAndDeployJob: promptRequestId=' + promptRequestId +
+                        ', sampleRecordId=' + sampleRecordId);
+
+            // Use consolidated job that handles Stages 10, 11, 12 in one transaction
+            // This avoids DML-before-callout issues
+            System.enqueueJob(new Stage10_12_ConsolidatedJob(runId, promptRequestId, sampleRecordId));
         }
     }
 }

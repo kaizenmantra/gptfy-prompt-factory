@@ -119,8 +119,15 @@ public with sharing class Stage12_QualityAudit implements IStage {
     private String buildQualityAuditPrompt(String outputHtml, String businessContext,
                                           String targetPersona, List<Object> businessObjectives,
                                           String rootObject) {
-        String objectivesStr = businessObjectives != null ?
-            String.join((List<String>) businessObjectives, ', ') : 'N/A';
+        // Convert List<Object> to comma-separated string (can't directly cast to List<String>)
+        String objectivesStr = 'N/A';
+        if (businessObjectives != null && !businessObjectives.isEmpty()) {
+            List<String> strList = new List<String>();
+            for (Object obj : businessObjectives) {
+                strList.add(String.valueOf(obj));
+            }
+            objectivesStr = String.join(strList, ', ');
+        }
 
         return 'You are an expert AI quality auditor for Salesforce implementations.\n\n' +
                'BUSINESS CONTEXT:\n' + (businessContext != null ? businessContext : 'Not provided') + '\n\n' +
