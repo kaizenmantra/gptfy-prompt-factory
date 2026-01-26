@@ -29,6 +29,9 @@ export default class PromptFactoryWizard extends LightningElement {
     @track qualityScorecard = null;
     @track aiModelOptions = [];
     @track activeTab = 'configuration'; // 'configuration' or 'activity'
+    @track createdPromptId = null;
+    @track createdDcmId = null;
+    @track targetPromptName = null;
 
     pollingInterval = null;
     POLLING_INTERVAL_MS = 2000;
@@ -72,6 +75,9 @@ export default class PromptFactoryWizard extends LightningElement {
         this.logs = [];
         this.errorMessage = '';
         this.qualityScorecard = null;
+        this.createdPromptId = null;
+        this.createdDcmId = null;
+        this.targetPromptName = null;
         this.activeTab = 'configuration';
     }
 
@@ -184,6 +190,10 @@ export default class PromptFactoryWizard extends LightningElement {
             this.logs = result.logs || [];
             // Use full qualityScorecard from backend, fallback to score-only for backward compatibility
             this.qualityScorecard = result.qualityScorecard || (result.qualityScore ? { overallScore: result.qualityScore } : null);
+            // V2.6: Track created prompt and DCM for navigation
+            this.createdPromptId = result.createdPromptId || null;
+            this.createdDcmId = result.createdDcmId || null;
+            this.targetPromptName = result.targetPromptName || this.inputData.promptName;
 
             // Transform stages array into stageStatuses array for progress tracker
             // The progress tracker expects: Array(12).fill('pending'|'running'|'completed'|'failed')
@@ -212,8 +222,12 @@ export default class PromptFactoryWizard extends LightningElement {
 
             // V2.6: Mark current stage as "running" if pipeline is in progress
             // This ensures the blue running indicator shows even if no stage record exists yet
+            // Statuses that indicate active execution: Queued, In Progress, running
             const pipelineStatusLower = result.status?.toLowerCase();
-            if (pipelineStatusLower === 'in progress' || pipelineStatusLower === 'running') {
+            const isActivelyRunning = pipelineStatusLower === 'in progress' ||
+                                      pipelineStatusLower === 'running' ||
+                                      pipelineStatusLower === 'queued';
+            if (isActivelyRunning) {
                 const currentIdx = Math.floor(result.currentStage) - 1;
                 if (currentIdx >= 0 && currentIdx < 12 && newStageStatuses[currentIdx] === 'pending') {
                     newStageStatuses[currentIdx] = 'running';
@@ -328,7 +342,7 @@ export default class PromptFactoryWizard extends LightningElement {
      */
     handleResetWizard() {
         // Confirm with user if pipeline is running
-        if (this.pipelineStatus === 'running') {
+        if (this.isRunning) {
             const confirmed = confirm('This will stop the current run. Are you sure?');
             if (!confirmed) {
                 return;
@@ -349,7 +363,8 @@ export default class PromptFactoryWizard extends LightningElement {
 
     // Computed properties for template rendering
     get isRunning() {
-        return this.pipelineStatus === 'running';
+        const status = this.pipelineStatus;
+        return status === 'running' || status === 'in progress' || status === 'queued';
     }
 
     get isCompleted() {
@@ -449,6 +464,10 @@ export default class PromptFactoryWizard extends LightningElement {
             this.logs = result.logs || [];
             this.qualityScorecard = result.qualityScorecard ||
                 (result.qualityScore ? { overallScore: result.qualityScore } : null);
+            // V2.6: Track created prompt and DCM for navigation
+            this.createdPromptId = result.createdPromptId || null;
+            this.createdDcmId = result.createdDcmId || null;
+            this.targetPromptName = result.targetPromptName || null;
 
             // Transform stages array into stageStatuses array
             const newStageStatuses = Array(12).fill('pending');

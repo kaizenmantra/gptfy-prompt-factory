@@ -119,6 +119,7 @@ public with sharing class PromptFactoryController {
                 SELECT Id, Name, Status__c, Current_Stage__c, Overall_Quality_Score__c,
                        Root_Object__c, Sample_Record_Id__c, Prompt_Name__c,
                        Started_At__c, Completed_At__c, Error_Message__c,
+                       Created_Prompt_Id__c, Created_DCM_Id__c,
                        CreatedById
                 FROM PF_Run__c
                 WHERE Id = :runId
@@ -236,6 +237,8 @@ public with sharing class PromptFactoryController {
                 'startedAt' => run.Started_At__c,
                 'completedAt' => run.Completed_At__c,
                 'errorMessage' => run.Error_Message__c,
+                'createdPromptId' => run.Created_Prompt_Id__c,
+                'createdDcmId' => run.Created_DCM_Id__c,
                 'createdByUser' => run.CreatedById,
                 'stages' => stagesArray,
                 'logs' => logsArray

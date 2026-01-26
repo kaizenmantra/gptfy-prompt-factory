@@ -48,6 +48,29 @@
     margin-top: 0.25rem;
 }
 
+/* Prompt Link Card - Prominent CTA */
+.prompt-link-card {
+    background: linear-gradient(135deg, #e5f2ff 0%, #d4ebff 100%);
+    border: 2px solid #0176d3;
+    border-radius: 0.75rem;
+    padding: 1.25rem 1.5rem;
+    box-shadow: 0 4px 12px rgba(1, 118, 211, 0.15);
+}
+
+.prompt-link-card .prompt-icon {
+    --slds-c-icon-color-foreground-default: #0176d3;
+}
+
+.prompt-link-card .prompt-name {
+    color: #032d60;
+    font-weight: 700;
+    font-size: 1.125rem;
+}
+
+.prompt-link-card:hover {
+    box-shadow: 0 6px 16px rgba(1, 118, 211, 0.2);
+}
+
 /* Overall Score Display */
 .overall-score-container {
     padding: 2rem;

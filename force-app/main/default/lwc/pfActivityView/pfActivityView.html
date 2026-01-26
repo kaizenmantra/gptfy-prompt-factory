@@ -87,6 +87,47 @@
                     </div>
                 </div>
 
+                <!-- Prominent Prompt Link Card -->
+                <template if:true={hasCreatedPrompt}>
+                    <div class="slds-m-top_medium prompt-link-card">
+                        <div class="slds-grid slds-grid_vertical-align-center slds-grid_align-spread">
+                            <div class="slds-col">
+                                <div class="slds-grid slds-grid_vertical-align-center">
+                                    <lightning-icon
+                                        icon-name="utility:prompt"
+                                        size="medium"
+                                        class="slds-m-right_small prompt-icon">
+                                    </lightning-icon>
+                                    <div>
+                                        <p class="slds-text-body_small slds-text-color_weak">Your Generated Prompt</p>
+                                        <h3 class="slds-text-heading_small prompt-name">{targetPromptName}</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="slds-col slds-col_bump-left">
+                                <lightning-button-group>
+                                    <lightning-button
+                                        label="Open Prompt"
+                                        icon-name="utility:open"
+                                        onclick={handleViewPrompt}
+                                        variant="brand"
+                                        title="Open the created AI Prompt record">
+                                    </lightning-button>
+                                    <template if:true={hasCreatedDcm}>
+                                        <lightning-button
+                                            label="View DCM"
+                                            icon-name="utility:database"
+                                            onclick={handleViewDcm}
+                                            variant="neutral"
+                                            title="Open the Data Collection Mapping">
+                                        </lightning-button>
+                                    </template>
+                                </lightning-button-group>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+
                 <!-- Overall Score -->
                 <div class="slds-m-top_large overall-score-container">
                     <div class="slds-text-align_center">

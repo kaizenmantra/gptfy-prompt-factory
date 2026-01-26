@@ -12,6 +12,9 @@ export default class PfActivityView extends NavigationMixin(LightningElement) {
     @api currentStage = 0;
     @api pipelineStatus = 'draft';
     @api qualityScorecard = null;
+    @api createdPromptId = null;
+    @api createdDcmId = null;
+    @api targetPromptName = null;
 
     // State file info
     stateFileExists = false;
@@ -74,6 +77,56 @@ export default class PfActivityView extends NavigationMixin(LightningElement) {
      */
     get showStateFileLink() {
         return this.stateFileExists && this.runId && this.pipelineStatus !== 'draft';
+    }
+
+    /**
+     * Check if prompt was created
+     */
+    get hasCreatedPrompt() {
+        return !!this.createdPromptId;
+    }
+
+    /**
+     * Check if DCM was created
+     */
+    get hasCreatedDcm() {
+        return !!this.createdDcmId;
+    }
+
+    /**
+     * Open created prompt in new tab
+     */
+    handleViewPrompt() {
+        if (!this.createdPromptId) return;
+
+        this[NavigationMixin.GenerateUrl]({
+            type: 'standard__recordPage',
+            attributes: {
+                recordId: this.createdPromptId,
+                objectApiName: 'ccai__AI_Prompt__c',
+                actionName: 'view'
+            }
+        }).then(url => {
+            window.open(url, '_blank');
+        });
+    }
+
+    /**
+     * Open created DCM in new tab
+     */
+    handleViewDcm() {
+        if (!this.createdDcmId) return;
+
+        this[NavigationMixin.GenerateUrl]({
+            type: 'standard__recordPage',
+            attributes: {
+                recordId: this.createdDcmId,
+                objectApiName: 'ccai__AI_Data_Extraction_Mapping__c',
+                actionName: 'view'
+            }
+        }).then(url => {
+            window.open(url, '_blank');
+        });
     }
 
     // Stage content definitions
@@ -173,7 +226,9 @@ export default class PfActivityView extends NavigationMixin(LightningElement) {
      */
     @api
     get showStageContent() {
-        return this.pipelineStatus === 'running' && this.runId;
+        const status = this.pipelineStatus;
+        const isRunning = status === 'running' || status === 'in progress' || status === 'queued';
+        return isRunning && this.runId;
     }
 
     /**
