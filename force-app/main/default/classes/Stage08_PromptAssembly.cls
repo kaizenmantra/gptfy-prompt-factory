@@ -33,7 +33,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
     // V2.5: Feature flag for two-layer meta-prompt architecture
     // When true: Meta-prompt generates TEMPLATE → Template executes on data
     // When false: Falls back to V2.0 (LLM analyzes data directly) or V1.1 (legacy)
-    // ENABLED: 2026-01-25 - Ready for testing
+    // ENABLED: 2026-01-26 - Ready for testing (deployment verification)
     private static final Boolean USE_META_PROMPT_V2_5 = true;
 
     /**
@@ -100,8 +100,9 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             // Then return that template (no execution yet - happens at DCM stage)
             // =========================================================================
 
-            // DEBUG: Always log the flag value to confirm code deployment
+            // DEBUG: Always log the flag value to confirm code deployment (verification timestamp: 2026-01-26 06:11)
             result.queueInfo(runId, STAGE_NUMBER, 'V2.5 flag value: ' + USE_META_PROMPT_V2_5);
+            result.queueInfo(runId, STAGE_NUMBER, 'V2.5 deployment verification: Code recompiled at 2026-01-26 06:11');
 
             if (USE_META_PROMPT_V2_5) {
                 result.queueInfo(runId, STAGE_NUMBER,
@@ -2075,8 +2076,9 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             Map<String, Object> selectedParentFields,
             List<Object> selectedGrandchildren) {
 
-        // Extract DCM metadata
-        String rootObject = (String) dcmConfig.get('objectName');
+        // Extract DCM metadata (defensive type handling)
+        Object rootObjectValue = dcmConfig.get('objectName');
+        String rootObject = (rootObjectValue instanceof String) ? (String) rootObjectValue : String.valueOf(rootObjectValue);
         List<Object> childObjectsRaw = (List<Object>) dcmConfig.get('childRelationships');
 
         // Build structured JSON analysis
@@ -2147,8 +2149,19 @@ public without sharing class Stage08_PromptAssembly implements IStage {
                 List<Object> parentFieldsRaw = (List<Object>) selectedParentFields.get(objName);
                 if (parentFieldsRaw != null) {
                     for (Object fieldObj : parentFieldsRaw) {
-                        String field = (String) fieldObj;
-                        if (field.contains('.')) {
+                        // Defensive: handle both String and Map types
+                        String field;
+                        if (fieldObj instanceof String) {
+                            field = (String) fieldObj;
+                        } else if (fieldObj instanceof Map<String, Object>) {
+                            // If it's a Map, try to get 'name' or convert to string
+                            Map<String, Object> fieldMap = (Map<String, Object>) fieldObj;
+                            field = fieldMap.containsKey('name') ? (String) fieldMap.get('name') : String.valueOf(fieldObj);
+                        } else {
+                            field = String.valueOf(fieldObj);
+                        }
+
+                        if (field != null && field.contains('.')) {
                             String parentName = field.substringBefore('.');
                             parentNames.add(parentName);
                         }
@@ -2179,7 +2192,16 @@ public without sharing class Stage08_PromptAssembly implements IStage {
 
         // Categorize regular fields
         for (Object fieldObj : fieldsRaw) {
-            String field = (String) fieldObj;
+            // Defensive: handle both String and Map types
+            String field;
+            if (fieldObj instanceof String) {
+                field = (String) fieldObj;
+            } else if (fieldObj instanceof Map<String, Object>) {
+                Map<String, Object> fieldMap = (Map<String, Object>) fieldObj;
+                field = fieldMap.containsKey('name') ? (String) fieldMap.get('name') : String.valueOf(fieldObj);
+            } else {
+                field = String.valueOf(fieldObj);
+            }
 
             // Heuristic categorization (can be enhanced with schema describe)
             if (isMetricField(field)) {
@@ -2195,7 +2217,17 @@ public without sharing class Stage08_PromptAssembly implements IStage {
 
         // Add parent fields
         for (Object parentFieldObj : parentFieldsRaw) {
-            categories.get('parentFields').add((String) parentFieldObj);
+            // Defensive: handle both String and Map types
+            String parentField;
+            if (parentFieldObj instanceof String) {
+                parentField = (String) parentFieldObj;
+            } else if (parentFieldObj instanceof Map<String, Object>) {
+                Map<String, Object> fieldMap = (Map<String, Object>) parentFieldObj;
+                parentField = fieldMap.containsKey('name') ? (String) fieldMap.get('name') : String.valueOf(parentFieldObj);
+            } else {
+                parentField = String.valueOf(parentFieldObj);
+            }
+            categories.get('parentFields').add(parentField);
         }
 
         return categories;
@@ -2301,11 +2333,21 @@ public without sharing class Stage08_PromptAssembly implements IStage {
 
     /**
      * @description Convert List<Object> to List<String>
+     * Handles both String objects and Map objects (extracts 'name' key if Map)
      */
     private List<String> objectListToStringList(List<Object> objList) {
         List<String> strList = new List<String>();
         for (Object obj : objList) {
-            strList.add((String) obj);
+            // Defensive: handle both String and Map types
+            if (obj instanceof String) {
+                strList.add((String) obj);
+            } else if (obj instanceof Map<String, Object>) {
+                Map<String, Object> objMap = (Map<String, Object>) obj;
+                String value = objMap.containsKey('name') ? (String) objMap.get('name') : String.valueOf(obj);
+                strList.add(value);
+            } else {
+                strList.add(String.valueOf(obj));
+            }
         }
         return strList;
     }
