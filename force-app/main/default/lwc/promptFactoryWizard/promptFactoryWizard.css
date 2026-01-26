@@ -41,20 +41,7 @@
     box-shadow: var(--pf-shadow-sm);
 }
 
-/* Loading overlay */
-.loading-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(255, 255, 255, 0.9);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 100;
-    border-radius: var(--pf-radius-lg);
-}
+/* Loading overlay removed - was causing positioning issues with lightning-spinner */
 
 /* Tab styling enhancements */
 .slds-tabs_default__nav {
