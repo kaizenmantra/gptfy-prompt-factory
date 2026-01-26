@@ -1,22 +1,59 @@
-import { LightningElement, api } from 'lwc';
+import { LightningElement, api, wire, track } from 'lwc';
+import getActivityLogs from '@salesforce/apex/PromptFactoryController.getActivityLogs';
 
 /**
  * Activity Log component - Terminal-style log viewer
  * Shows pipeline activity in a clean, command-line format
+ * V2.6: Auto-loads historical logs when viewing completed runs
  */
 export default class PfActivityLog extends LightningElement {
     @api runId = null;
     @api logs = [];
+    @track historicalLogs = [];
+
+    /**
+     * Wire adapter to load historical logs when runId is set
+     * Only fetches if no logs were passed as props
+     */
+    @wire(getActivityLogs, { runId: '$runId', lastCount: 100 })
+    wiredLogs({ error, data }) {
+        if (data && data.length > 0) {
+            // Transform backend format to component format
+            this.historicalLogs = data.map(log => ({
+                timestamp: log.timestamp,
+                stage: log.stageNumber ? `Stage ${Math.floor(log.stageNumber)}` : 'Pipeline',
+                level: log.logLevel || 'INFO',
+                message: log.logMessage || ''
+            }));
+        } else if (error) {
+            console.warn('Could not load historical logs:', error);
+            this.historicalLogs = [];
+        }
+    }
+
+    /**
+     * Get effective logs - prefer props, fallback to historical
+     */
+    get effectiveLogs() {
+        // If logs were passed as props, use those
+        if (this.logs && this.logs.length > 0) {
+            return this.logs;
+        }
+        // Otherwise use historical logs from wire
+        return this.historicalLogs;
+    }
 
     /**
      * Process logs for terminal-style display
+     * V2.6: Uses effectiveLogs to support both live and historical logs
      */
     get processedLogs() {
-        if (!this.logs || this.logs.length === 0) {
+        const logs = this.effectiveLogs;
+        if (!logs || logs.length === 0) {
             return [];
         }
 
-        return this.logs.map((log, index) => {
+        return logs.map((log, index) => {
             const level = (log.level || 'INFO').toUpperCase();
             const stage = log.stage || log.stageName || '';
             const timestamp = this.formatTimestamp(log.timestamp);
@@ -85,7 +122,8 @@ export default class PfActivityLog extends LightningElement {
      * Scroll to bottom after logs update
      */
     renderedCallback() {
-        if (this.logs && this.logs.length > 0) {
+        const logs = this.effectiveLogs;
+        if (logs && logs.length > 0) {
             this.scrollToBottom();
         }
     }
@@ -103,11 +141,13 @@ export default class PfActivityLog extends LightningElement {
     // Computed properties
     @api
     get hasLogs() {
-        return this.logs && this.logs.length > 0;
+        const logs = this.effectiveLogs;
+        return logs && logs.length > 0;
     }
 
     @api
     get logCount() {
-        return this.logs ? this.logs.length : 0;
+        const logs = this.effectiveLogs;
+        return logs ? logs.length : 0;
     }
 }
