@@ -30,6 +30,13 @@ public without sharing class Stage08_PromptAssembly implements IStage {
     private static final Integer STAGE_NUMBER = 8;
 
     /**
+     * V2.5 Enhancement: Include actual data values in prompt
+     * When enabled, queries the sample record and includes real data in the prompt
+     * so the thinking model can make informed visualization decisions.
+     */
+    private static final Boolean USE_V2_5_ACTUAL_DATA = true;
+
+    /**
      * @description Executes Stage 8: Prompt Assembly
      * @param runId ID of the PF_Run__c record
      * @param inputs Map containing HTML template and configuration from previous stages
@@ -67,6 +74,9 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             if (selectedGrandchildrenRaw == null) {
                 selectedGrandchildrenRaw = new List<Object>();
             }
+
+            // V2.5: Extract sample record ID for actual data query
+            Id sampleRecordId = (Id) inputs.get('sampleRecordId');
 
             // NEW: Extract Strategic Context from Stage 2
             // CRITICAL: Use companyIntelligence (actual research) over companyProfile (AI summary)
@@ -124,11 +134,12 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             // Build AI instructions - branch based on architecture version
             String aiInstructions;
             if (useMetaPrompt) {
-                // V2.0: Build meta-prompt with 6 sections
+                // V2.0/V2.5: Build meta-prompt with 6+ sections
                 aiInstructions = buildMetaPrompt(
                     businessContext, targetPersona, businessObjectivesRaw, rootObject,
                     effectiveCompanyContext, strategicInsights, industryContext,
-                    multiSampleProfileRaw, selectedFieldsRaw, runId, result);
+                    multiSampleProfileRaw, selectedFieldsRaw, selectedParentFieldsRaw,
+                    sampleRecordId, runId, result);
             } else {
                 // V1.1: Build traditional AI instructions (legacy)
                 aiInstructions = buildAIInstructions(
@@ -1490,8 +1501,9 @@ public without sharing class Stage08_PromptAssembly implements IStage {
     // ========================================================================
 
     /**
-     * @description Builds meta-prompt with 6 sections (V2.0 architecture)
+     * @description Builds meta-prompt with 6+ sections (V2.0/V2.5 architecture)
      * Transforms LLM from "template filler" to "business analyst"
+     * V2.5: Includes actual data values so thinking model makes informed decisions
      */
     private String buildMetaPrompt(
             String businessContext,
@@ -1503,18 +1515,27 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             String industryContext,
             Object multiSampleProfileRaw,
             Map<String, Object> selectedFieldsRaw,
+            Map<String, Object> selectedParentFieldsRaw,
+            Id sampleRecordId,
             Id runId,
             StageResult result) {
 
-        result.queueInfo(runId, STAGE_NUMBER, 'Building meta-prompt (V2.0)');
+        String version = USE_V2_5_ACTUAL_DATA && sampleRecordId != null ? 'V2.5' : 'V2.0';
+        result.queueInfo(runId, STAGE_NUMBER, 'Building meta-prompt (' + version + ')');
 
         String metaPrompt = '';
 
         // Section 1: ROLE
         metaPrompt += buildRoleSection(targetPersona);
 
-        // Section 2: DATA PAYLOAD
+        // Section 2: DATA PAYLOAD (schema patterns)
         metaPrompt += buildDataPayloadSection(multiSampleProfileRaw, rootObject, selectedFieldsRaw);
+
+        // V2.5: Section 2.5: ACTUAL DATA VALUES
+        if (USE_V2_5_ACTUAL_DATA && sampleRecordId != null) {
+            metaPrompt += buildActualDataSection(
+                sampleRecordId, rootObject, selectedFieldsRaw, selectedParentFieldsRaw, runId, result);
+        }
 
         // Section 3: ANALYSIS PRINCIPLES
         metaPrompt += buildAnalysisPrinciplesSection(rootObject, runId);
@@ -1610,6 +1631,252 @@ public without sharing class Stage08_PromptAssembly implements IStage {
         }
 
         return section;
+    }
+
+    /**
+     * @description V2.5: Section 2.5 - ACTUAL DATA VALUES
+     * Queries the sample record and includes real data values so the thinking model
+     * can make informed visualization decisions based on actual content.
+     */
+    private String buildActualDataSection(
+            Id sampleRecordId,
+            String rootObject,
+            Map<String, Object> selectedFieldsRaw,
+            Map<String, Object> selectedParentFieldsRaw,
+            Id runId,
+            StageResult result) {
+
+        String section = '=== ACTUAL DATA VALUES (Sample Record) ===\n\n';
+        section += 'Below is the actual data from the sample record. Use these values to:\n';
+        section += '- Understand the data scale and formats\n';
+        section += '- Identify which fields have meaningful data\n';
+        section += '- Make informed visualization decisions\n\n';
+
+        try {
+            // Build field list for root object
+            List<String> rootFields = new List<String>{'Id'};
+            if (selectedFieldsRaw != null && selectedFieldsRaw.containsKey(rootObject)) {
+                List<Object> fields = (List<Object>) selectedFieldsRaw.get(rootObject);
+                if (fields != null) {
+                    for (Object f : fields) {
+                        String fieldName = String.valueOf(f);
+                        if (!rootFields.contains(fieldName)) {
+                            rootFields.add(fieldName);
+                        }
+                    }
+                }
+            }
+
+            // Add parent lookup fields (e.g., Owner.Name, Contact.Title)
+            if (selectedParentFieldsRaw != null) {
+                for (String parentKey : selectedParentFieldsRaw.keySet()) {
+                    List<Object> parentFields = (List<Object>) selectedParentFieldsRaw.get(parentKey);
+                    if (parentFields != null) {
+                        for (Object pf : parentFields) {
+                            String parentField = parentKey + '.' + String.valueOf(pf);
+                            if (!rootFields.contains(parentField)) {
+                                rootFields.add(parentField);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Build and execute query for root object
+            String rootQuery = 'SELECT ' + String.join(rootFields, ', ') +
+                              ' FROM ' + rootObject +
+                              ' WHERE Id = :sampleRecordId';
+
+            result.queueInfo(runId, STAGE_NUMBER, 'V2.5: Querying sample record: ' + rootObject);
+
+            List<SObject> rootRecords = Database.query(rootQuery);
+            if (rootRecords.isEmpty()) {
+                section += 'Note: Sample record not found (ID: ' + sampleRecordId + ')\n\n';
+                return section;
+            }
+
+            SObject rootRecord = rootRecords[0];
+
+            // Format root object data
+            section += '--- ' + rootObject + ' ---\n';
+            for (String fieldName : rootFields) {
+                if (fieldName == 'Id') continue;
+                Object value = getFieldValue(rootRecord, fieldName);
+                String displayValue = formatFieldValue(value);
+                section += fieldName + ': ' + displayValue + '\n';
+            }
+            section += '\n';
+
+            // Query and format child objects
+            for (String objName : selectedFieldsRaw.keySet()) {
+                if (objName == rootObject) continue;
+
+                List<Object> fields = (List<Object>) selectedFieldsRaw.get(objName);
+                if (fields == null || fields.isEmpty()) continue;
+
+                // Build field list for child
+                List<String> childFields = new List<String>{'Id'};
+                for (Object f : fields) {
+                    String fieldName = String.valueOf(f);
+                    if (!childFields.contains(fieldName)) {
+                        childFields.add(fieldName);
+                    }
+                }
+
+                // Find relationship name
+                String relationshipName = findRelationshipName(rootObject, objName);
+                if (String.isBlank(relationshipName)) {
+                    result.queueInfo(runId, STAGE_NUMBER, 'V2.5: Could not find relationship for ' + objName);
+                    continue;
+                }
+
+                // Build subquery
+                String childQuery = 'SELECT ' + String.join(childFields, ', ') +
+                                   ' FROM ' + relationshipName;
+
+                // Query with subquery
+                String fullQuery = 'SELECT Id, (' + childQuery + ') FROM ' + rootObject +
+                                  ' WHERE Id = :sampleRecordId';
+
+                try {
+                    List<SObject> parentWithChildren = Database.query(fullQuery);
+                    if (!parentWithChildren.isEmpty()) {
+                        SObject parent = parentWithChildren[0];
+                        List<SObject> children = parent.getSObjects(relationshipName);
+
+                        if (children != null && !children.isEmpty()) {
+                            section += '--- ' + objName + ' (' + children.size() + ' records) ---\n';
+                            Integer displayLimit = Math.min(children.size(), 5);
+                            for (Integer i = 0; i < displayLimit; i++) {
+                                SObject child = children[i];
+                                section += 'Record ' + (i + 1) + ':\n';
+                                for (String fieldName : childFields) {
+                                    if (fieldName == 'Id') continue;
+                                    Object value = child.get(fieldName);
+                                    String displayValue = formatFieldValue(value);
+                                    section += '  ' + fieldName + ': ' + displayValue + '\n';
+                                }
+                            }
+                            if (children.size() > displayLimit) {
+                                section += '... and ' + (children.size() - displayLimit) + ' more records\n';
+                            }
+                            section += '\n';
+                        }
+                    }
+                } catch (Exception e) {
+                    result.queueInfo(runId, STAGE_NUMBER, 'V2.5: Could not query ' + objName + ': ' + e.getMessage());
+                }
+            }
+
+            result.queueInfo(runId, STAGE_NUMBER, 'V2.5: Actual data section built (' + section.length() + ' chars)');
+
+        } catch (Exception e) {
+            section += 'Error querying data: ' + e.getMessage() + '\n\n';
+            result.queueError(runId, STAGE_NUMBER, 'V2.5: Error querying actual data: ' + e.getMessage());
+        }
+
+        return section;
+    }
+
+    /**
+     * @description Gets field value from SObject, handling dot notation for parent lookups
+     */
+    private Object getFieldValue(SObject record, String fieldPath) {
+        if (!fieldPath.contains('.')) {
+            return record.get(fieldPath);
+        }
+
+        // Handle dot notation (e.g., Owner.Name)
+        List<String> parts = fieldPath.split('\\.');
+        SObject current = record;
+        for (Integer i = 0; i < parts.size() - 1; i++) {
+            current = current.getSObject(parts[i]);
+            if (current == null) return null;
+        }
+        return current.get(parts[parts.size() - 1]);
+    }
+
+    /**
+     * @description Formats field value for display in prompt
+     */
+    private String formatFieldValue(Object value) {
+        if (value == null) return '(empty)';
+        if (value instanceof Decimal) {
+            Decimal d = (Decimal) value;
+            // Format currency-like values
+            if (d >= 1000) {
+                return '$' + d.format();
+            }
+            return String.valueOf(d);
+        }
+        if (value instanceof Date) {
+            return ((Date) value).format();
+        }
+        if (value instanceof DateTime) {
+            return ((DateTime) value).format();
+        }
+        String strValue = String.valueOf(value);
+        // Truncate very long values
+        if (strValue.length() > 200) {
+            return strValue.substring(0, 200) + '...';
+        }
+        return strValue;
+    }
+
+    /**
+     * @description Finds the relationship name for a child object from parent
+     */
+    private String findRelationshipName(String parentObject, String childObject) {
+        // Common relationship mappings
+        Map<String, Map<String, String>> relationships = new Map<String, Map<String, String>>{
+            'Account' => new Map<String, String>{
+                'Contact' => 'Contacts',
+                'Opportunity' => 'Opportunities',
+                'Case' => 'Cases',
+                'Task' => 'Tasks',
+                'Event' => 'Events',
+                'Note' => 'Notes',
+                'Attachment' => 'Attachments',
+                'AccountContactRelation' => 'AccountContactRelations'
+            },
+            'Opportunity' => new Map<String, String>{
+                'OpportunityLineItem' => 'OpportunityLineItems',
+                'OpportunityContactRole' => 'OpportunityContactRoles',
+                'Task' => 'Tasks',
+                'Event' => 'Events'
+            },
+            'Contact' => new Map<String, String>{
+                'Case' => 'Cases',
+                'Task' => 'Tasks',
+                'Event' => 'Events',
+                'OpportunityContactRole' => 'OpportunityContactRoles'
+            },
+            'Case' => new Map<String, String>{
+                'CaseComment' => 'CaseComments',
+                'Task' => 'Tasks',
+                'Event' => 'Events'
+            },
+            'Lead' => new Map<String, String>{
+                'Task' => 'Tasks',
+                'Event' => 'Events',
+                'CampaignMember' => 'CampaignMembers'
+            }
+        };
+
+        if (relationships.containsKey(parentObject)) {
+            Map<String, String> childRelations = relationships.get(parentObject);
+            if (childRelations.containsKey(childObject)) {
+                return childRelations.get(childObject);
+            }
+        }
+
+        // Fallback: try pluralizing the child object name
+        if (childObject.endsWith('y')) {
+            return childObject.substring(0, childObject.length() - 1) + 'ies';
+        } else if (childObject.endsWith('s')) {
+            return childObject + 'es';
+        }
+        return childObject + 's';
     }
 
     /**
