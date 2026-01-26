@@ -24,36 +24,23 @@ public with sharing class GPTfySecurityFilterLoader {
     private static Map<String, List<SecurityFilter>> filtersByType;
 
     // Standard field-to-filter mappings for auto-detection
+    //
+    // !! ALL MASKING DISABLED !!
+    // GPTfy has a critical bug in their PII restoration logic where masks like
+    // Company{n}, Phone{n}, {n} etc. create tokens like "Company1", "Phone1", "1"
+    // and then the restoration replaces ALL occurrences of the digit "1" globally
+    // instead of just the full mask token. This corrupts HTML/CSS (e.g., "135deg"
+    // becomes "www.example.com35deg").
+    //
+    // Re-enable when GPTfy fixes the {n} counter restoration logic to only replace
+    // the complete mask token, not just the counter digit.
+    //
     private static final Map<String, String> FIELD_TO_FILTER_TYPE = new Map<String, String>{
-        // Email fields
-        'Email' => 'Email',
-        'PersonEmail' => 'Email',
-        'npe01__HomeEmail__c' => 'Email',
-        'npe01__WorkEmail__c' => 'Email',
-
-        // Phone fields
-        'Phone' => 'Phone',
-        'Fax' => 'Phone',
-        'MobilePhone' => 'Phone',
-        'HomePhone' => 'Phone',
-        'OtherPhone' => 'Phone',
-        'AssistantPhone' => 'Phone',
-
-        // Note: Company name masking disabled due to GPTfy PII restoration bug
-        // that replaces digit patterns globally instead of just the mask token.
-        // Re-enable when GPTfy fixes the Company{n} restoration logic.
-        // 'Name' => 'Company',
-        // 'CompanyName' => 'Company',
-        // 'Account.Name' => 'Company',
-
-        // URL fields
-        'Website' => 'URL',
-        'PhotoUrl' => 'URL',
-
-        // ID/Tax fields
-        'SSN__c' => 'National/Tax ID',
-        'TaxId__c' => 'National/Tax ID',
-        'NationalId__c' => 'National/Tax ID'
+        // ALL MAPPINGS DISABLED - GPTfy PII restoration bug
+        // 'Email' => 'Email',
+        // 'Phone' => 'Phone',
+        // 'Website' => 'URL',
+        // etc.
     };
 
     // Valid picklist values for ccai__Anonymize_With__c field
