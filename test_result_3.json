@@ -1,0 +1,42 @@
+{
+  "status": 100,
+  "result": {
+    "summary": {
+      "failRate": "50%",
+      "failing": 1,
+      "hostname": "https://agentictso.my.salesforce.com",
+      "orgId": "00DgD000001li6fUAA",
+      "outcome": "Failed",
+      "passRate": "50%",
+      "passing": 1,
+      "skipped": 0,
+      "testRunId": "707QH00000rMuX5",
+      "testStartTime": "2026-01-26T07:12:31.000Z",
+      "testsRan": 2,
+      "userId": "005gD000000b55ZQAQ",
+      "username": "agentictso@gptfy.com",
+      "commandTime": "158 ms",
+      "testExecutionTime": "3108 ms",
+      "testTotalTime": "3598 ms"
+    },
+    "tests": [
+      {
+        "Id": "07MQH0000070wZS2AY",
+        "QueueItemId": "709QH00000GFUXhYAP",
+        "StackTrace": "Class.Stage09_V25_Verification_Test.verifyV25MergeGate: line 101, column 1",
+        "Message": "System.AssertException: Assertion Failed: Should contain account name: {\"template\": \"Account: Big Deal 2.5, Amount: 100000.00, Items:  - 100000.00, \"}",
+        "AsyncApexJobId": "707QH00000rMuX5YAK",
+        "MethodName": "verifyV25MergeGate",
+        "Outcome": "Fail",
+        "ApexClass": {
+          "Id": "01pQH00000Hj8sTYAR",
+          "Name": "Stage09_V25_Verification_Test",
+          "NamespacePrefix": null
+        },
+        "RunTime": 3108,
+        "FullName": "Stage09_V25_Verification_Test.verifyV25MergeGate"
+      }
+    ]
+  },
+  "warnings": []
+}

@@ -2057,11 +2057,12 @@ public without sharing class Stage08_PromptAssembly implements IStage {
      * @return String The meta-prompt content from Builder record
      */
     private String loadMetaPromptBuilder() {
+        Id builderRtId = Schema.SObjectType.ccai__AI_Prompt__c.getRecordTypeInfosByDeveloperName().get('Builder').getRecordTypeId();
         List<ccai__AI_Prompt__c> builders = [
             SELECT ccai__Prompt_Command__c, Name, ccai__Description__c
             FROM ccai__AI_Prompt__c
-            WHERE RecordType.DeveloperName = 'Builder'
-              AND ccai__Type__c = 'Context Template' // TODO: Change to 'Meta Prompt' after picklist value added
+            WHERE RecordTypeId = :builderRtId
+              AND ccai__Type__c = 'Context Template'
               AND Name = 'GPTfy Prompt Generation Framework v2.5'
               AND ccai__Status__c = 'Active'
             LIMIT 1

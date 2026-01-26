@@ -641,29 +641,50 @@ public with sharing class Stage09_CreateAndDeploy implements IStage {
         return query;
     }
 
-    /**
-     * @description Converts SObject to Map structure compatible with HandlebarsTemplateEngine
-     */
-    private Map<String, Object> convertSObjectToMap(SObject record, String rootObject, Map<String, Object> inputs) {
+    private Map<String, Object> convertSObjectToMap(SObject record, String objName, Map<String, Object> inputs) {
         Map<String, Object> context = record.getPopulatedFieldsAsMap().clone();
         
-        // Handle child relationships
-        Map<String, Object> selectedFieldsMap = (Map<String, Object>) inputs.get('selectedFields');
-        if (selectedFieldsMap != null) {
-            for (String objName : selectedFieldsMap.keySet()) {
-                if (objName == rootObject) continue;
-                
-                String relName = getChildRelationshipName(rootObject, objName);
-                if (String.isBlank(relName)) continue;
+        // Add parent SObjects for multi-part resolution (e.g. Account.Name, Product2.Name)
+        for (String key : new List<String>(context.keySet())) {
+            String relName = null;
+            if (key.endsWith('Id') && key != 'Id') relName = key.substring(0, key.length() - 2);
+            else if (key.endsWith('__c')) relName = key.replace('__c', '__r');
+            
+            if (relName != null) {
+                try {
+                    SObject relSObj = record.getSObject(relName);
+                    if (relSObj != null) {
+                        context.put(relName, relSObj.getPopulatedFieldsAsMap());
+                    }
+                } catch (Exception e) { /* Not a relationship */ }
+            }
+        }
 
-                List<SObject> children = record.getSObjects(relName);
-                List<Map<String, Object>> childMaps = new List<Map<String, Object>>();
-                if (children != null) {
-                    for (SObject child : children) {
-                        childMaps.add(child.getPopulatedFieldsAsMap());
+        // Handle child relationships (only if this is the root object)
+        String rootObject = (String) inputs.get('rootObject');
+        if (objName == rootObject) {
+            Map<String, Object> selectedFieldsMap = (Map<String, Object>) inputs.get('selectedFields');
+            if (selectedFieldsMap != null) {
+                for (String childObjName : selectedFieldsMap.keySet()) {
+                    if (childObjName == rootObject) continue;
+                    
+                    String relName = getChildRelationshipName(rootObject, childObjName);
+                    if (String.isBlank(relName)) continue;
+
+                    try {
+                        List<SObject> children = record.getSObjects(relName);
+                        List<Map<String, Object>> childMaps = new List<Map<String, Object>>();
+                        if (children != null) {
+                            for (SObject child : children) {
+                                // Recursively convert children (to pick up their parent lookups like Product2)
+                                childMaps.add(convertSObjectToMap(child, childObjName, inputs));
+                            }
+                        }
+                        context.put(relName, childMaps);
+                    } catch (Exception e) {
+                        PromptFactoryLogger.warning(null, STAGE_NUMBER, 'Could not resolve children for ' + relName + ': ' + e.getMessage());
                     }
                 }
-                context.put(relName, childMaps);
             }
         }
         

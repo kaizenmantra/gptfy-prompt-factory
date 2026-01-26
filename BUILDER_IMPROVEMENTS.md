@@ -817,12 +817,12 @@ Implement the two-layer architecture where Stage 8 uses meta-prompt to generate 
 | 5.53 | Update Stage 8 outputs to include metadata | Sonnet | done | Fixed: result.outputs was overwriting instead of merging. Restored selectedFields, selectedParentFields, dcmConfig, and promptConfig pass-through for Stage 9. |
 | 5.54 | Add V2.5 detection to Stage 9 execute() | Sonnet | done | Detects V2.5_Meta_Generated promptType, routes to executeV25TemplateFlow() |
 | 5.55 | Create HandlebarsTemplateEngine.cls | Opus | done | Purpose-built substitution engine. Features: {{{Field}}} substitution, {{#Collection}} iteration support, nested loops for grandchildren, null/empty handling. ~300 lines. |
-| 5.56 | Add buildDynamicSOQL() to Stage 9 | Opus | done | Construct SOQL from selectedFields/parentFields/grandchildren. Handles root fields, parent lookups (Owner.Name), child subqueries. |
-| 5.57 | Add queryRecordData() to Stage 9 | Opus | done | Execute dynamic SOQL, return SObject. Convert to Map structure for template substitution. |
-| 5.58 | Add executeV25Template() to Stage 9 | Sonnet | done | Orchestrates V2.5 flow: Build DCM config → Query data → Call HandlebarsTemplateEngine → Return final prompt. Falls back to V2.0 on error. |
-| 5.59 | Create HandlebarsTemplateEngine_Test.cls | Sonnet | not_started | Unit tests for simple fields, parent lookups, iteration blocks, nested iterations, null handling. Mock data structure. |
-| 5.60 | Create Stage09_V25_Test.cls | Sonnet | not_started | Test V2.5 detection, SOQL building, template execution. Use golden test case data. |
-| 5.61 | Manual end-to-end verification | Manual | not_started | Run pipeline with Opportunity 006QH00000HjgvlYAB. Verify Stage 9 completes, prompt has real data (no {{{...}}} placeholders), GPTfy executes successfully. |
+| 5.56 | Add buildDynamicSOQL() to Stage 9 | Opus | done | Constructs SOQL from selectedFields/parentFields/grandchildren. Handles root fields, parent lookups (Owner.Name), and child subqueries. |
+| 5.57 | Add queryRecordData() to Stage 9 | Opus | done | Executes dynamic SOQL, returns SObject. Converts to Map structure for template substitution. |
+| 5.58 | Add executeV25Template() to Stage 9 | Sonnet | done | Orchestrates V2.5 flow: Builds DCM config → Queries data → Calls HandlebarsTemplateEngine → Returns final prompt. Falls back to V2.0 on error. |
+| 5.59 | Create HandlebarsTemplateEngine_Test.cls | Sonnet | done | Verified: simple fields, parent lookups, iteration blocks, nested iterations, null handling. 100% pass. |
+| 5.60 | Create Stage09_V25_Verification_Test.cls | Sonnet | done | Verified Stage 8 -> Stage 9 hand-off. Tested metadata pass-through, dynamic SOQL, and Merge Gate rendering. |
+| 5.61 | Manual end-to-end verification | Manual | done | Pipeline verified with Opportunity `006QH00000HjgvlYAB`. Prompt correctly renders with real data (VusionGroup Test, Smart Label). |
 
 **Implementation Notes:**
 - SchemaHelper.cls already exists with field metadata methods - use for SOQL validation

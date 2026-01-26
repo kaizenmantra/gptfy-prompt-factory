@@ -1,0 +1,42 @@
+{
+  "status": 100,
+  "result": {
+    "summary": {
+      "failRate": "50%",
+      "failing": 1,
+      "hostname": "https://agentictso.my.salesforce.com",
+      "orgId": "00DgD000001li6fUAA",
+      "outcome": "Failed",
+      "passRate": "50%",
+      "passing": 1,
+      "skipped": 0,
+      "testRunId": "707QH00000rN1uj",
+      "testStartTime": "2026-01-26T07:10:14.000Z",
+      "testsRan": 2,
+      "userId": "005gD000000b55ZQAQ",
+      "username": "agentictso@gptfy.com",
+      "commandTime": "156 ms",
+      "testExecutionTime": "144 ms",
+      "testTotalTime": "521 ms"
+    },
+    "tests": [
+      {
+        "Id": "07MQH0000070wUc2AI",
+        "QueueItemId": "709QH00000GFURBYA5",
+        "StackTrace": "Class.Stage09_V25_Verification_Test.verifyV25MergeGate: line 76, column 1",
+        "Message": "System.AssertException: Assertion Failed: Stage 8 failed: Failed to complete prompt assembly: Failed to load meta-prompt Builder: Meta-Prompt Builder not found. Expected: GPTfy Prompt Generation Framework v2.5 | Logs: [{\"attributes\":{\"type\":\"PF_Run_Log__c\"},\"Run__c\":\"a0gQH000005GPu1YAG\",\"Stage_Number__c\":8,\"Log_Level__c\":\"INFO\",\"Log_Message__c\":\"Starting prompt assembly\",\"Timestamp__c\":\"2026-01-26T07:10:23.571+0000\",\"Component__c\":null},{\"attributes\":{\"type\":\"PF_Run_Log__c\"},\"Run__c\":\"a0gQH000005GPu1YAG\",\"Stage_Number__c\":8,\"Log_Level__c\":\"INFO\",\"Log_Message__c\":\"V2.5 flag value: true\",\"Timestamp__c\":\"2026-01-26T07:10:23.571+0000\",\"Component__c\":null},{\"attributes\":{\"type\":\"PF_Run_Log__c\"},\"Run__c\":\"a0gQH000005GPu1YAG\",\"Stage_Number__c\":8,\"Log_Level__c\":\"INFO\",\"Log_Message__c\":\"V2.5 deployment verification: Code recompiled at 2026-01-26 06:11\",\"Timestamp__c\":\"2026-01-26T07:10:23.571+0000\",\"Component__c\":null},{\"attributes\":{\"type\":\"PF_Run_Log__c\"},\"Run__c\":\"a0gQH000005GPu1YAG\",\"Stage_Number__c\":8,\"Log_Level__c\":\"INFO\",\"Log_Message__c\":\"V2.5: Using two-layer meta-prompt architecture\",\"Timestamp__c\":\"2026-01-26T07:10:23.571+0000\",\"Component__c\":null},{\"attributes\":{\"type\":\"PF_Run_Log__c\"},\"Run__c\":\"a0gQH000005GPu1YAG\",\"Stage_Number__c\":8,\"Log_Level__c\":\"ERROR\",\"Log_Message__c\":\"Stage execution failed: Failed to load meta-prompt Builder: Meta-Prompt Builder not found. Expected: GPTfy Prompt Generation Framework v2.5\",\"Timestamp__c\":\"2026-01-26T07:10:23.616+0000\",\"Component__c\":null}]: Expected: Completed, Actual: Failed",
+        "AsyncApexJobId": "707QH00000rN1ujYAC",
+        "MethodName": "verifyV25MergeGate",
+        "Outcome": "Fail",
+        "ApexClass": {
+          "Id": "01pQH00000Hj8sTYAR",
+          "Name": "Stage09_V25_Verification_Test",
+          "NamespacePrefix": null
+        },
+        "RunTime": 144,
+        "FullName": "Stage09_V25_Verification_Test.verifyV25MergeGate"
+      }
+    ]
+  },
+  "warnings": []
+}
