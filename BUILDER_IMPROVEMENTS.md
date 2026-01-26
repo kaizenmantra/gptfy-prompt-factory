@@ -18,7 +18,11 @@ All architecture, decisions, tasks, and progress tracked here.
 ## Release Strategy
 
 ### Current Branch: `feature/v2.5-clean`
-**Status:** Active development (V2.6 work)
+**Status:** Ready to merge to main (V2.6 Phase 6E+6F complete, 100/100 test score)
+
+**Next Steps:**
+1. Merge `feature/v2.5-clean` → `main`
+2. Create `feature/v2.6-stage12-enhancement` for Phase 6G
 
 ### Version History
 
