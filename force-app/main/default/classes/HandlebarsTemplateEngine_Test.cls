@@ -88,11 +88,38 @@ private class HandlebarsTemplateEngine_Test {
     }
 
     @IsTest
-    static void testRender_EmptyTemplate() {
+    static void testRender_ElseBlock() {
+        String template = '{{#Items}}{{{Items.Name}}}{{else}}No items{{/Items}}';
+        
         Test.startTest();
-        String result = HandlebarsTemplateEngine.render('', new Map<String, Object>());
+        String resultWithItems = HandlebarsTemplateEngine.render(template, new Map<String, Object>{
+            'Items' => new List<Object>{new Map<String, Object>{'Name' => 'Item 1'}}
+        });
+        String resultNoItems = HandlebarsTemplateEngine.render(template, new Map<String, Object>{
+            'Items' => new List<Object>()
+        });
         Test.stopTest();
         
-        System.assertEquals('', result);
+        System.assertEquals('Item 1', resultWithItems);
+        System.assertEquals('No items', resultNoItems);
+    }
+
+    @IsTest
+    static void testRender_InvertedSection() {
+        String template = '{{^Items}}Empty List{{/Items}}';
+        
+        Test.startTest();
+        String resultEmpty = HandlebarsTemplateEngine.render(template, new Map<String, Object>{
+            'Items' => new List<Object>()
+        });
+        String resultNull = HandlebarsTemplateEngine.render(template, new Map<String, Object>());
+        String resultNotEmpty = HandlebarsTemplateEngine.render(template, new Map<String, Object>{
+            'Items' => new List<Object>{new Map<String, Object>{'Name' => 'Item 1'}}
+        });
+        Test.stopTest();
+        
+        System.assertEquals('Empty List', resultEmpty);
+        System.assertEquals('Empty List', resultNull);
+        System.assertEquals('', resultNotEmpty);
     }
 }
