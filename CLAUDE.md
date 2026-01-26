@@ -6,14 +6,27 @@
 
 2. **Stay Within Scope** - Current work is V2.6 (visual richness). Do not add features outside this scope.
 
-3. **Use Existing Scripts**
+3. **ALWAYS USE SF CLI, NOT APEX** - For queries, use `sf data query` NOT anonymous Apex:
+   ```bash
+   # GOOD - Use sf CLI
+   sf data query -o agentictso -q "SELECT Id, Name FROM Account LIMIT 5"
+
+   # BAD - Don't write Apex for simple queries
+   sf apex run -f /tmp/query.apex  # AVOID THIS
+   ```
+   Only use `sf apex run` when you need to:
+   - Start pipeline runs (System.enqueueJob)
+   - Execute DML operations
+   - Run complex logic that can't be done with queries
+
+4. **Use Existing Scripts**
    - Deploy: `sf project deploy start -o agentictso -d <path>`
    - Commit: `./scripts/gitcommit.sh "message"`
-   - Test: `sf apex run --file temp/test-v2.5-e2e.apex -o agentictso`
+   - Query: `sf data query -o agentictso -q "SOQL here"`
 
-4. **Test Harness** - Use existing test files in `/temp/` and `/scripts/apex/` directories.
+5. **Test Harness** - Use existing test files in `/temp/` and `/scripts/apex/` directories.
 
-5. **Commit Often** - After completing each task or group of related tasks, commit with gitcommit.sh.
+6. **Commit Often** - After completing each task or group of related tasks, commit with gitcommit.sh.
 
 ## V2.6 Scope (Current Work)
 
