@@ -278,10 +278,13 @@ public class StageJobHelper {
         // ========================================
         if (result.outputs != null && !result.outputs.isEmpty()) {
             try {
+                // Write to buffer (no file I/O yet)
                 PipelineState.write(runId, result.outputs);
                 PipelineState.markStageComplete(runId, stageNumber);
                 PipelineState.log(runId, stageNumber, 'INFO',
                     'Stage ' + stageNumber + ' completed: ' + result.status);
+                // Flush buffer to file ONCE per stage (reduces ContentVersions from 100+ to ~12)
+                PipelineState.flush(runId);
             } catch (Exception e) {
                 // Log but don't fail - stage records are still available as backup
                 System.debug(LoggingLevel.WARN,

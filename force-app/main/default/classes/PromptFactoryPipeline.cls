@@ -354,11 +354,13 @@ public class PromptFactoryPipeline implements Queueable, Database.AllowsCallouts
             // ========================================
             if (result.outputs != null && !result.outputs.isEmpty()) {
                 try {
-                    // Write outputs to state (merges with existing data)
+                    // Write outputs to state buffer (merges with existing data)
                     PipelineState.write(runId, result.outputs);
                     PipelineState.markStageComplete(runId, currentStage);
                     PipelineState.log(runId, currentStage, 'INFO',
                         'Stage ' + currentStage + ' completed: ' + result.status);
+                    // Flush buffer to file ONCE per stage (reduces ContentVersions from 100+ to ~12)
+                    PipelineState.flush(runId);
                 } catch (Exception e) {
                     // Log but don't fail - stage records are still available as backup
                     PromptFactoryLogger.warning(runId, currentStage,

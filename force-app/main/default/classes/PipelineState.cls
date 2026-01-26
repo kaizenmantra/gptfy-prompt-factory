@@ -21,8 +21,23 @@ public with sharing class PipelineState {
     private static final String PATH_ON_CLIENT = 'pipeline_state.json';
     private static final String SHARE_TYPE = 'V'; // Viewer access
 
+    // ============================================================================
+    // BUFFERED WRITE MODE - Accumulates changes in memory, writes ONCE on flush()
+    // ============================================================================
+    // This prevents creating hundreds of ContentVersion records per run.
+    // Call write(), log(), markStageComplete() freely - they only update memory.
+    // Call flush() ONCE at the end of each stage to persist to file.
+    // ============================================================================
+
+    // In-memory buffer for pending state changes (keyed by runId)
+    private static Map<Id, Map<String, Object>> stateBuffer = new Map<Id, Map<String, Object>>();
+
+    // Track which runs have pending changes that need flushing
+    private static Set<Id> dirtyRuns = new Set<Id>();
+
     /**
      * @description Reads the current state for a run
+     * Returns buffered state if available, otherwise reads from file
      * @param runId ID of the PF_Run__c record
      * @return Map containing the state, or empty map if no file exists
      */
@@ -31,6 +46,12 @@ public with sharing class PipelineState {
             return new Map<String, Object>();
         }
 
+        // Check buffer first (may have unflushed changes)
+        if (stateBuffer.containsKey(runId)) {
+            return stateBuffer.get(runId);
+        }
+
+        // Read from file
         try {
             ContentVersion cv = getLatestVersion(runId);
             if (cv == null || cv.VersionData == null) {
@@ -42,7 +63,12 @@ public with sharing class PipelineState {
                 return new Map<String, Object>();
             }
 
-            return (Map<String, Object>) JSON.deserializeUntyped(jsonContent);
+            Map<String, Object> state = (Map<String, Object>) JSON.deserializeUntyped(jsonContent);
+
+            // Cache in buffer for subsequent reads within this transaction
+            stateBuffer.put(runId, state);
+
+            return state;
         } catch (Exception e) {
             System.debug(LoggingLevel.ERROR, 'PipelineState.read error: ' + e.getMessage());
             return new Map<String, Object>();
@@ -50,7 +76,8 @@ public with sharing class PipelineState {
     }
 
     /**
-     * @description Writes state for a run (creates file if needed, updates if exists)
+     * @description Writes state to buffer (does NOT write to file)
+     * Call flush() to persist buffered changes to file.
      * Merges provided data with existing state
      * @param runId ID of the PF_Run__c record
      * @param data Map of key-value pairs to merge into state
@@ -60,7 +87,7 @@ public with sharing class PipelineState {
             return;
         }
 
-        // Read existing state and merge
+        // Read existing state (from buffer or file) and merge
         Map<String, Object> currentState = read(runId);
         for (String key : data.keySet()) {
             currentState.put(key, data.get(key));
@@ -70,25 +97,56 @@ public with sharing class PipelineState {
         currentState.put('runId', runId);
         currentState.put('lastUpdatedAt', System.now().format('yyyy-MM-dd\'T\'HH:mm:ss.SSSZ'));
 
-        // Serialize to JSON
-        String jsonContent = JSON.serializePretty(currentState);
+        // Store in buffer (NOT file) and mark dirty
+        stateBuffer.put(runId, currentState);
+        dirtyRuns.add(runId);
+    }
 
-        // Check if file already exists
-        ContentVersion existingCv = getLatestVersion(runId);
+    /**
+     * @description Flushes buffered state to file (creates ONE ContentVersion)
+     * Call this ONCE at the end of each stage to persist all changes.
+     * @param runId ID of the PF_Run__c record
+     * @return True if flush was successful, false otherwise
+     */
+    public static Boolean flush(Id runId) {
+        if (runId == null || !dirtyRuns.contains(runId)) {
+            return false; // Nothing to flush
+        }
 
-        if (existingCv != null) {
-            // Update existing file by creating new version
-            ContentVersion newVersion = new ContentVersion(
-                ContentDocumentId = existingCv.ContentDocumentId,
-                Title = FILE_PREFIX + runId + FILE_EXTENSION,
-                PathOnClient = PATH_ON_CLIENT,
-                VersionData = Blob.valueOf(jsonContent),
-                Origin = 'H'
-            );
-            insert newVersion;
-        } else {
-            // Create new file
-            createNewFile(runId, jsonContent);
+        Map<String, Object> state = stateBuffer.get(runId);
+        if (state == null || state.isEmpty()) {
+            return false;
+        }
+
+        try {
+            String jsonContent = JSON.serializePretty(state);
+
+            // Check if file already exists
+            ContentVersion existingCv = getLatestVersion(runId);
+
+            if (existingCv != null) {
+                // Update existing file by creating new version
+                ContentVersion newVersion = new ContentVersion(
+                    ContentDocumentId = existingCv.ContentDocumentId,
+                    Title = FILE_PREFIX + runId + FILE_EXTENSION,
+                    PathOnClient = PATH_ON_CLIENT,
+                    VersionData = Blob.valueOf(jsonContent),
+                    Origin = 'H'
+                );
+                insert newVersion;
+            } else {
+                // Create new file
+                createNewFile(runId, jsonContent);
+            }
+
+            // Clear dirty flag (but keep in buffer for reads)
+            dirtyRuns.remove(runId);
+            System.debug('PipelineState: Flushed state to file for run ' + runId);
+            return true;
+
+        } catch (Exception e) {
+            System.debug(LoggingLevel.ERROR, 'PipelineState.flush error: ' + e.getMessage());
+            return false;
         }
     }
 
@@ -171,20 +229,27 @@ public with sharing class PipelineState {
     }
 
     /**
-     * @description Initializes a new state file for a run
-     * Creates the file with initial metadata. Call this at the start of pipeline.
+     * @description Initializes state for a run (buffered, no file write)
+     * Call flush() to persist to file.
      * @param runId ID of the PF_Run__c record
      * @param initialData Optional initial data to include
-     * @return True if file was created, false if it already existed
+     * @return True if initialized, false if already existed
      */
     public static Boolean initialize(Id runId, Map<String, Object> initialData) {
         if (runId == null) {
             return false;
         }
 
+        // Check if already in buffer
+        if (stateBuffer.containsKey(runId)) {
+            return false; // Already initialized
+        }
+
         // Check if file already exists
         ContentVersion existingCv = getLatestVersion(runId);
         if (existingCv != null) {
+            // Load existing state into buffer
+            read(runId);
             return false; // File already exists
         }
 
@@ -203,20 +268,32 @@ public with sharing class PipelineState {
             }
         }
 
-        // Create the file
-        String jsonContent = JSON.serializePretty(state);
-        createNewFile(runId, jsonContent);
+        // Store in buffer and mark dirty
+        stateBuffer.put(runId, state);
+        dirtyRuns.add(runId);
 
         return true;
     }
 
     /**
-     * @description Checks if a state file exists for the run
+     * @description Checks if state exists for the run (in buffer or file)
      * @param runId ID of the PF_Run__c record
-     * @return True if file exists
+     * @return True if state exists
      */
     public static Boolean exists(Id runId) {
+        if (stateBuffer.containsKey(runId)) {
+            return true;
+        }
         return getLatestVersion(runId) != null;
+    }
+
+    /**
+     * @description Check if there are unflushed changes for a run
+     * @param runId ID of the PF_Run__c record
+     * @return True if there are pending changes to flush
+     */
+    public static Boolean hasPendingChanges(Id runId) {
+        return dirtyRuns.contains(runId);
     }
 
     /**
