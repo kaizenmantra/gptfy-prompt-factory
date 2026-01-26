@@ -11,7 +11,7 @@ All architecture, decisions, tasks, and progress tracked here.
 |-------|------|---------------------|---------|
 | - | None | - | - |
 
-**Status:** V2.6 Phase 6E in progress (Evidence Binding + Date Analysis fixes). Phase 6F planned (Automated Test Harness to bypass Stage 10).
+**Status:** V2.6 Phase 6F COMPLETE. Test achieved 100/100 score with v4 Quality Rules. Phase 6G pending (Stage 12 enhancement).
 
 ---
 
@@ -45,6 +45,20 @@ The V2.2 branch attempted to:
 **Root cause:** Complex accumulation logic across 12 stage records, JSON serialization/deserialization, field limits, and no easy way to debug.
 
 **Solution:** V2.3 implements a simple JSON file approach. One file per run, all stages read/write to it. After this foundation is solid, we'll cherry-pick the valuable V2.2 features (schema enrichment, parent fields, grandchild discovery).
+
+---
+
+## PROJECT RESOURCES INDEX
+
+**See `CLAUDE.md`** for a complete index of:
+- Test harnesses and how to run them
+- REST API endpoints (including GPTfy bypass)
+- Utility scripts in `scripts/apex/`
+- Key documentation files
+- Scoring logic locations
+- Common test account IDs
+
+This prevents searching for existing tools every session.
 
 ---
 
@@ -532,7 +546,7 @@ Update `buildDirectiveSection()` to encourage story-driven layout.
 |---|------|-------|--------|-------|
 | 6.24 | Add Evidence Binding rules to Quality Rules (Compressed) | Opus | done | "Every insight MUST explain WHY" with GOOD/BAD examples |
 | 6.25 | Add DATE ANALYSIS section to Quality Rules | Opus | done | Enhanced v3: explicit "compare to TODAY'S DATE", calculated deltas required, GOOD/BAD examples, forbidden phrases |
-| 6.26 | Add current date to meta-prompt | Opus | done | Added TODAY'S DATE to buildRoleSection() in Stage08 |
+| 6.26 | Add current date to meta-prompt | Opus | done | Added TODAY'S DATE to buildRoleSection() in Stage08. Format: "TODAY'S DATE: 1/26/2026" with instructions to calculate PAST/FUTURE |
 | 6.27 | Add LastActivityDate to useful system fields | Opus | done | SchemaHelper.cls - critical for staleness analysis |
 | 6.28 | Add lookup ID fields to priority field lists | Opus | done | Stage05 - AccountId, ContactId, WhatId, WhoId for parent-child correlation |
 | 6.29 | Keep CreatedDate, LastModifiedDate in useful fields | Opus | done | Per user request - useful for context |
@@ -542,25 +556,30 @@ Update `buildDirectiveSection()` to encourage story-driven layout.
 **Problem:** Stage 10 Apex fails due to GPTfy API issues. But Python test harness can call GPTfy REST API directly.
 
 **Solution:** Create automated iteration loop:
-1. Run Stages 1-9 via `sf apex run` → Get Prompt ID
-2. Call GPTfy REST API directly (`/services/apexrest/ccai/v1/executePrompt`)
-3. Score response using `tests/phase0/score_outputs.py` logic
-4. If score < 90, update Quality Rules and re-run
-5. Log iterations for analysis
+1. Start pipeline via `TestHarnessController` REST API → Get Run ID
+2. Poll `/test-harness/run-status/{runId}` until Stage 9 completes
+3. Get `Created_Prompt_Id__c` and query `promptRequestId`
+4. Call GPTfy REST API directly (`/services/apexrest/ccai/v1/executePrompt`)
+5. Score response using quality scoring logic
+6. If score < 90, iterate
+7. Log iterations for analysis
 
 **Quality Threshold:** Score must be ≥ 90/100 (not 75)
 
-**Scoring Logic Location:** `tests/phase0/score_outputs.py`
+**Test Harness Files:**
+- `TestHarnessController.cls` - REST API for pipeline control
+- `tests/v26/run_innovatek_test.py` - Integrated end-to-end test script
+- `tests/phase0/score_outputs.py` - Reference scoring logic
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 6.30 | Create `tests/v26/run_iteration_test.py` | Opus | not_started | Combines pipeline run + GPTfy API call + scoring |
-| 6.31 | Add current date injection to prompt | Opus | not_started | Python adds "Today: 2026-01-26" before API call |
-| 6.32 | Create `tests/v26/score_v26_output.py` | Opus | not_started | Scoring with 90+ threshold, date analysis checks |
-| 6.33 | Add date analysis scoring criteria | Opus | not_started | Check for "overdue", "past close date", "X days" patterns |
-| 6.34 | Add evidence binding scoring criteria | Opus | not_started | Check for "because", "due to", "(Evidence:" patterns |
-| 6.35 | Run 3 iterations with Innovatek account | Opus | not_started | Target: 90+ score with proper evidence binding |
-| 6.36 | Document winning prompt configuration | Opus | not_started | Capture what worked for future reference |
+| 6.30 | Create `tests/v26/run_innovatek_test.py` | Opus | done | Combines pipeline start + polling + GPTfy API + scoring + iteration |
+| 6.31 | Add current date injection to prompt | Opus | done | Stage08 adds TODAY'S DATE to buildRoleSection() |
+| 6.32 | Add quality scoring to test script | Opus | done | Integrated scoring: evidence, date analysis, forbidden, colors, customer refs |
+| 6.33 | Add date analysis scoring criteria | Opus | done | Checks for "overdue", "past close date", "X days/months" patterns |
+| 6.34 | Add evidence binding scoring criteria | Opus | done | Checks for dollar amounts, percentages, date fields |
+| 6.35 | Run iterations with Innovatek account | Opus | done | Score 100/100 achieved with v4 Quality Rules |
+| 6.36 | Document winning prompt configuration | Opus | done | v4 Quality Rules: "ANALYZE EVERY RECORD", explicit checklist |
 
 ### Phase 6G: Stage 12 Quality Audit Enhancement
 
@@ -972,6 +991,9 @@ Stage 5: Field Selection (Enhanced)
 | 2026-01-26 | CLAUDE.md update | Opus | Added rule to always use `sf data query` instead of anonymous Apex for queries. Only use `sf apex run` for DML/pipeline operations. |
 | 2026-01-26 | Analysis: AI output quality gap | Opus | Identified root cause: AI says "unresolved" or "at risk" but doesn't explain WHY. Close dates from 2024 are 22+ months past due but AI doesn't calculate this. Need: (1) Current date in prompt, (2) Stronger date analysis rules. |
 | 2026-01-26 | Discovery: Python test harness | Opus | Found `tests/phase0/run_full_test.py` and `score_outputs.py` - can bypass Stage 10 Apex by calling GPTfy REST API directly. Scoring logic: evidence citations, forbidden phrases, customer references, diagnostic language. |
+| 2026-01-26 | Task 6.26: Add current date to meta-prompt | Opus | Added TODAY'S DATE to buildRoleSection() in Stage08. Format: "TODAY'S DATE: 1/26/2026. Use this date to calculate if dates are PAST (overdue) or FUTURE." |
+| 2026-01-26 | Tasks 6.30-6.34: Test harness creation | Opus | Created `tests/v26/run_innovatek_test.py` - comprehensive test script that: (1) Starts pipeline via TestHarnessController REST API, (2) Polls for Stage 9 completion, (3) Gets promptId, (4) Calls GPTfy API directly, (5) Scores output for evidence, date analysis, forbidden phrases, colors, customer refs. Target: 90+ score. |
+| 2026-01-26 | Tasks 6.35-6.36: Test execution SUCCESS | Opus | Ran 4 iterations total. v3 Quality Rules scored 75-85/100. v4 Quality Rules scored **100/100**. Key improvements in v4: "ANALYZE EVERY RECORD", "FOR EACH OPPORTUNITY", "CHECK YOUR MATH", explicit checklist items. Output now shows "11 months overdue", "22 months overdue" for all opportunities. |
 
 ---
 
