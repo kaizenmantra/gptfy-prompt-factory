@@ -50,22 +50,52 @@ public with sharing class HandlebarsTemplateEngine {
             result = result.substring(0, startIdx) + replacement + result.substring(endIdx + endTag.length());
         }
 
-        // 2. Process Standard Blocks: {{#Collection}}...{{/Collection}}
+        // 2. Process Standard Blocks: {{#Collection}} or {{#if Field}} or {{#if not Field}}
         while (result.contains(BLOCK_OPEN_PREFIX)) {
             Integer startIdx = result.indexOf(BLOCK_OPEN_PREFIX);
             Integer tagEndIdx = result.indexOf(DOUBLE_BRACE_CLOSE, startIdx);
             if (tagEndIdx == -1) break;
             
-            String collectionName = result.substring(startIdx + 3, tagEndIdx).trim();
-            String endTag = BLOCK_CLOSE_PREFIX + collectionName + DOUBLE_BRACE_CLOSE;
+            String fullTagName = result.substring(startIdx + 3, tagEndIdx).trim();
+            String blockType = fullTagName.substringBefore(' ');
+            String blockName = String.isBlank(blockType) ? fullTagName : blockType;
+            String argument = fullTagName.substringAfter(' ').trim();
+            
+            // Handle if / if not / each
+            String collectionName = blockName;
+            Boolean isInvertedIf = false;
+            
+            if (blockName == 'if') {
+                if (argument.startsWith('not ')) {
+                    collectionName = argument.substringAfter('not ').trim();
+                    isInvertedIf = true;
+                } else {
+                    // Handle simple expressions like 'HealthScore < 80' - just take the field name
+                    collectionName = argument.substringBefore(' ').trim();
+                }
+            } else if (blockName == 'each') {
+                collectionName = argument;
+            }
+
+            String endTag = BLOCK_CLOSE_PREFIX + blockName + DOUBLE_BRACE_CLOSE;
             Integer endIdx = result.indexOf(endTag, tagEndIdx);
-            if (endIdx == -1) break;
+            
+            // If specific end tag not found (e.g. {{/each}}), try generic block close or original name
+            if (endIdx == -1 && blockName != fullTagName) {
+               endTag = BLOCK_CLOSE_PREFIX + fullTagName + DOUBLE_BRACE_CLOSE;
+               endIdx = result.indexOf(endTag, tagEndIdx);
+            }
+            
+            if (endIdx == -1) {
+                // Skip this tag to avoid infinite loop
+                result = result.substring(0, startIdx) + '_SKIP_' + result.substring(startIdx + 3);
+                continue;
+            }
             
             String innerContent = result.substring(tagEndIdx + 2, endIdx);
             String mainTemplate = innerContent;
             String elseTemplate = '';
             
-            // Handle {{else}} inside block
             if (innerContent.contains(ELSE_TAG)) {
                 mainTemplate = innerContent.substringBefore(ELSE_TAG);
                 elseTemplate = innerContent.substringAfter(ELSE_TAG);
@@ -74,20 +104,33 @@ public with sharing class HandlebarsTemplateEngine {
             String replacement = '';
             Object collectionObj = resolveValue(collectionName, context);
             
-            if (collectionObj instanceof List<Object> && !((List<Object>)collectionObj).isEmpty()) {
-                List<Object> items = (List<Object>) collectionObj;
-                for (Object item : items) {
-                    if (item instanceof Map<String, Object>) {
-                        // Pass the item as context for the inner template
-                        replacement += render(mainTemplate, (Map<String, Object>) item);
-                    }
-                }
+            if (blockName == 'if') {
+                Boolean condition = (collectionObj != null);
+                if (collectionObj instanceof Boolean) condition = (Boolean)collectionObj;
+                else if (collectionObj instanceof List<Object>) condition = !((List<Object>)collectionObj).isEmpty();
+                
+                if (isInvertedIf) condition = !condition;
+                
+                replacement = condition ? processBlocks(mainTemplate, context) : processBlocks(elseTemplate, context);
             } else {
-                replacement = processBlocks(elseTemplate, context);
+                // Iteration block
+                if (collectionObj instanceof List<Object> && !((List<Object>)collectionObj).isEmpty()) {
+                    List<Object> items = (List<Object>) collectionObj;
+                    for (Object item : items) {
+                        if (item instanceof Map<String, Object>) {
+                            replacement += processBlocks(mainTemplate, (Map<String, Object>) item);
+                        }
+                    }
+                } else {
+                    replacement = processBlocks(elseTemplate, context);
+                }
             }
             
             result = result.substring(0, startIdx) + replacement + result.substring(endIdx + endTag.length());
         }
+        
+        // Clean up any _SKIP_ tokens
+        result = result.replace('_SKIP_', '{{#');
         
         // 3. Process Triple Brace Substitutions: {{{Field}}}
         return substituteFields(result, context);

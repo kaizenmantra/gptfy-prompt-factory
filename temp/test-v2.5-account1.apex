@@ -13,14 +13,15 @@ Id runId = PromptFactoryController.startPipelineRun(
     businessContext,
     outputFormat,
     null, // businessObjectives
-    'https://gptfy--agentictso.sandbox.my.salesforce.com'
+    'https://agentictso.my.salesforce.com' // Fixed instance URL
 );
 
 System.debug('========================================');
-System.debug('V2.5 TEST - Account 1');
+System.debug('V2.5 TEST - Account 1: Pinnacle Wealth Partners');
 System.debug('========================================');
 System.debug('Run ID: ' + runId);
-System.debug('Account: TESTDATA_Pinnacle Wealth Partners ($15M)');
-System.debug('Expected: Stage 8 should show "V2.5: Using two-layer meta-prompt architecture"');
-System.debug('Check logs after pipeline completes');
+System.debug('Expected: V2.5 two-layer architecture');
+System.debug('Stage 8: Generate template with merge fields');
+System.debug('Stage 9: Substitute real data (Merge Gate)');
+System.debug('Stage 10: Execute via GPTfy API');
 System.debug('========================================');

@@ -824,6 +824,19 @@ Implement the two-layer architecture where Stage 8 uses meta-prompt to generate 
 | 5.60 | Create Stage09_V25_Verification_Test.cls | Sonnet | done | Verified Stage 8 -> Stage 9 hand-off. Tested metadata pass-through, dynamic SOQL, and Merge Gate rendering. |
 | 5.61 | Manual end-to-end verification | Manual | done | Pipeline verified with Opportunity `006QH00000HjgvlYAB`. Prompt correctly renders with real data (VusionGroup Test, Smart Label). |
 
+#### Sub-Phase 5D.6: V2.5 Testing & Bug Fixes (Post-Integration)
+
+**Context:** Initial V2.5 testing (PFR-188-195) revealed critical bugs preventing Stage 10 completion.
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 5.62 | Fix SOQL builder parent lookup filtering | Sonnet | done | Fixed: Added isChildRelationship() check in buildDynamicSOQL(). Filters out child relationships (Contact, Opportunity) from parent lookup processing. Only true parent lookups (Owner, Account) added to rootFields. |
+| 5.63 | Fix PromptBuilder RecordType selection | Sonnet | done | Fixed: Changed from Builder RecordType to Execution RecordType. V2.5 prompts now use Type='Text' (valid for Execution RT) instead of 'Context Template' (Builder RT only). |
+| 5.64 | Add SOQL validation before execution | Sonnet | not_started | Enhancement: Validate generated SOQL with Database.query() test before using in production. Catch SOQL errors early. |
+| 5.65 | Investigate GPTfy API Stage 10 errors | Manual | not_started | Error: "An error occured, please contact your System Admin." May be related to SOQL bugs or prompt data issues. Check GPTfy logs after fixing SOQL. |
+| 5.66 | End-to-end test with 3 accounts | Manual | not_started | Test accounts: 001QH000024mdDnYAI (Pinnacle), 001QH000024mdDoYAI (Vanguard), 001QH000024mdDpYAI (MediCare). Verify all reach Stage 12. |
+| 5.67 | Document V2.5 testing results | Sonnet | not_started | Create testing summary: success rate, common errors, quality metrics. |
+
 **Implementation Notes:**
 - SchemaHelper.cls already exists with field metadata methods - use for SOQL validation
 - Stage 9 already queries PF_Run__c for recordId - can reuse this pattern

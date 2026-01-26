@@ -1,0 +1,80 @@
+```html
+<div style="background:#F3F3F3;padding:20px;">
+  <!-- Health Score -->
+  <div style="display:flex;align-items:center;gap:12px;">
+    <div style="font-size:36px;font-weight:700;color:{{#if HealthScore}}#2E844A{{else if HealthScore < 80}}#FFB75D{{else}}#BA0517{{/if}};"></div>
+    <div>
+      <div>Account Health</div>
+      <div style="width:200px;height:8px;background:#E0E0E0;">
+        <div style="width:%;height:100%;background:{{#if HealthScore}}#2E844A{{else if HealthScore < 80}}#FFB75D{{else}}#BA0517{{/if}};"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Red Critical Alert -->
+  <div style="background:#FED7D7;border-left:4px solid #BA0517;padding:12px;">
+    Critical: High-priority cases requiring immediate attention: . Examples: 
+  </div>
+
+  <!-- Orange Warning Alert -->
+  <div style="background:#FEF3CD;border-left:4px solid #DD7A01;padding:12px;">
+    Warning: Opportunities at risk due to low probability: . Focus on: TESTDATA_Pinnacle Wealth Partners ()
+  </div>
+
+  <!-- Blue Info Alert -->
+  <div style="background:#D7E9FC;border-left:4px solid #0176D3;padding:12px;">
+    Opportunity: Recently closed deals worth celebrating: . Highlight: TESTDATA_Pinnacle Wealth Partners ()
+  </div>
+
+  <!-- Data Table -->
+  <table style="width:100%;border-collapse:collapse;">
+    <thead>
+      <tr style="background:#F3F3F3;">
+        <th>Name</th><th>Amount</th><th>Stage</th><th>Close Date</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#Opportunities}}
+      <tr>
+        <td>TESTDATA_Pinnacle Wealth Partners</td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
+      {{/Opportunities}}
+    </tbody>
+  </table>
+
+  <!-- Stat Cards -->
+  <div style="display:flex;gap:12px;margin-top:20px;">
+    <div style="background:#F3F3F3;padding:10px;width:150px;text-align:center;border-radius:8px;">
+      <div style="font-size:24px;font-weight:700;"></div>
+      <div style="color:#666;">Total Opportunities</div>
+    </div>
+    <div style="background:#F3F3F3;padding:10px;width:150px;text-align:center;border-radius:8px;">
+      <div style="font-size:24px;font-weight:700;"></div>
+      <div style="color:#666;">Pipeline Amount</div>
+    </div>
+    <div style="background:#F3F3F3;padding:10px;width:150px;text-align:center;border-radius:8px;">
+      <div style="font-size:24px;font-weight:700;"></div>
+      <div style="color:#666;">High-Priority Cases</div>
+    </div>
+  </div>
+
+  <!-- Recommendation Cards -->
+  <div style="display:flex;flex-direction:column;gap:12px;margin-top:20px;">
+    <div style="background:#FFF;padding:12px;border:1px solid #DDD;border-radius:8px;">
+      <div style="font-size:16px;font-weight:700;color:#BA0517;">Urgent Action Required</div>
+      <div>Resolve  critical cases immediately to protect account health.</div>
+    </div>
+    <div style="background:#FFF;padding:12px;border:1px solid #DDD;border-radius:8px;">
+      <div style="font-size:16px;font-weight:700;color:#DD7A01;">Follow-Up Recommended</div>
+      <div>Engage with  opportunities at risk to recover potential revenue.</div>
+    </div>
+    <div style="background:#FFF;padding:12px;border:1px solid #DDD;border-radius:8px;">
+      <div style="font-size:16px;font-weight:700;color:#0176D3;">Celebrate Success</div>
+      <div>Highlight  recently closed deals in client communication to reinforce trust.</div>
+    </div>
+  </div>
+</div>
+```

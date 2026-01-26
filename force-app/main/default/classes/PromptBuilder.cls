@@ -58,6 +58,18 @@ public with sharing class PromptBuilder {
                 truncatedDescription = truncatedDescription.substring(0, 252) + '...';
             }
 
+            String dbType = config.promptType;
+            Id recordTypeId = null;
+
+            if (dbType == 'V2.5_Meta_Generated') {
+                // V2.5 prompts are executable, so use Execution RecordType with Type='Text'
+                dbType = 'Text';
+                recordTypeId = Schema.SObjectType.ccai__AI_Prompt__c.getRecordTypeInfosByDeveloperName().get('Execution').getRecordTypeId();
+            } else {
+                // Default to Execution RecordType for backward compatibility
+                recordTypeId = Schema.SObjectType.ccai__AI_Prompt__c.getRecordTypeInfosByDeveloperName().get('Execution').getRecordTypeId();
+            }
+
             // Create AI Prompt record
             // ccai__AI_Connection__c is CRITICAL - without it, prompt won't execute
             ccai__AI_Prompt__c prompt = new ccai__AI_Prompt__c(
@@ -68,7 +80,8 @@ public with sharing class PromptBuilder {
                 ccai__AI_Connection__c = aiConnectionId,
                 ccai__Prompt_Command__c = buildPromptCommandWithTemplate(config.promptCommand, config.htmlTemplate, config.groundingRules),
                 ccai__Object__c = config.targetObject,
-                ccai__Type__c = config.promptType,
+                ccai__Type__c = dbType,
+                RecordTypeId = recordTypeId,
                 ccai__Max_Output_Tokens__c = config.maxTokens,
                 ccai__Temperature__c = config.temperature,
                 ccai__Status__c = 'Draft',

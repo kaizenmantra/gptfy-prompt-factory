@@ -604,10 +604,26 @@ public with sharing class Stage09_CreateAndDeploy implements IStage {
             }
         }
 
-        // Add parent lookups
+        // Add parent lookups (filter out child relationships)
         if (selectedParentFieldsMap != null && selectedParentFieldsMap.containsKey(rootObject)) {
             for (Object f : (List<Object>) selectedParentFieldsMap.get(rootObject)) {
-                rootFields.add(String.valueOf(f));
+                String fieldPath = String.valueOf(f);
+
+                // Extract relationship name from field path
+                String relName = fieldPath.contains('.') ? fieldPath.substringBefore('.') : null;
+
+                // Skip if this is actually a child relationship, not a parent lookup
+                if (relName != null && isChildRelationship(rootObject, relName)) {
+                    PromptFactoryLogger.warning(null, STAGE_NUMBER,
+                        'V2.5: Skipping child relationship in parent lookups: ' + fieldPath);
+                    continue;
+                }
+
+                // Normalize standard relationships: OwnerId.Name -> Owner.Name
+                if (fieldPath.contains('Id.')) {
+                    fieldPath = fieldPath.replace('Id.', '.');
+                }
+                rootFields.add(fieldPath);
             }
         }
 
@@ -702,6 +718,20 @@ public with sharing class Stage09_CreateAndDeploy implements IStage {
             }
         }
         return null;
+    }
+
+    /**
+     * @description Checks if a relationship name is a child relationship (not a parent lookup)
+     * Used to filter out child relationships from parent lookup fields
+     */
+    private Boolean isChildRelationship(String parentObj, String relationshipName) {
+        List<SchemaHelper.ChildRelationship> rels = SchemaHelper.getChildRelationships(parentObj);
+        for (SchemaHelper.ChildRelationship rel : rels) {
+            if (rel.relationshipName == relationshipName) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**

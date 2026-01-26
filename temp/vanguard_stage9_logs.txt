@@ -1,0 +1,5 @@
+Starting DCM and Prompt creation
+V2.5 Detection: Applying Merge Gate (Handlebars → Executable Prompt)
+V2.5: Generated Dynamic SOQL for merge gate: SELECT Id, Name, Industry, AnnualRevenue, NumberOfEmployees, Phone, Website, BillingAddress, Owner.Name, Owner.Email, Contact.Name, (SELECT Id, Name, Email, Phone, MailingAddress, Title FROM Contacts), (SELECT Id, Name, StageName, Amount, CloseDate, Probability, Type, NextStep, Description FROM Opportunities), (SELECT Id, CaseNumber, Subject, Status, Priority, Type, Description, OwnerId FROM Cases) FROM Account WHERE Id = '001QH000024mdDoYAI' LIMIT 1
+V2.5 Merge Gate failed: Didn't understand relationship 'Contact' in field path. If you are attempting to use a custom relationship, be sure to append the '__r' after the custom relationship name. Please reference your WSDL or the describe call for the appropriate names.
+Stage execution failed: V2.5 Merge Gate failure: Didn't understand relationship 'Contact' in field path. If you are attempting to use a custom relationship, be sure to append the '__r' after the custom relationship name. Please reference your WSDL or the describe call for the appropriate names.

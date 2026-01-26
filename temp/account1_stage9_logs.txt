@@ -1,0 +1,19 @@
+Starting DCM and Prompt creation
+V2.5 Detection: Applying Merge Gate (Handlebars → Executable Prompt)
+V2.5: Generated Dynamic SOQL for merge gate: SELECT Id, Name, Industry, AnnualRevenue, NumberOfEmployees, Type, BillingCity, BillingState, Phone, Website, Owner.Name, Owner.Email, (SELECT Id, Name, StageName, Amount, CloseDate, Probability, Type, NextStep, Description, IsClosed, IsWon FROM Opportunities), (SELECT Id, Name, Email, Phone, MobilePhone, MailingCity, MailingState, Title FROM Contacts), (SELECT Id, CaseNumber, Subject, Status, Priority, Type, Description, IsClosed, ClosedDate, Origin FROM Cases) FROM Account WHERE Id = '001QH000024mdDnYAI' LIMIT 1
+V2.5: Successfully queried record data for merge.
+V2.5: Template rendered successfully (3369 chars)
+No AI Model specified, will use default
+Creating Data Context Mapping (with grandchild support)
+DCM created successfully: a05QH000008SGtFYAW
+Creating AI Prompt record
+AI Prompt created successfully: a0DQH00000Kazvt2AB
+DCM linked to Prompt via External_Id
+DCM activated successfully
+Activating AI Prompt...
+AI Prompt activated at 1/26/2026, 1:45 AM
+Waiting for GPTfy to generate Prompt Request ID (polling up to 15 times, 2000ms interval)...
+Prompt Request ID captured after 1 poll attempt(s): d4e4a59566e011d7adda8a7f34bc854bcaf33
+Prompt Request ID captured: d4e4a59566e011d7adda8a7f34bc854bcaf33
+Updated run record with DCM and Prompt IDs
+Deployment completed successfully. DCM and Prompt are active. Ready for execution.
