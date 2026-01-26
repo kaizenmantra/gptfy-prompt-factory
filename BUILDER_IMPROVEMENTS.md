@@ -388,6 +388,233 @@ The parent lookup feature now works correctly using the **existing infrastructur
 
 ---
 
+## Two-Layer Meta-Prompt Architecture (V2.5)
+
+**Date**: 2026-01-25
+**Key Insight from User**: Creative thinking should happen at meta-prompt layer (Stage 8), NOT at GPTfy execution layer
+
+### The Consistency vs Intelligence Problem
+
+**Original Concern**: If we execute the same prompt repeatedly, we must get the same style of output. Varying degrees of UI elements erode user trust very quickly.
+
+**Failed Approach**: Adding "Think-Then-Execute" framework to GPTfy prompts → causes variance in output because LLM makes creative decisions at execution time.
+
+**Breakthrough Insight**: The meta-prompt (Stage 8, which generates GPTfy prompts) should contain all creative thinking, design philosophy, and self-evaluation logic. The GPTfy prompt should be deterministic and specific.
+
+### Architecture: Two Layers
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ LAYER 1: META-PROMPT (Stage 8)                                  │
+│                                                                  │
+│ Purpose: Creative intelligence and design decisions             │
+│                                                                  │
+│ Contains:                                                        │
+│ • Design philosophy (from v2 doc)                               │
+│ • Self-evaluation protocol                                      │
+│ • Health score methodology                                      │
+│ • Component selection framework                                 │
+│ • Visual element decision logic                                 │
+│ • Story structure guidance                                      │
+│ • "What makes a good prompt?" reasoning                         │
+│                                                                  │
+│ Input: DCM structure, business context, sample data             │
+│ Process: Analyze, reason, design, evaluate                      │
+│ Output: SPECIFIC deterministic GPTfy prompt template            │
+│                                                                  │
+│ Runs: ONCE per pipeline (at Stage 8)                            │
+│ Can iterate: YES - 10 iterations to perfect the prompt          │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              │ Generates
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│ LAYER 2: GPTFY PROMPT (Execution)                               │
+│                                                                  │
+│ Purpose: Deterministic "paint by numbers" execution             │
+│                                                                  │
+│ Contains:                                                        │
+│ • Exact component requirements                                  │
+│ • Specific merge field syntax                                   │
+│ • Precise layout instructions                                   │
+│ • Fixed health score formula                                    │
+│ • Conditional alert mapping                                     │
+│ • No open-ended reasoning                                       │
+│                                                                  │
+│ Input: Account/Opportunity/Case data via merge fields           │
+│ Process: Execute template, fill placeholders                    │
+│ Output: HTML dashboard (consistent structure)                   │
+│                                                                  │
+│ Runs: EVERY TIME prompt is executed                             │
+│ Variability: NONE - same input = same output structure          │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Why This Solves Consistency
+
+**Same DCM Structure** → **Same Meta-Prompt Analysis** → **Same Specific GPTfy Prompt** → **Consistent Output**
+
+Example:
+1. User creates pipeline for Opportunity with OpportunityContactRole child
+2. Stage 8 meta-prompt analyzes DCM structure, sees Contact relationship
+3. Meta-prompt reasons: "Contact names personalize output, health score based on Stage + Amount, use red alerts for at-risk deals"
+4. Meta-prompt generates specific GPTfy prompt: "Create health score: (Stage weight * 40) + (Amount/target * 30) + (Days to close * 30). Use red alert if health < 60."
+5. Every execution uses this EXACT formula → consistent output
+
+**No variance** because creative decisions happened once at design time, not repeatedly at execution time.
+
+### Implementation Approach
+
+#### Phase 1: Meta-Prompt Storage (Choose One)
+
+**Option A: Builder Record** (Recommended)
+- Create new Builder record with Type = "Meta Prompt"
+- Store full v2 doc content (728 lines) in `ccai__Prompt_Command__c`
+- Stage 8 queries for this type and loads content
+- Easy to update via Salesforce UI
+
+**Option B: Static Resource**
+- Upload v2 doc as Static Resource
+- Reference from Stage 8
+- Requires deployment to update
+
+**Option C: Custom Metadata**
+- Store in Custom Metadata Type
+- More structured but harder to edit long content
+
+**Decision**: Use Builder Record (Type = "Meta Prompt") for consistency with existing pattern.
+
+#### Phase 2: Stage 8 Enhancement
+
+Update `Stage08_PromptAssembly.cls` to:
+
+1. **Load Meta-Prompt**
+```apex
+private String loadMetaPrompt() {
+    List<ccai__AI_Prompt__c> metaPrompts = [
+        SELECT ccai__Prompt_Command__c
+        FROM ccai__AI_Prompt__c
+        WHERE RecordType.DeveloperName = 'Builder'
+          AND ccai__Type__c = 'Meta Prompt'
+          AND ccai__Status__c = 'Active'
+        ORDER BY LastModifiedDate DESC
+        LIMIT 1
+    ];
+    return metaPrompts.isEmpty() ? null : metaPrompts[0].ccai__Prompt_Command__c;
+}
+```
+
+2. **Analyze DCM Structure**
+```apex
+private Map<String, Object> analyzeDCM(Id dcmId) {
+    // Load DCM with all detail records
+    // Identify: root object, children, grandchildren, parent lookups
+    // Categorize fields: identifiers, metrics, dates, relationships
+    // Calculate: field density, data availability
+    // Return: structured analysis for meta-prompt
+}
+```
+
+3. **Call LLM to Generate Specific Prompt**
+```apex
+private String generateSpecificPrompt(String metaPrompt, Map<String, Object> dcmAnalysis, Id runId) {
+    // Build context: meta-prompt + DCM analysis + business context
+    // Call Anthropic API (Claude)
+    // Receive: Specific deterministic GPTfy prompt with merge fields
+    // Validate: Check merge field syntax, no hardcoded values
+    // Return: Final prompt template
+}
+```
+
+4. **Iterative Refinement** (Optional)
+```apex
+private String iterateOnPrompt(String metaPrompt, Map<String, Object> dcmAnalysis, String previousPrompt, String feedback, Id runId) {
+    // If validation fails or quality is low, iterate
+    // Include previous attempt + feedback in context
+    // LLM adjusts and generates improved version
+    // Can iterate up to 10 times until quality threshold met
+}
+```
+
+#### Phase 3: Meta-Prompt Content Structure
+
+The Meta-Prompt Builder record should contain:
+
+```markdown
+# GPTfy Prompt Generation Framework v2.5
+
+You are an expert prompt engineer designing deterministic templates for Salesforce dashboards.
+
+## Design Philosophy
+[From v2 doc lines 1-50: Executive-grade quality, diagnostic language, business value quantification]
+
+## Component Selection Framework
+[From v2 doc lines 100-200: When to use health scores, alerts, tables, stat cards]
+
+## Self-Evaluation Protocol
+[From v2 doc lines 300-400: Checklist for validating output quality]
+
+## Health Score Methodology
+[From v2 doc lines 450-500: Formula-based calculation with deductions/bonuses]
+
+## Alert Selection Rules
+[From v2 doc lines 550-600: Condition-based mapping to red/orange/blue]
+
+## Output Requirements
+[From v2 doc lines 650-728: Merge field syntax, single-line HTML, evidence citations]
+
+## Few-Shot Examples
+[3-5 complete example prompts showing good patterns]
+
+## Your Task
+Given the DCM structure and business context below, generate a SPECIFIC deterministic GPTfy prompt.
+
+DCM Analysis:
+{dcmAnalysis}
+
+Business Context:
+{businessContext}
+
+Generate the prompt now...
+```
+
+#### Phase 4: Validation & Testing
+
+1. **Merge Field Validation**: Ensure all dynamic values use `{{{FieldName}}}` syntax
+2. **No Hardcoded Values**: Check that no actual data from sample JSON is embedded
+3. **Structural Consistency**: Verify same DCM → same prompt structure
+4. **Quality Metrics**: Evaluate against rubric (diagnostic depth, business value, visual quality)
+
+### Benefits of Two-Layer Architecture
+
+| Benefit | Description |
+|---------|-------------|
+| **Consistency** | Same input always produces same output structure |
+| **Intelligence** | Creative decisions made once, informed by full context |
+| **Maintainability** | Update meta-prompt, all future prompts improve |
+| **Debuggability** | Can see exact prompt template generated, validate before execution |
+| **Iteration** | Can refine meta-prompt 10 times to perfect design without affecting production |
+| **Trust** | Users see predictable, professional outputs every time |
+
+### Migration Path
+
+1. **Keep Current Approach**: Existing Stage 8 works as fallback
+2. **Add Meta-Prompt Layer**: New `USE_META_PROMPT_V2` flag in Stage 8
+3. **A/B Testing**: Run both approaches, compare quality
+4. **Gradual Rollout**: Enable for new pipelines first, migrate existing later
+5. **Fallback Safety**: If meta-prompt generation fails, use current approach
+
+### Success Criteria
+
+✅ Same DCM structure generates identical prompt template across runs
+✅ Generated prompts score 8.5+/10 on quality rubric
+✅ No hardcoded values in output
+✅ All merge fields use correct syntax
+✅ Visual diversity consistent (health + 3-color alerts + table)
+✅ Self-evaluation protocol catches issues before finalization
+
+---
+
 ## Architectural Fragility Analysis (V2.5)
 
 **Date**: 2026-01-24
@@ -540,18 +767,55 @@ Extract and organize example prompts for few-shot learning. These show the LLM w
 | 5.27 | Create `examples/case_analysis.txt` | Opus | not_started | Example for Case root object |
 | 5.28 | Document example prompt patterns | Opus | not_started | What makes these examples good (structure, merge fields) |
 
-### Phase 5D: Meta-Prompt Iteration
+### Phase 5D: Two-Layer Meta-Prompt Implementation
 
-Use the test harness to iterate on meta-prompt design until generated prompts match hand-crafted quality.
+Implement the two-layer architecture where Stage 8 uses meta-prompt to generate deterministic GPTfy prompts.
+
+**PREREQUISITE: Phase 5A.5 (Automated Testing) and Phase 5C (Example Prompts) must be complete.**
+
+#### Sub-Phase 5D.1: Meta-Prompt Builder Creation
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 5.29 | Run baseline test with current meta-prompt | Opus | not_started | Document failure modes (hardcoded values, missing merge fields) |
-| 5.30 | Add few-shot examples to meta-prompt | Opus | not_started | Include 2-3 example prompts in context |
-| 5.31 | Test with few-shot examples | Opus | not_started | Compare output quality |
-| 5.32 | Iterate on meta-prompt structure | Opus | not_started | Adjust based on results |
-| 5.33 | Document winning meta-prompt pattern | Opus | not_started | What worked, what didn't |
-| 5.34 | Port successful meta-prompt back to Stage08 | Opus | not_started | Update Apex code with proven approach |
+| 5.29 | Create Meta-Prompt Builder record | Opus | not_started | Type = "Meta Prompt", Name = "GPTfy Prompt Generation Framework v2.5" |
+| 5.30 | Extract v2 doc content into meta-prompt structure | Opus | not_started | Convert v2 doc (728 lines) into meta-prompt template with sections |
+| 5.31 | Add few-shot examples to meta-prompt | Opus | not_started | Include 3-5 example prompts from Phase 5C |
+| 5.32 | Add DCM analysis template to meta-prompt | Opus | not_started | Placeholder for dynamic DCM structure injection |
+| 5.33 | Test meta-prompt with Python script | Opus | not_started | Use test harness to validate meta-prompt generates good output |
+
+#### Sub-Phase 5D.2: Stage 8 Enhancement for Two-Layer Architecture
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 5.34 | Add `loadMetaPrompt()` method to Stage08 | Opus | not_started | Query Builder records with Type = 'Meta Prompt' |
+| 5.35 | Add `analyzeDCM()` method to Stage08 | Opus | not_started | Load DCM, categorize fields, calculate density, identify relationships |
+| 5.36 | Add `generateSpecificPrompt()` method to Stage08 | Opus | not_started | Call Anthropic API with meta-prompt + DCM analysis |
+| 5.37 | Add `validatePromptQuality()` method to Stage08 | Opus | not_started | Check merge fields, no hardcoded values, structural consistency |
+| 5.38 | Add `iterateOnPrompt()` method to Stage08 | Opus | not_started | If validation fails, iterate up to 10 times with feedback |
+| 5.39 | Add `USE_META_PROMPT_V2` flag to Stage08 | Opus | not_started | Feature flag to enable/disable two-layer approach |
+| 5.40 | Update `execute()` method with meta-prompt flow | Opus | not_started | If flag enabled, use new flow; else fallback to current |
+
+#### Sub-Phase 5D.3: Anthropic API Integration
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 5.41 | Create Named Credential for Anthropic API | Sonnet | not_started | Setup in Salesforce org: https://api.anthropic.com |
+| 5.42 | Add Anthropic API key to Named Credential | Manual | not_started | User must add API key via Setup UI |
+| 5.43 | Create `AnthropicClient.cls` helper class | Opus | not_started | Wrapper for API calls with proper headers, retry logic |
+| 5.44 | Add error handling for API failures | Opus | not_started | Fallback to current approach if API unreachable |
+| 5.45 | Test API integration end-to-end | Manual | not_started | Verify Stage08 can call Claude and receive response |
+
+#### Sub-Phase 5D.4: Iterative Refinement & Testing
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 5.46 | Run baseline test with meta-prompt v1 | Opus | not_started | Document failure modes (hardcoded values, missing merge fields) |
+| 5.47 | Iterate on meta-prompt structure | Opus | not_started | Adjust based on test results, improve instructions |
+| 5.48 | Test consistency: same DCM → same prompt | Opus | not_started | Run 10 times, verify identical output structure |
+| 5.49 | Test quality: generated prompts score 8.5+/10 | Opus | not_started | Use quality rubric from iteration tracker |
+| 5.50 | Document winning meta-prompt pattern | Opus | not_started | What worked, what didn't, final meta-prompt version |
+| 5.51 | A/B test: meta-prompt vs current approach | Opus | not_started | Compare quality, consistency, generation time |
+| 5.52 | Update meta-prompt builder with final version | Opus | not_started | Deploy winning meta-prompt to Salesforce org |
 
 ### Phase 5E: Interactive Refinement (Future)
 
@@ -968,6 +1232,7 @@ Stage 5: Field Selection (Enhanced)
 | 2026-01-24 | Prioritize automated testing over features | After 100+ hours and recurring "fix one thing, break another" cycles, root cause identified: architectural fragility + no safety nets. Agent Lightning (MS training framework) won't solve this - it optimizes agent intelligence, not codebase stability. Decision: Create integration tests, smoke tests, regression tests BEFORE continuing with autonomous iteration. Tests give fast feedback loops and catch breaks immediately. |
 | 2026-01-24 | Phase 5A.5: Automated Testing inserted before Phase 5B | New phase with 8 tasks: golden test case, integration test, smoke tests, validation script, baseline run. Claude must be able to self-validate changes autonomously. Tests are prerequisite for Python orchestration - without them, we'll continue chasing tail. |
 | 2026-01-24 | This document is now a learning log | Not just task tracking, but reasoning tracking. User feedback: "Every approach was as emphatically proposed and recommended as your current recommendation." Truth: Without tests, there's no objective way to validate recommendations. Future Claude sessions must review Architectural Fragility Analysis before making confident recommendations. |
+| 2026-01-25 | Two-layer meta-prompt architecture | User insight: Creative thinking should happen at meta-prompt layer (Stage 8), NOT at GPTfy execution layer. Meta-prompt contains design philosophy, self-evaluation, component selection, health score methodology from v2 doc (728 lines). Stage 8 calls LLM to generate SPECIFIC deterministic GPTfy prompt. Same DCM → same analysis → same prompt → consistent output. Solves consistency vs intelligence tension. Creative decisions happen once at design time, not repeatedly at execution time. Meta-prompt stored as Builder record (Type = 'Meta Prompt'). Stage 8 enhanced with analyzeDCM(), generateSpecificPrompt(), iterateOnPrompt() methods. Can iterate 10 times at meta-prompt layer to perfect design. GPTfy prompts become deterministic execution templates with no open-ended reasoning. |
 
 ---
 
