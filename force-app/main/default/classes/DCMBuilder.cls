@@ -97,6 +97,7 @@ public with sharing class DCMBuilder {
 
     /**
      * @description Creates a FIELD type field record
+     * V2.6: Now applies GPTfy security filters for PII/sensitive data masking
      */
     private static SObject createFieldRecord(
         Id dcmId, String fieldName, String objectName, Integer sequence) {
@@ -110,7 +111,21 @@ public with sharing class DCMBuilder {
         field.put('ccai__Object__c', objectName);
         field.put('ccai__Label__c', fieldLabel);
         field.put('ccai__Send_To_AI__c', true);
-        field.put('ccai__Scan_for_PII__c', shouldMaskField(fieldName));
+
+        // V2.6: Apply security filters using GPTfySecurityFilterLoader
+        GPTfySecurityFilterLoader.FieldSecurityConfig securityConfig =
+            GPTfySecurityFilterLoader.getFieldSecurityConfig(objectName, fieldName, fieldLabel);
+
+        if (securityConfig != null && String.isNotBlank(securityConfig.anonymizeWith)) {
+            // Apply masking configuration
+            field.put('ccai__Anonymize_With__c', securityConfig.anonymizeWith);
+            field.put('ccai__Masking_Scope__c', securityConfig.maskingScope);
+            field.put('ccai__Scan_for_PII__c', securityConfig.scanForPII);
+        } else {
+            // Fallback to legacy PII detection
+            field.put('ccai__Scan_for_PII__c', shouldMaskField(fieldName));
+        }
+
         return field;
     }
 
