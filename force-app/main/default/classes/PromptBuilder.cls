@@ -448,7 +448,7 @@ public with sharing class PromptBuilder {
      */
     private static Id getAIConnection() {
         try {
-            // Query for AI Connections, preferring ones with 'OpenAI' or 'Claude' or 'GPT' in name
+            // Query for AI Connections
             List<ccai__AI_Connection__c> connections = [
                 SELECT Id, Name
                 FROM ccai__AI_Connection__c
@@ -457,12 +457,23 @@ public with sharing class PromptBuilder {
             ];
 
             if (!connections.isEmpty()) {
-                // Prefer OpenAI or Claude connections
+                // Priority 1: Prefer OpenAI connections (most reliable)
+                for (ccai__AI_Connection__c conn : connections) {
+                    if (conn.Name != null && conn.Name.containsIgnoreCase('OpenAI')) {
+                        return conn.Id;
+                    }
+                }
+                // Priority 2: Claude connections (but not BedRock which can have issues)
                 for (ccai__AI_Connection__c conn : connections) {
                     if (conn.Name != null &&
-                        (conn.Name.containsIgnoreCase('OpenAI') ||
-                         conn.Name.containsIgnoreCase('Claude') ||
-                         conn.Name.containsIgnoreCase('GPT'))) {
+                        conn.Name.containsIgnoreCase('Claude') &&
+                        !conn.Name.containsIgnoreCase('BedRock')) {
+                        return conn.Id;
+                    }
+                }
+                // Priority 3: Any GPT connection
+                for (ccai__AI_Connection__c conn : connections) {
+                    if (conn.Name != null && conn.Name.containsIgnoreCase('GPT')) {
                         return conn.Id;
                     }
                 }

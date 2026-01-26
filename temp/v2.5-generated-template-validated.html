@@ -1,0 +1,106 @@
+<div style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.5;">
+  <div style="text-align: center; margin-bottom: 20px;">
+    <h1 style="font-size: 24px; color: #0176D3;">Account Dashboard</h1>
+    <h2 style="font-size: 20px; color: #333333;">{{{Name}}}</h2>
+    <p style="font-size: 14px; color: #555555;">Industry: {{{Industry}}} &#124; Type: {{{Type}}} &#124; Rating: {{{Rating}}}</p>
+  </div>
+
+  <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+    <div style="flex: 1; text-align: center; padding: 10px; border: 1px solid #ddd; border-radius: 5px; margin-right: 10px;">
+      <h3 style="font-size: 18px; color: #0176D3;">Annual Revenue</h3>
+      <p style="font-size: 22px; color: #333333;">${{{AnnualRevenue}}}</p>
+    </div>
+    <div style="flex: 1; text-align: center; padding: 10px; border: 1px solid #ddd; border-radius: 5px; margin-left: 10px;">
+      <h3 style="font-size: 18px; color: #0176D3;">Number of Employees</h3>
+      <p style="font-size: 22px; color: #333333;">{{{NumberOfEmployees}}}</p>
+    </div>
+  </div>
+
+  <div style="margin-bottom: 20px;">
+    <h3 style="font-size: 18px; color: #0176D3;">Opportunities</h3>
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+      <thead>
+        <tr style="background-color: #f4f4f4; text-align: left;">
+          <th style="padding: 8px; border: 1px solid #ddd;">Name</th>
+          <th style="padding: 8px; border: 1px solid #ddd;">Amount</th>
+          <th style="padding: 8px; border: 1px solid #ddd;">Stage</th>
+          <th style="padding: 8px; border: 1px solid #ddd;">Close Date</th>
+          <th style="padding: 8px; border: 1px solid #ddd;">Probability</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#Opportunitys}}
+          <tr>
+            <td style="padding: 8px; border: 1px solid #ddd;">{{{Name}}}</td>
+            <td style="padding: 8px; border: 1px solid #ddd;">${{{Amount}}}</td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{{{StageName}}}</td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{{{CloseDate}}}</td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{{{Probability}}}%</td>
+          </tr>
+        {{else}}
+          <tr>
+            <td colspan="5" style="padding: 8px; border: 1px solid #ddd; text-align: center;">No opportunities available</td>
+          </tr>
+        {{/Opportunitys}}
+      </tbody>
+    </table>
+  </div>
+
+  <div style="margin-bottom: 20px;">
+    <h3 style="font-size: 18px; color: #0176D3;">Contacts</h3>
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+      <thead>
+        <tr style="background-color: #f4f4f4; text-align: left;">
+          <th style="padding: 8px; border: 1px solid #ddd;">Name</th>
+          <th style="padding: 8px; border: 1px solid #ddd;">Email</th>
+          <th style="padding: 8px; border: 1px solid #ddd;">Title</th>
+          <th style="padding: 8px; border: 1px solid #ddd;">Phone</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#Contacts}}
+          <tr>
+            <td style="padding: 8px; border: 1px solid #ddd;">{{{Name}}}</td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{{{Email}}}</td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{{{Title}}}</td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{{{Phone}}}</td>
+          </tr>
+        {{else}}
+          <tr>
+            <td colspan="4" style="padding: 8px; border: 1px solid #ddd; text-align: center;">No contacts available</td>
+          </tr>
+        {{/Contacts}}
+      </tbody>
+    </table>
+  </div>
+
+  <div style="margin-bottom: 20px;">
+    <h3 style="font-size: 18px; color: #0176D3;">Cases</h3>
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+      <thead>
+        <tr style="background-color: #f4f4f4; text-align: left;">
+          <th style="padding: 8px; border: 1px solid #ddd;">Case Number</th>
+          <th style="padding: 8px; border: 1px solid #ddd;">Subject</th>
+          <th style="padding: 8px; border: 1px solid #ddd;">Status</th>
+          <th style="padding: 8px; border: 1px solid #ddd;">Priority</th>
+          <th style="padding: 8px; border: 1px solid #ddd;">Origin</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#Cases}}
+          <tr>
+            <td style="padding: 8px; border: 1px solid #ddd;">{{{CaseNumber}}}</td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{{{Subject}}}</td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{{{Status}}}</td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{{{Priority}}}</td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{{{Origin}}}</td>
+          </tr>
+        {{else}}
+          <tr>
+            <td colspan="5" style="padding: 8px; border: 1px solid #ddd; text-align: center;">No cases available</td>
+          </tr>
+        {{/Cases}}
+      </tbody>
+    </table>
+  </div>
+</div>

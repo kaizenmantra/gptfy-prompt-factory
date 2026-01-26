@@ -931,7 +931,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
 
         // Root object fields
         if (selectedFieldsRaw.containsKey(rootObject)) {
-            ref += rootObject.toUpperCase() + ' (Root Object) - use {{{FieldName}}}:\n';
+            ref += rootObject.toUpperCase() + ' (Root Object) - use triple braces:\n';
             List<Object> fields = (List<Object>) selectedFieldsRaw.get(rootObject);
             for (Object field : fields) {
                 ref += '  {{{' + String.valueOf(field) + '}}}\n';
@@ -967,7 +967,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
 
                     ref += objName.toUpperCase() + ' (Grandchild of ' + parentObjName + '):\n';
                     ref += '  Nested iteration: {{#' + parentRelName + '}}{{#' + chainedPath + '}}...{{/' + chainedPath + '}}{{/' + parentRelName + '}}\n';
-                    ref += '  Fields use chained path: {{{' + chainedPath + '.FieldName}}}\n';
+                    ref += '  Fields use chained path (e.g., ' + chainedPath + '.FieldName):\n';
                     for (Object field : fields) {
                         String fieldName = String.valueOf(field);
                         ref += '    {{{' + chainedPath + '.' + fieldName + '}}}\n';
@@ -1982,7 +1982,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             section += 'LAYOUT COMPONENTS:\n\n';
 
             section += '--- Stats Strip (use at top for key metrics) ---\n';
-            section += '<div style="display:flex;gap:16px;margin-bottom:20px;"><div style="flex:1;background:white;border-radius:6px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,0.1);"><div style="font-size:28px;font-weight:700;color:#0176D3;margin-bottom:4px;">{{{Value}}}</div><div style="font-size:13px;color:#706E6B;">Label</div></div></div>\n\n';
+            section += '<div style="display:flex;gap:16px;margin-bottom:20px;"><div style="flex:1;background:white;border-radius:6px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,0.1);"><div style="font-size:28px;font-weight:700;color:#0176D3;margin-bottom:4px;">$15M</div><div style="font-size:13px;color:#706E6B;">Annual Revenue</div></div></div>\n\n';
 
             section += '--- Section Card ---\n';
             section += '<div style="background:white;border-radius:8px;padding:20px;margin-bottom:16px;box-shadow:0 2px 4px rgba(0,0,0,0.1);"><h2 style="margin:0 0 16px 0;font-size:18px;font-weight:600;color:#181818;">Section Title</h2><!-- Content here --></div>\n\n';
@@ -2065,12 +2065,13 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             section += outputRules + '\n\n';
         } else {
             // Fallback to hardcoded syntax if builder not found
+            // NOTE: Use text descriptions, NOT actual merge field examples (GPTfy validates all merge fields)
             section += 'MERGE FIELD SYNTAX:\n';
-            section += '- Root object fields: {{{FieldName}}}\n';
-            section += '- Parent lookup fields: {{{Relationship.Field}}} (e.g., {{{Account.Name}}})\n';
-            section += '- Child iteration: {{#Collection}}...{{/Collection}}\n';
-            section += '- Child fields (inside iteration): {{{Collection.FieldName}}} (e.g., {{{Events.Subject}}})\n';
-            section += '- Empty check: {{^Collection}}No items{{/Collection}}\n\n';
+            section += '- Root object fields: Use triple braces with field name\n';
+            section += '- Parent lookup fields: Use Relationship.Field pattern\n';
+            section += '- Child iteration: Use hash-Collection syntax\n';
+            section += '- Child fields: Must include Collection prefix inside iteration\n';
+            section += '- Empty check: Use caret-Collection for empty state handling\n\n';
         }
 
         section += 'STYLING:\n';

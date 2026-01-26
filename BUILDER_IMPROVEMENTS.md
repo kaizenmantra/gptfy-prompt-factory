@@ -440,7 +440,7 @@ Stage 9-10:
 | 5.10 | Enhance UI Toolkit with richer examples | Opus | not_started | More component HTML, usage guidance |
 | 5.11 | Add information hierarchy section | Opus | done | buildInformationHierarchySection() - inverted pyramid |
 | 5.12 | Remove V2.5 template code from Stage 9 | Opus | n/a | Clean branch from main - no template code exists |
-| 5.13 | Test with 3 golden accounts | Manual | not_started | Compare output quality vs V2.0 |
+| 5.13 | Test with 3 golden accounts | Manual | in_progress | Tested with Pinnacle Wealth Partners - actual data included |
 | 5.14 | Document V2.5 architecture | Opus | not_started | Update this file + create design doc |
 
 ### Phase 5D: Abandoned - Two-Layer Template Architecture
