@@ -43,7 +43,7 @@ public with sharing class HandlebarsTemplateEngine {
             if (endIdx == -1) break;
             
             String innerTemplate = result.substring(tagEndIdx + 2, endIdx);
-            Object obj = getValue(collectionName, context);
+            Object obj = resolveValue(collectionName, context);
             Boolean isEmpty = (obj == null) || (obj instanceof List<Object> && ((List<Object>)obj).isEmpty());
             
             String replacement = isEmpty ? processBlocks(innerTemplate, context) : '';
@@ -72,7 +72,7 @@ public with sharing class HandlebarsTemplateEngine {
             }
             
             String replacement = '';
-            Object collectionObj = getValue(collectionName, context);
+            Object collectionObj = resolveValue(collectionName, context);
             
             if (collectionObj instanceof List<Object> && !((List<Object>)collectionObj).isEmpty()) {
                 List<Object> items = (List<Object>) collectionObj;
