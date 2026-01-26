@@ -11,7 +11,7 @@ All architecture, decisions, tasks, and progress tracked here.
 |-------|------|---------------------|---------|
 | - | None | - | - |
 
-**Status:** V2.6 COMPLETE (code-side). Phase 6A-6C done. Phase 6D testing blocked by Stage 10 GPTfy API error (external service).
+**Status:** V2.6 Phase 6E in progress (Evidence Binding + Date Analysis fixes). Phase 6F planned (Automated Test Harness to bypass Stage 10).
 
 ---
 
@@ -524,6 +524,44 @@ Update `buildDirectiveSection()` to encourage story-driven layout.
 | 6.22 | Test with 3 different account types | Manual | blocked | Stage 10 GPTfy API error (external service issue) |
 | 6.23 | Document before/after comparison | Sonnet | blocked | Need Stage 10 to work for full visual output |
 
+### Phase 6E: Evidence Binding & Date Analysis Fixes
+
+**Problem:** AI output shows "high risk" or "unresolved" but doesn't explain WHY. Close dates from 2024 are nearly 2 years past due but AI doesn't calculate or mention this.
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 6.24 | Add Evidence Binding rules to Quality Rules (Compressed) | Opus | done | "Every insight MUST explain WHY" with GOOD/BAD examples |
+| 6.25 | Add DATE ANALYSIS section to Quality Rules | Opus | done | "Calculate if dates are PAST or FUTURE", overdue/stale guidance |
+| 6.26 | Add current date to meta-prompt | Opus | not_started | "Today's date is: [DATE]" so AI can calculate deltas |
+| 6.27 | Add LastActivityDate to useful system fields | Opus | done | SchemaHelper.cls - critical for staleness analysis |
+| 6.28 | Add lookup ID fields to priority field lists | Opus | done | Stage05 - AccountId, ContactId, WhatId, WhoId for parent-child correlation |
+| 6.29 | Keep CreatedDate, LastModifiedDate in useful fields | Opus | done | Per user request - useful for context |
+
+### Phase 6F: Automated Test Harness (Bypass Stage 10)
+
+**Problem:** Stage 10 Apex fails due to GPTfy API issues. But Python test harness can call GPTfy REST API directly.
+
+**Solution:** Create automated iteration loop:
+1. Run Stages 1-9 via `sf apex run` → Get Prompt ID
+2. Call GPTfy REST API directly (`/services/apexrest/ccai/v1/executePrompt`)
+3. Score response using `tests/phase0/score_outputs.py` logic
+4. If score < 90, update Quality Rules and re-run
+5. Log iterations for analysis
+
+**Quality Threshold:** Score must be ≥ 90/100 (not 75)
+
+**Scoring Logic Location:** `tests/phase0/score_outputs.py`
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 6.30 | Create `tests/v26/run_iteration_test.py` | Opus | not_started | Combines pipeline run + GPTfy API call + scoring |
+| 6.31 | Add current date injection to prompt | Opus | not_started | Python adds "Today: 2026-01-26" before API call |
+| 6.32 | Create `tests/v26/score_v26_output.py` | Opus | not_started | Scoring with 90+ threshold, date analysis checks |
+| 6.33 | Add date analysis scoring criteria | Opus | not_started | Check for "overdue", "past close date", "X days" patterns |
+| 6.34 | Add evidence binding scoring criteria | Opus | not_started | Check for "because", "due to", "(Evidence:" patterns |
+| 6.35 | Run 3 iterations with Innovatek account | Opus | not_started | Target: 90+ score with proper evidence binding |
+| 6.36 | Document winning prompt configuration | Opus | not_started | Capture what worked for future reference |
+
 ---
 
 ## PipelineState Architecture
@@ -903,6 +941,14 @@ Stage 5: Field Selection (Enhanced)
 | 2026-01-24 | Bug fix: PARENT_LOOKUP missing Parent_Detail__c | Sonnet | Fixed "List index out of bounds: 0" error in Stage 9. PARENT_LOOKUP detail records were missing Parent_Detail__c field to link them to their child object's detail record. Updated createParentLookupDetail() to accept parentDetailId parameter and set ccai__Parent_Detail__c field. Deployed successfully. User can now retry pipeline run. |
 | 2026-01-24 | DISABLED: PARENT_LOOKUP auto-discovery | Opus | GPTfy managed package doesn't support PARENT_LOOKUP type in DCM Details. Prompts with PARENT_LOOKUP records cause "Attempt to de-reference a null object" error on prompt detail page. Root cause: PARENT_LOOKUP is a custom type we created; GPTfy only supports CHILD and GRANDCHILD types. Fix: (1) Deleted 8 PARENT_LOOKUP records from broken DCM a05QH000008RKm1YAG, (2) Commented out PHASE 1.5 in DCMBuilder.createDCMWithGrandchildren(). TODO: Investigate if GPTfy has a supported way to enable parent lookup traversals or if this should be handled via prompt merge field syntax only. |
 | 2026-01-24 | FIXED: Parent lookup via Stage08 integration | Opus | Discovered working DCM (a05QH000008RJTNYA4) uses dot-notation FIELD records, NOT PARENT_LOOKUP details. Fix: (1) Reverted broken auto-discovery code from DCMBuilder PHASE 1.5, (2) Added `selectedParentFields` integration to Stage08's `buildDCMConfigForStage9()`, (3) Added `convertLookupToRelationship()` to convert `ContactId.Name` → `Contact.Name`. Parent fields now flow: Stage05 traversals → `selectedParentFields` → Stage08 → `fieldsByObject` → DCMBuilder. No more guessing fields - uses existing traversal definitions. |
+| 2026-01-26 | Task 6.24: Evidence Binding rules | Opus | Updated "Quality Rules (Compressed)" builder to include EVIDENCE BINDING section: "Every insight MUST explain WHY", GOOD/BAD examples, parenthetical citations guidance. |
+| 2026-01-26 | Task 6.25: Date Analysis rules | Opus | Added DATE ANALYSIS section to Quality Rules: "Calculate if dates are PAST or FUTURE", CloseDate overdue detection, LastActivityDate staleness detection. |
+| 2026-01-26 | Task 6.27: LastActivityDate to useful fields | Opus | Updated SchemaHelper.cls `isUsefulSystemField()` to include LastActivityDate - critical for engagement/staleness analysis. |
+| 2026-01-26 | Task 6.28: Lookup ID fields in priority lists | Opus | Updated Stage05_FieldSelection.cls `getPriorityFieldsForObject()` to include AccountId, ContactId, WhatId, WhoId, OpportunityId, ParentId for parent-child correlation. |
+| 2026-01-26 | Task 6.29: Keep CreatedDate, LastModifiedDate | Opus | Per user request, kept CreatedDate and LastModifiedDate in useful system fields for timeline context. |
+| 2026-01-26 | CLAUDE.md update | Opus | Added rule to always use `sf data query` instead of anonymous Apex for queries. Only use `sf apex run` for DML/pipeline operations. |
+| 2026-01-26 | Analysis: AI output quality gap | Opus | Identified root cause: AI says "unresolved" or "at risk" but doesn't explain WHY. Close dates from 2024 are 22+ months past due but AI doesn't calculate this. Need: (1) Current date in prompt, (2) Stronger date analysis rules. |
+| 2026-01-26 | Discovery: Python test harness | Opus | Found `tests/phase0/run_full_test.py` and `score_outputs.py` - can bypass Stage 10 Apex by calling GPTfy REST API directly. Scoring logic: evidence citations, forbidden phrases, customer references, diagnostic language. |
 
 ---
 
