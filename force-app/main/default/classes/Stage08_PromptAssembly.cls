@@ -1498,6 +1498,9 @@ public without sharing class Stage08_PromptAssembly implements IStage {
         // Section 3.5: INFORMATION HIERARCHY (V2.5)
         metaPrompt += buildInformationHierarchySection();
 
+        // V2.6: Section 3.6: DATA-DRIVEN DESIGN GUIDANCE
+        metaPrompt += buildDataDrivenDesignSection();
+
         // Section 4: UI TOOLKIT
         metaPrompt += buildUIToolkitSection();
 
@@ -1907,6 +1910,60 @@ public without sharing class Stage08_PromptAssembly implements IStage {
     }
 
     /**
+     * @description V2.6: DATA-DRIVEN DESIGN GUIDANCE
+     * Tells LLM WHEN to use WHICH visualization based on data patterns
+     */
+    private String buildDataDrivenDesignSection() {
+        String section = '=== DATA-DRIVEN DESIGN GUIDANCE ===\n\n';
+        section += 'Choose visualization components based on what the DATA tells you:\n\n';
+
+        // Pipeline pattern guidance (Task 6.13)
+        section += '--- PIPELINE/FUNNEL PATTERN ---\n';
+        section += 'When you see: 3+ opportunities at different stages, deals in various phases, or any multi-stage progression\n';
+        section += 'Use: Pipeline Funnel component showing stage distribution with amounts\n';
+        section += 'Visual impact: Immediately shows where deals are stuck or progressing\n\n';
+
+        // Urgency pattern guidance (Task 6.14)
+        section += '--- URGENCY/RISK PATTERN ---\n';
+        section += 'When you see: Critical issues, overdue items, high-priority problems, or churn risk signals\n';
+        section += 'Use: Featured Hero Card (gradient) for THE most critical issue, or Risk Priority Matrix for multiple risks\n';
+        section += 'Visual impact: Red/orange colors demand immediate attention. Hero card should be used once per dashboard.\n\n';
+
+        // Trend pattern guidance (Task 6.15)
+        section += '--- TREND/CHANGE PATTERN ---\n';
+        section += 'When you see: Revenue changes, growth metrics, before/after comparisons, or period-over-period data\n';
+        section += 'Use: Trend Indicator for simple up/down, KPI Card with Trend for metrics with context, Comparison Card for side-by-side\n';
+        section += 'Visual impact: Green arrows/values for positive trends, red for negative\n\n';
+
+        // Comparison pattern guidance (Task 6.16)
+        section += '--- COMPARISON PATTERN ---\n';
+        section += 'When you see: Two time periods, A vs B scenarios, targets vs actuals, or any paired values\n';
+        section += 'Use: Comparison Card for clear side-by-side, or Two-Column Layout for more complex comparisons\n';
+        section += 'Visual impact: Visual contrast makes differences immediately obvious\n\n';
+
+        // Progress/Score pattern
+        section += '--- PROGRESS/SCORE PATTERN ---\n';
+        section += 'When you see: Percentages, win probability, health scores, completion rates, or any 0-100 values\n';
+        section += 'Use: Progress Ring for percentages, Gauge Meter for scores with zones\n';
+        section += 'Visual impact: Circular graphics are attention-grabbing and easy to interpret\n\n';
+
+        // Timeline pattern
+        section += '--- TIMELINE/SEQUENCE PATTERN ---\n';
+        section += 'When you see: Milestone dates, key events, activity history, or chronological sequences\n';
+        section += 'Use: Timeline component to show progression with dates and status\n';
+        section += 'Visual impact: Shows journey/progress at a glance\n\n';
+
+        section += 'DESIGN PRINCIPLES:\n';
+        section += '- Match the visualization to the data story, not vice versa\n';
+        section += '- If data shows urgency, the visual should convey urgency (reds, bold, hero cards)\n';
+        section += '- If data shows progress, use progressive visuals (funnels, timelines, gauges)\n';
+        section += '- Use 2-3 different component types per dashboard for visual interest\n';
+        section += '- The Featured Hero Card demands attention - use it for the ONE thing that matters most\n\n';
+
+        return section;
+    }
+
+    /**
      * @description Section 4: UI TOOLKIT - Available components
      * V2.1: Now queries UI Component builders for actual HTML snippets
      */
@@ -2038,56 +2095,46 @@ public without sharing class Stage08_PromptAssembly implements IStage {
      */
     private String buildDirectiveSection(String rootObject, String businessContext) {
         String section = '=== YOUR DIRECTIVE ===\n\n';
-        section += 'Analyze the ' + rootObject + ' data and generate an executive dashboard.\n\n';
+        section += 'Create a visually distinctive executive dashboard for this ' + rootObject + '.\n\n';
 
         if (String.isNotBlank(businessContext)) {
             section += 'SPECIFIC REQUIREMENTS:\n' + businessContext + '\n\n';
         }
 
-        section += 'STRUCTURE YOUR OUTPUT AS:\n';
-        section += '1. EXECUTIVE SUMMARY (2-3 sentences)\n';
-        section += '   - Overall health/status assessment\n';
-        section += '   - Biggest risk and biggest opportunity\n';
-        section += '   - Recommended immediate action\n\n';
+        // V2.6: Story-driven layout instead of rigid structure
+        section += 'TELL THE DATA\'S STORY:\n';
+        section += 'Let the data guide your layout choices. Ask yourself:\n';
+        section += '- What is the SINGLE most important thing the user needs to know? Lead with it.\n';
+        section += '- Does the data show urgency or risk? Use dramatic visuals (Hero Card, red alerts).\n';
+        section += '- Does the data show progress or pipeline? Use progression visuals (Funnel, Timeline).\n';
+        section += '- Does the data show comparisons or trends? Use comparison visuals (Trend Indicator, Comparison Card).\n';
+        section += '- What would make an executive stop scrolling and pay attention?\n\n';
 
-        section += '2. KEY INSIGHTS (3-5 findings)\n';
-        section += '   - Use Insight Cards with evidence citations\n';
-        section += '   - Prioritize by business impact\n';
-        section += '   - Include specific data points\n\n';
+        section += 'CREATIVE FREEDOM:\n';
+        section += 'You are NOT limited to a fixed template. Choose from these layout approaches:\n\n';
 
-        section += '3. RECOMMENDED ACTIONS (2-4 items)\n';
-        section += '   - Use Recommendation Cards\n';
-        section += '   - Be specific: "Schedule call with Sarah Johnson" not "Follow up"\n';
-        section += '   - Include urgency indicator\n\n';
+        section += '- HERO + GRID: Lead with a Featured Hero Card for the key insight, then a grid of supporting cards\n';
+        section += '- TWO-COLUMN: Side-by-side layout comparing two aspects (e.g., Opportunities vs Risks)\n';
+        section += '- TIMELINE-DRIVEN: Chronological layout when sequence matters (milestones, activity history)\n';
+        section += '- FUNNEL-FOCUSED: Pipeline/funnel visualization with supporting metrics when deals/stages are key\n';
+        section += '- MATRIX + DETAILS: Risk/priority matrix followed by detailed cards for high-priority items\n\n';
 
-        section += '4. SUPPORTING DATA (if warranted)\n';
-        section += '   - Tables for detailed records ONLY if adds value\n';
-        section += '   - ONLY use child objects listed in AVAILABLE MERGE FIELDS section\n';
-        section += '   - Do NOT create tables for objects not in the merge field reference\n';
-        section += '   - Keep tables compact (5-7 rows max)\n';
-        section += '   - Add context paragraph before each table\n\n';
-
-        section += 'VISUAL DIVERSITY REQUIREMENT:\n';
-        section += '- MUST use colored components (red/orange/blue alerts, colored borders)\n';
-        section += '- MUST use Stats Strip at the top for key metrics\n';
-        section += '- MUST vary component types (mix alerts, insight cards, recommendation cards)\n';
-        section += '- Avoid repetitive layouts - use visual hierarchy\n\n';
-
-        section += 'PERSONALIZATION REQUIREMENT:\n';
-        section += '- Always use actual names, not titles or roles\n';
-        section += '- Say "Sarah Johnson" not "the CFO"\n';
-        section += '- Say "John Smith at Acme Corp" not "the customer"\n';
-        section += '- Use the merge fields from AVAILABLE MERGE FIELDS section for names\n\n';
+        section += 'REQUIREMENTS (non-negotiable):\n';
+        section += '- Use at least 3 DIFFERENT component types per dashboard\n';
+        section += '- Include at least one data visualization (Progress Ring, Gauge, Funnel, or Trend Indicator)\n';
+        section += '- Lead with insights, not tables - tables should support your analysis if used at all\n';
+        section += '- Use colored elements strategically - red for critical, orange for warning, green for positive\n';
+        section += '- Be specific: use actual names ("Sarah Johnson") not titles ("the CFO")\n';
+        section += '- ONLY use merge fields from the AVAILABLE MERGE FIELDS section\n\n';
 
         section += 'QUALITY CHECKLIST:\n';
-        section += '[ ] Does the summary capture the key story?\n';
+        section += '[ ] Did I lead with the most important finding (not bury it)?\n';
+        section += '[ ] Did I match visualizations to data patterns (see DATA-DRIVEN DESIGN GUIDANCE)?\n';
+        section += '[ ] Did I use at least 3 different component types?\n';
         section += '[ ] Does every insight cite specific evidence?\n';
-        section += '[ ] Are recommendations specific and actionable?\n';
-        section += '[ ] Is the layout insight-first, not table-first?\n';
-        section += '[ ] Did I use colored alerts and stats strip?\n';
-        section += '[ ] Did I use actual names instead of titles?\n';
+        section += '[ ] Are recommendations specific and actionable with names?\n';
         section += '[ ] Did I ONLY use merge fields from the AVAILABLE MERGE FIELDS list?\n';
-        section += '[ ] Would an executive find this valuable?\n\n';
+        section += '[ ] Would this dashboard make an executive take immediate action?\n\n';
 
         section += 'Generate the dashboard now. Output raw HTML only.\n\n';
 

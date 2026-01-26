@@ -9,16 +9,16 @@ All architecture, decisions, tasks, and progress tracked here.
 
 | Model | Task | File Being Modified | Started |
 |-------|------|---------------------|---------|
-| Opus | 4.1+ | Stage08, LWC | 2026-01-24 |
+| Sonnet | 6.12+ | Stage08_PromptAssembly.cls | 2026-01-26 |
 
-**Status:** V2.4 IN PROGRESS - Builder refactoring and LWC enhancements. V2.3 merged to main.
+**Status:** V2.6 IN PROGRESS - Visual richness and creative freedom. V2.5 actual data integration complete.
 
 ---
 
 ## Release Strategy
 
-### Current Branch: `feature/v2.4-builder-refactor`
-**Status:** Active development
+### Current Branch: `feature/v2.5-clean`
+**Status:** Active development (V2.6 work)
 
 ### Version History
 
@@ -29,7 +29,9 @@ All architecture, decisions, tasks, and progress tracked here.
 | V2.1 | feature/v2.1-enhancements | ✅ Complete | Visual diversity, parent traversals, builder library |
 | V2.2 | feature/v2.2-schema-intelligence | ⚠️ Abandoned | Schema enrichment attempted, pipeline state passing broke. See Decision Log. |
 | V2.3 | feature/v2.3-json-state | ✅ Complete | JSON file-based state (PipelineState.cls), merge field notation fixes |
-| V2.4 | feature/v2.4-builder-refactor | 🔨 Active | Builder Type migration, Output Rules builder, LWC enhancements |
+| V2.4 | feature/v2.4-builder-refactor | ✅ Complete | Builder Type migration, Output Rules builder, LWC enhancements |
+| V2.5 | feature/v2.5-clean | ✅ Complete | Actual data in meta-prompt, information hierarchy, FieldName fix |
+| V2.6 | feature/v2.5-clean | 🔨 Active | Visual richness: expanded components, data-driven design, creative freedom |
 
 ### V2.2 Abandonment Note
 
@@ -453,6 +455,74 @@ The "two-layer meta-prompt" approach that was implemented is fundamentally flawe
 - Stage 10 just echoed back HTML (wasted API call)
 
 This has been replaced by Phase 5C (Thinking Model Enhancement) which keeps V2.0's working approach of letting the AI see actual data.
+
+---
+
+## V2.6 Task Queue (Visual Richness & Creative Freedom)
+
+**Branch:** `feature/v2.5-clean` (continuing from V2.5)
+**Status:** 🔨 Active
+
+**Problem Statement:** V2.5 added actual data to the meta-prompt, but outputs still look identical to V2.0 because:
+1. Same 8 UI components in the toolkit
+2. Same rigid "1. Stats, 2. Alerts, 3. Insights, 4. Recommendations, 5. Table" structure
+3. No data-driven visualization selection guidance
+4. No creative freedom for the LLM
+
+**Goal:** Enable visually rich, data-driven dashboards by:
+1. Expanding UI component library (database updates - fast)
+2. Adding data-driven design guidance (tells LLM WHEN to use WHICH component)
+3. Removing rigid structure (let LLM choose layout based on data story)
+4. Encouraging creative expression
+
+### Phase 6A: Expand UI Component Library (Database - Quick)
+
+Add 10+ new component patterns as builder records. No code changes needed.
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 6.1 | Create Progress Ring component | Opus | done | CSS-only donut/ring chart for percentages |
+| 6.2 | Create Trend Indicator component | Opus | done | Value + arrow + percentage change |
+| 6.3 | Create Comparison Card component | Opus | done | A vs B side-by-side layout |
+| 6.4 | Create Pipeline/Funnel component | Opus | done | Stage progression visualization |
+| 6.5 | Create Featured Hero Card component | Opus | done | Large prominent card for key insight |
+| 6.6 | Create Gauge/Meter component | Opus | done | Semi-circle progress indicator |
+| 6.7 | Create Risk Matrix component | Opus | done | 2x2 or 3x3 grid for priority |
+| 6.8 | Create Timeline component | Opus | done | Horizontal event sequence |
+| 6.9 | Create Two-Column Layout component | Opus | done | Side-by-side responsive grid |
+| 6.10 | Create KPI Card with Trend component | Opus | done | Metric + mini sparkline-style trend |
+| 6.11 | Update existing components with variations | Opus | skipped | New components sufficient for variety |
+
+### Phase 6B: Data-Driven Design Guidance (Code Change)
+
+Add new section to Stage08 that tells LLM WHEN to use WHICH visualization.
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 6.12 | Create `buildDataDrivenDesignSection()` in Stage08 | Sonnet | done | Pattern-based component selection |
+| 6.13 | Add pipeline pattern guidance | Sonnet | done | "3+ opps → show pipeline funnel" |
+| 6.14 | Add urgency pattern guidance | Sonnet | done | "Critical case → lead with red banner" |
+| 6.15 | Add trend pattern guidance | Sonnet | done | "Revenue available → show trend indicator" |
+| 6.16 | Add comparison pattern guidance | Sonnet | done | "Multiple periods → use before/after" |
+
+### Phase 6C: Remove Rigid Structure (Code Change)
+
+Update `buildDirectiveSection()` to encourage story-driven layout.
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 6.17 | Remove fixed "1,2,3,4" structure from directive | Sonnet | done | Replace with "tell the data's story" |
+| 6.18 | Add creative encouragement language | Sonnet | done | "Create visually distinctive dashboard" |
+| 6.19 | Add layout variation examples | Sonnet | done | Show 2-column, featured+grid options |
+| 6.20 | Update quality checklist for visual variety | Sonnet | done | Check for component diversity |
+
+### Phase 6D: Testing & Validation
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 6.21 | Test with Pinnacle Wealth Partners | Manual | not_started | Compare V2.5 vs V2.6 output |
+| 6.22 | Test with 3 different account types | Manual | not_started | Verify visual variety across data |
+| 6.23 | Document before/after comparison | Sonnet | not_started | Screenshots + analysis |
 
 ---
 
