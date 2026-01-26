@@ -54,11 +54,21 @@ public with sharing class GPTfySecurityFilterLoader {
         'NationalId__c' => 'National/Tax ID'
     };
 
-    // Custom mask patterns for fields without standard filters
-    private static final Map<String, String> CUSTOM_MASKS = new Map<String, String>{
+    // Valid picklist values for ccai__Anonymize_With__c field
+    // These are the ONLY values allowed (restricted picklist)
+    private static final Map<String, String> ANONYMIZE_PICKLIST_VALUES = new Map<String, String>{
         'Company' => 'Company{n}',
-        'Person' => 'Person{n}',
-        'Contact' => 'Contact{n}'
+        'Email' => 'removed{n}@removed.com',
+        'Phone' => 'Phone{n}',
+        'PersonFirst' => 'PersonF{n}',
+        'PersonLast' => 'PersonL{n}',
+        'PersonFull' => 'PersonFull{n}',
+        'Street' => 'Street{n}',
+        'City' => 'City{n}',
+        'State' => 'State{n}',
+        'Country' => 'Country{n}',
+        'Product' => 'Product{n}',
+        'Generic' => '{n}'
     };
 
     /**
@@ -196,6 +206,7 @@ public with sharing class GPTfySecurityFilterLoader {
     /**
      * @description Get field security configuration with auto-detection
      * Analyzes field and recommends appropriate masking
+     * Uses ONLY valid picklist values for ccai__Anonymize_With__c
      * @param objectName The SObject API name
      * @param fieldName The field API name
      * @param fieldLabel The field label for display
@@ -212,23 +223,47 @@ public with sharing class GPTfySecurityFilterLoader {
         }
 
         if (filterType != null) {
-            // Check if we have a custom mask for this type
-            if (CUSTOM_MASKS.containsKey(filterType)) {
-                config.anonymizeWith = CUSTOM_MASKS.get(filterType);
+            // Map filter type to valid picklist value
+            String anonymizeValue = getAnonymizePicklistValue(filterType);
+            if (String.isNotBlank(anonymizeValue)) {
+                config.anonymizeWith = anonymizeValue;
                 config.maskingScope = 'Entire Value';
-                config.scanForPII = false;
-            } else {
-                // Use GPTfy's built-in filter
-                List<SecurityFilter> filters = getFiltersByType(filterType);
-                if (!filters.isEmpty()) {
-                    config.anonymizeWith = filters[0].replacementValue;
-                    config.maskingScope = 'Entire Value';
-                    config.scanForPII = true;
-                }
+                config.scanForPII = (filterType != 'Company'); // Don't scan company names, just mask
             }
         }
 
         return config;
+    }
+
+    /**
+     * @description Maps a filter type to a valid ccai__Anonymize_With__c picklist value
+     * @param filterType The type of filter (Email, Phone, Company, etc.)
+     * @return Valid picklist value or null if no mapping
+     */
+    private static String getAnonymizePicklistValue(String filterType) {
+        if (String.isBlank(filterType)) {
+            return null;
+        }
+
+        // Direct mapping to picklist values
+        if (ANONYMIZE_PICKLIST_VALUES.containsKey(filterType)) {
+            return ANONYMIZE_PICKLIST_VALUES.get(filterType);
+        }
+
+        // Handle variations
+        String typeLower = filterType.toLowerCase();
+        if (typeLower.contains('email')) {
+            return ANONYMIZE_PICKLIST_VALUES.get('Email');
+        } else if (typeLower.contains('phone') || typeLower.contains('fax') || typeLower.contains('mobile')) {
+            return ANONYMIZE_PICKLIST_VALUES.get('Phone');
+        } else if (typeLower.contains('company') || typeLower.contains('account')) {
+            return ANONYMIZE_PICKLIST_VALUES.get('Company');
+        } else if (typeLower.contains('url') || typeLower.contains('website')) {
+            // URLs don't have a specific mask, use generic
+            return ANONYMIZE_PICKLIST_VALUES.get('Generic');
+        }
+
+        return null;
     }
 
     /**
