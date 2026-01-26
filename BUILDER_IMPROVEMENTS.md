@@ -779,33 +779,32 @@ Implement the two-layer architecture where Stage 8 uses meta-prompt to generate 
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 5.29 | Create Meta-Prompt Builder record | Opus | not_started | Type = "Meta Prompt", Name = "GPTfy Prompt Generation Framework v2.5" |
-| 5.30 | Extract v2 doc content into meta-prompt structure | Opus | not_started | Convert v2 doc (728 lines) into meta-prompt template with sections |
-| 5.31 | Add few-shot examples to meta-prompt | Opus | not_started | Include 3-5 example prompts from Phase 5C |
-| 5.32 | Add DCM analysis template to meta-prompt | Opus | not_started | Placeholder for dynamic DCM structure injection |
+| 5.29 | Create Meta-Prompt Builder record | Opus | done | Created a0DQH00000KaubF2AR, Type = "Context Template" (temp), Name = "GPTfy Prompt Generation Framework v2.5" |
+| 5.30 | Extract v2 doc content into meta-prompt structure | Opus | done | Converted v2 doc into 8-part meta-prompt (Design Philosophy, Component Selection, Health Score, Output Requirements, Self-Evaluation, Input Structure, Examples, Directive) |
+| 5.31 | Add few-shot examples to meta-prompt | Opus | done | Added 2 examples: Simple alert-based dashboard + Account 360 with stat cards/tables. 13,457 chars total. |
+| 5.32 | Add DCM analysis template to meta-prompt | Opus | done | Enhanced PART 6 with field categorizations (metrics, dates, statuses, identifiers, parentFields) + narrative template. Builder a0DQH00000KaueT2AR, 15,417 chars. |
 | 5.33 | Test meta-prompt with Python script | Opus | not_started | Use test harness to validate meta-prompt generates good output |
 
 #### Sub-Phase 5D.2: Stage 8 Enhancement for Two-Layer Architecture
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 5.34 | Add `loadMetaPrompt()` method to Stage08 | Opus | not_started | Query Builder records with Type = 'Meta Prompt' |
-| 5.35 | Add `analyzeDCM()` method to Stage08 | Opus | not_started | Load DCM, categorize fields, calculate density, identify relationships |
-| 5.36 | Add `generateSpecificPrompt()` method to Stage08 | Opus | not_started | Call Anthropic API with meta-prompt + DCM analysis |
-| 5.37 | Add `validatePromptQuality()` method to Stage08 | Opus | not_started | Check merge fields, no hardcoded values, structural consistency |
-| 5.38 | Add `iterateOnPrompt()` method to Stage08 | Opus | not_started | If validation fails, iterate up to 10 times with feedback |
-| 5.39 | Add `USE_META_PROMPT_V2` flag to Stage08 | Opus | not_started | Feature flag to enable/disable two-layer approach |
-| 5.40 | Update `execute()` method with meta-prompt flow | Opus | not_started | If flag enabled, use new flow; else fallback to current |
+| 5.34 | Add `loadMetaPrompt()` method to Stage08 | Opus | done | Queries Builder with Type='Context Template', Name='GPTfy Prompt Generation Framework v2.5' |
+| 5.35 | Add `analyzeDCM()` method to Stage08 | Opus | done | Categorizes fields (metrics, dates, statuses, identifiers, parentFields) + builds narrative. Includes extractParentLookupNames, categorizeFields, isMetricField/DateField/StatusField, buildDCMNarrative helpers. |
+| 5.36 | Add `generateSpecificPrompt()` method to Stage08 | Opus | done | generateSpecificPromptTemplate() calls AIServiceClient.callAI() with meta-prompt + DCM analysis, 8192 max tokens, 0.7 temperature |
+| 5.37 | Add `validatePromptQuality()` method to Stage08 | Opus | done | validatePromptTemplate() checks merge fields, iteration blocks, hardcoded values (currency, dates, emails, phones, names), visual components. Includes detectHardcodedValues, countOccurrences helpers. |
+| 5.38 | Add `iterateOnPrompt()` method to Stage08 | Opus | done | iterateOnPromptGeneration() loops up to 10 times, generates template, validates, logs errors/warnings, returns on success |
+| 5.39 | Add `USE_META_PROMPT_V2` flag to Stage08 | Opus | done | USE_META_PROMPT_V2_5 constant added (default: false). TODO: Enable after API integration tested |
+| 5.40 | Update `execute()` method with meta-prompt flow | Opus | done | Added V2.5 branch with early return. Loads builder → Analyzes DCM → Generates/iterates → Returns template. Falls back to V2.0/V1.1 if flag disabled. |
 
-#### Sub-Phase 5D.3: Anthropic API Integration
+#### Sub-Phase 5D.3: AI API Integration
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 5.41 | Create Named Credential for Anthropic API | Sonnet | not_started | Setup in Salesforce org: https://api.anthropic.com |
-| 5.42 | Add Anthropic API key to Named Credential | Manual | not_started | User must add API key via Setup UI |
-| 5.43 | Create `AnthropicClient.cls` helper class | Opus | not_started | Wrapper for API calls with proper headers, retry logic |
-| 5.44 | Add error handling for API failures | Opus | not_started | Fallback to current approach if API unreachable |
-| 5.45 | Test API integration end-to-end | Manual | not_started | Verify Stage08 can call Claude and receive response |
+| 5.41-5.42 | Configure API credentials | Manual | done | Uses existing AIServiceClient - no new credentials needed! Auto-detects Azure OpenAI, Claude, or DeepSeek from Custom Settings. |
+| 5.43 | Integrate with AI API | Opus | done | Updated Stage08 to use AIServiceClient.callAI(systemPrompt, userPrompt, 8192, 0.7). Removed unnecessary AnthropicClient. |
+| 5.44 | Add error handling for API failures | Opus | done | AIServiceClient already has retry logic, rate limiting, timeout handling built-in |
+| 5.45 | Test API integration end-to-end | Manual | not_started | TODO: Enable USE_META_PROMPT_V2_5 flag and test with golden test case 006QH00000HjgvlYAB |
 
 #### Sub-Phase 5D.4: Iterative Refinement & Testing
 

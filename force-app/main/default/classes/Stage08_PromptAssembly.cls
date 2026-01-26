@@ -29,6 +29,11 @@ public without sharing class Stage08_PromptAssembly implements IStage {
 
     private static final Integer STAGE_NUMBER = 8;
 
+    // V2.5: Feature flag for two-layer meta-prompt architecture
+    // When true: Meta-prompt generates TEMPLATE → Template executes on data
+    // When false: Falls back to V2.0 (LLM analyzes data directly) or V1.1 (legacy)
+    private static final Boolean USE_META_PROMPT_V2_5 = false; // TODO: Enable after API integration complete
+
     /**
      * @description Executes Stage 8: Prompt Assembly
      * @param runId ID of the PF_Run__c record
@@ -85,6 +90,89 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             } else if (String.isNotBlank(companyProfile)) {
                 result.queueInfo(runId, STAGE_NUMBER, 'Using company profile (no direct research available)');
             }
+
+            // =========================================================================
+            // V2.5: TWO-LAYER META-PROMPT ARCHITECTURE
+            // =========================================================================
+            // If enabled, use meta-prompt to GENERATE a deterministic template
+            // Then return that template (no execution yet - happens at DCM stage)
+            // =========================================================================
+
+            if (USE_META_PROMPT_V2_5) {
+                result.queueInfo(runId, STAGE_NUMBER,
+                    'V2.5: Using two-layer meta-prompt architecture');
+
+                // Step 1: Load Meta-Prompt Builder
+                String metaPromptBuilder;
+                try {
+                    metaPromptBuilder = loadMetaPromptBuilder();
+                    result.queueInfo(runId, STAGE_NUMBER,
+                        'V2.5: Loaded meta-prompt (' + metaPromptBuilder.length() + ' chars)');
+                } catch (Exception e) {
+                    throw new StageException('Failed to load meta-prompt Builder: ' + e.getMessage(), e);
+                }
+
+                // Step 2: Analyze DCM structure
+                Map<String, Object> dcmConfigRaw = (Map<String, Object>) inputs.get('dcmConfig');
+                if (dcmConfigRaw == null) {
+                    throw new StageException('V2.5 requires dcmConfig in inputs');
+                }
+
+                Map<String, Object> dcmAnalysis = analyzeDCMStructure(
+                    dcmConfigRaw,
+                    selectedFieldsRaw,
+                    selectedParentFieldsRaw,
+                    selectedGrandchildrenRaw
+                );
+
+                String dcmAnalysisJson = (String) dcmAnalysis.get('json');
+                result.queueInfo(runId, STAGE_NUMBER,
+                    'V2.5: Analyzed DCM structure: ' + dcmAnalysis.get('narrative'));
+
+                // Step 3: Generate and iterate on template
+                Map<String, Object> generationResult = iterateOnPromptGeneration(
+                    metaPromptBuilder,
+                    dcmAnalysisJson,
+                    (Map<String, Object>) dcmAnalysis.get('structured'),
+                    businessContext,
+                    runId,
+                    result,
+                    10 // Max iterations
+                );
+
+                Boolean success = (Boolean) generationResult.get('success');
+                if (!success) {
+                    throw new StageException('V2.5: Failed to generate valid template after max iterations');
+                }
+
+                String generatedTemplate = (String) generationResult.get('template');
+                Integer iterations = (Integer) generationResult.get('iterations');
+
+                result.queueInfo(runId, STAGE_NUMBER,
+                    'V2.5: Generated template (' + generatedTemplate.length() + ' chars, ' +
+                    iterations + ' iteration' + (iterations > 1 ? 's' : '') + ')');
+
+                // Step 4: Assemble prompt configuration with generated template
+                Map<String, Object> promptConfig = new Map<String, Object>{
+                    'promptCommand' => generatedTemplate,
+                    'promptType' => 'V2.5_Meta_Generated',
+                    'metaPromptUsed' => true,
+                    'iterations' => iterations,
+                    'dcmAnalysis' => dcmAnalysisJson,
+                    'businessContext' => businessContext
+                };
+
+                // Return outputs
+                result.outputs = promptConfig;
+                result.queueInfo(runId, STAGE_NUMBER,
+                    'V2.5: Prompt assembly complete (two-layer meta-prompt)');
+                result.success = true;
+                return result;
+            }
+
+            // =========================================================================
+            // FALLBACK: V2.0 or V1.1 Architecture
+            // =========================================================================
 
             // V2.0: Check if using meta-prompt architecture
             Boolean useMetaPrompt = (Boolean) inputs.get('useMetaPrompt');
@@ -1898,6 +1986,560 @@ public without sharing class Stage08_PromptAssembly implements IStage {
         }
 
         return content;
+    }
+
+    // =========================================================================
+    // V2.5: TWO-LAYER META-PROMPT ARCHITECTURE
+    // =========================================================================
+    // These methods implement the two-layer approach where:
+    // - Layer 1 (Meta-Prompt): Generates deterministic TEMPLATE with merge fields
+    // - Layer 2 (Execution): Fills template with actual data
+    //
+    // This differs from V2.0 which has LLM analyze data directly to generate HTML.
+    // =========================================================================
+
+    /**
+     * @description Load Meta-Prompt Builder record for V2.5 architecture
+     * Queries ccai__AI_Prompt__c with RecordType='Builder' and Type='Meta Prompt'
+     * @return String The meta-prompt content from Builder record
+     */
+    private String loadMetaPromptBuilder() {
+        List<ccai__AI_Prompt__c> builders = [
+            SELECT ccai__Prompt_Command__c, Name, ccai__Description__c
+            FROM ccai__AI_Prompt__c
+            WHERE RecordType.DeveloperName = 'Builder'
+              AND ccai__Type__c = 'Context Template' // TODO: Change to 'Meta Prompt' after picklist value added
+              AND Name = 'GPTfy Prompt Generation Framework v2.5'
+              AND ccai__Status__c = 'Active'
+            LIMIT 1
+        ];
+
+        if (builders.isEmpty()) {
+            throw new StageException('Meta-Prompt Builder not found. Expected: GPTfy Prompt Generation Framework v2.5');
+        }
+
+        return builders[0].ccai__Prompt_Command__c;
+    }
+
+    /**
+     * @description Analyze DCM structure and format for meta-prompt injection
+     * Categorizes fields by type (metrics, dates, statuses, identifiers, parentFields)
+     * and creates narrative description for LLM context
+     *
+     * @param dcmConfig Map containing DCM configuration from Stage 9
+     * @param selectedFields Map of object -> field list
+     * @param selectedParentFields Map of object -> parent field list
+     * @param selectedGrandchildren List of grandchild objects
+     * @return Map<String, Object> with keys: 'json' (structured analysis), 'narrative' (text description)
+     */
+    private Map<String, Object> analyzeDCMStructure(
+            Map<String, Object> dcmConfig,
+            Map<String, Object> selectedFields,
+            Map<String, Object> selectedParentFields,
+            List<Object> selectedGrandchildren) {
+
+        // Extract DCM metadata
+        String rootObject = (String) dcmConfig.get('objectName');
+        List<Object> childObjectsRaw = (List<Object>) dcmConfig.get('childRelationships');
+
+        // Build structured JSON analysis
+        Map<String, Object> analysis = new Map<String, Object>();
+        analysis.put('rootObject', rootObject);
+        analysis.put('childObjects', childObjectsRaw != null ? childObjectsRaw : new List<Object>());
+        analysis.put('grandchildObjects', selectedGrandchildren != null ? selectedGrandchildren : new List<Object>());
+        analysis.put('parentLookups', extractParentLookupNames(selectedParentFields));
+
+        // Categorize fields by object
+        Map<String, Object> fieldsByObject = new Map<String, Object>();
+        for (String objName : selectedFields.keySet()) {
+            Map<String, List<String>> categorized = categorizeFields(
+                objName,
+                (List<Object>) selectedFields.get(objName),
+                selectedParentFields.get(objName) != null ? (List<Object>) selectedParentFields.get(objName) : new List<Object>()
+            );
+            fieldsByObject.put(objName, categorized);
+        }
+        analysis.put('fields', fieldsByObject);
+
+        // Build narrative description
+        String narrative = buildDCMNarrative(
+            rootObject,
+            (List<Object>) analysis.get('childObjects'),
+            (List<Object>) analysis.get('grandchildObjects'),
+            (List<String>) analysis.get('parentLookups'),
+            fieldsByObject
+        );
+        analysis.put('narrative', narrative);
+
+        // Return both JSON and narrative
+        Map<String, Object> result = new Map<String, Object>();
+        result.put('json', JSON.serialize(analysis, true)); // Pretty-print JSON
+        result.put('narrative', narrative);
+        result.put('structured', analysis); // For validation later
+
+        return result;
+    }
+
+    /**
+     * @description Extract parent lookup names from selectedParentFields
+     * Example: {'Opportunity': ['Account.Name', 'Owner.Name']} → ['Account', 'Owner']
+     */
+    private List<String> extractParentLookupNames(Map<String, Object> selectedParentFields) {
+        Set<String> parentNames = new Set<String>();
+
+        if (selectedParentFields != null) {
+            for (String objName : selectedParentFields.keySet()) {
+                List<Object> parentFieldsRaw = (List<Object>) selectedParentFields.get(objName);
+                if (parentFieldsRaw != null) {
+                    for (Object fieldObj : parentFieldsRaw) {
+                        String field = (String) fieldObj;
+                        if (field.contains('.')) {
+                            String parentName = field.substringBefore('.');
+                            parentNames.add(parentName);
+                        }
+                    }
+                }
+            }
+        }
+
+        return new List<String>(parentNames);
+    }
+
+    /**
+     * @description Categorize fields by type (metrics, dates, statuses, identifiers, parentFields)
+     * Uses field name patterns and Salesforce schema describe to determine category
+     */
+    private Map<String, List<String>> categorizeFields(
+            String objectName,
+            List<Object> fieldsRaw,
+            List<Object> parentFieldsRaw) {
+
+        Map<String, List<String>> categories = new Map<String, List<String>>{
+            'metrics' => new List<String>(),
+            'dates' => new List<String>(),
+            'statuses' => new List<String>(),
+            'identifiers' => new List<String>(),
+            'parentFields' => new List<String>()
+        };
+
+        // Categorize regular fields
+        for (Object fieldObj : fieldsRaw) {
+            String field = (String) fieldObj;
+
+            // Heuristic categorization (can be enhanced with schema describe)
+            if (isMetricField(field)) {
+                categories.get('metrics').add(field);
+            } else if (isDateField(field)) {
+                categories.get('dates').add(field);
+            } else if (isStatusField(field)) {
+                categories.get('statuses').add(field);
+            } else {
+                categories.get('identifiers').add(field);
+            }
+        }
+
+        // Add parent fields
+        for (Object parentFieldObj : parentFieldsRaw) {
+            categories.get('parentFields').add((String) parentFieldObj);
+        }
+
+        return categories;
+    }
+
+    /**
+     * @description Check if field is a metric (Amount, Count, Probability, Revenue, etc.)
+     */
+    private Boolean isMetricField(String field) {
+        String lowerField = field.toLowerCase();
+        return lowerField.contains('amount')
+            || lowerField.contains('count')
+            || lowerField.contains('revenue')
+            || lowerField.contains('probability')
+            || lowerField.contains('value')
+            || lowerField.contains('total')
+            || lowerField.contains('sum');
+    }
+
+    /**
+     * @description Check if field is a date/datetime field
+     */
+    private Boolean isDateField(String field) {
+        String lowerField = field.toLowerCase();
+        return lowerField.contains('date')
+            || lowerField.contains('time')
+            || lowerField.equals('createdat')
+            || lowerField.equals('updatedat');
+    }
+
+    /**
+     * @description Check if field is a status/picklist field
+     */
+    private Boolean isStatusField(String field) {
+        String lowerField = field.toLowerCase();
+        return lowerField.contains('status')
+            || lowerField.contains('stage')
+            || lowerField.contains('priority')
+            || lowerField.contains('type')
+            || lowerField.contains('category')
+            || lowerField.equals('isclosed')
+            || lowerField.equals('isactive');
+    }
+
+    /**
+     * @description Build narrative description of DCM for LLM context
+     */
+    private String buildDCMNarrative(
+            String rootObject,
+            List<Object> childObjects,
+            List<Object> grandchildObjects,
+            List<String> parentLookups,
+            Map<String, Object> fieldsByObject) {
+
+        String narrative = 'This DCM includes ' + rootObject + ' as root';
+
+        // Describe child relationships
+        if (!childObjects.isEmpty()) {
+            narrative += ' with ' + childObjects.size() + ' child relationship';
+            if (childObjects.size() > 1) {
+                narrative += 's';
+            }
+            narrative += ' (' + String.join(objectListToStringList(childObjects), ', ') + ')';
+        }
+
+        // Describe grandchild relationships
+        if (!grandchildObjects.isEmpty()) {
+            narrative += ' and ' + grandchildObjects.size() + ' grandchild';
+            if (grandchildObjects.size() > 1) {
+                narrative += 'ren';
+            }
+            narrative += ' (' + String.join(objectListToStringList(grandchildObjects), ', ') + ')';
+        }
+
+        // Describe parent lookups
+        if (!parentLookups.isEmpty()) {
+            narrative += '. Parent lookups to ' + String.join(parentLookups, ' and ') + ' are included';
+        }
+
+        // Describe available metrics, dates, statuses
+        Map<String, Object> rootFields = (Map<String, Object>) fieldsByObject.get(rootObject);
+        if (rootFields != null) {
+            List<String> metrics = (List<String>) rootFields.get('metrics');
+            List<String> dates = (List<String>) rootFields.get('dates');
+            List<String> statuses = (List<String>) rootFields.get('statuses');
+
+            if (metrics != null && !metrics.isEmpty()) {
+                narrative += '. Available metrics: ' + String.join(metrics, ', ') + ' for pipeline analysis';
+            }
+
+            if (dates != null && !dates.isEmpty()) {
+                narrative += '. Available dates: ' + String.join(dates, ', ') + ' for time-based alerts';
+            }
+
+            if (statuses != null && !statuses.isEmpty()) {
+                narrative += '. Status fields: ' + String.join(statuses, ', ') + ' for severity assessment';
+            }
+        }
+
+        narrative += '.';
+        return narrative;
+    }
+
+    /**
+     * @description Convert List<Object> to List<String>
+     */
+    private List<String> objectListToStringList(List<Object> objList) {
+        List<String> strList = new List<String>();
+        for (Object obj : objList) {
+            strList.add((String) obj);
+        }
+        return strList;
+    }
+
+    /**
+     * @description Validate generated prompt template for V2.5 quality requirements
+     * Checks for:
+     * - All dynamic values use {{{MergeField}}} syntax
+     * - No hardcoded values from sample data (names, amounts, dates)
+     * - Iteration blocks properly closed
+     * - Required components present (health score, alerts, tables)
+     *
+     * @param generatedPrompt The prompt template generated by meta-prompt
+     * @param dcmAnalysis The DCM analysis structure
+     * @return Map<String, Object> with keys: 'isValid' (Boolean), 'errors' (List<String>), 'warnings' (List<String>)
+     */
+    private Map<String, Object> validatePromptTemplate(String generatedPrompt, Map<String, Object> dcmAnalysis) {
+        Map<String, Object> validation = new Map<String, Object>();
+        List<String> errors = new List<String>();
+        List<String> warnings = new List<String>();
+
+        // Check 1: Must contain merge field syntax {{{...}}}
+        if (!generatedPrompt.contains('{{{')) {
+            errors.add('No merge fields detected. Template must use {{{FieldName}}} syntax for dynamic values.');
+        }
+
+        // Check 2: Iteration blocks must be properly closed
+        Integer openBlocks = countOccurrences(generatedPrompt, '{{#');
+        Integer closeBlocks = countOccurrences(generatedPrompt, '{{/');
+        if (openBlocks != closeBlocks) {
+            errors.add('Iteration blocks not properly closed: ' + openBlocks + ' open blocks, ' + closeBlocks + ' close blocks');
+        }
+
+        // Check 3: No hardcoded values - look for common patterns
+        if (detectHardcodedValues(generatedPrompt)) {
+            errors.add('Hardcoded values detected in template. All dynamic values must use merge field syntax.');
+        }
+
+        // Check 4: Required visual components
+        if (!generatedPrompt.containsIgnoreCase('background') && !generatedPrompt.containsIgnoreCase('style=')) {
+            warnings.add('No inline CSS styling detected. Template should use inline styles for visual components.');
+        }
+
+        if (!generatedPrompt.containsIgnoreCase('table')) {
+            warnings.add('No data table detected. Templates should include at least one table with iteration block.');
+        }
+
+        // Check 5: Component count heuristics
+        Integer redAlerts = countOccurrences(generatedPrompt.toLowerCase(), '#ba0517') +
+                            countOccurrences(generatedPrompt.toLowerCase(), '#dc3545');
+        Integer orangeAlerts = countOccurrences(generatedPrompt.toLowerCase(), '#dd7a01') +
+                               countOccurrences(generatedPrompt.toLowerCase(), '#ff9800');
+        Integer blueAlerts = countOccurrences(generatedPrompt.toLowerCase(), '#0176d3') +
+                             countOccurrences(generatedPrompt.toLowerCase(), '#2e844a');
+
+        if (redAlerts == 0 && orangeAlerts == 0 && blueAlerts == 0) {
+            warnings.add('No color-coded alerts detected. Template should include at least 1 red, 1 orange, 1 blue alert.');
+        }
+
+        // Build result
+        validation.put('isValid', errors.isEmpty());
+        validation.put('errors', errors);
+        validation.put('warnings', warnings);
+        validation.put('errorCount', errors.size());
+        validation.put('warningCount', warnings.size());
+
+        return validation;
+    }
+
+    /**
+     * @description Detect hardcoded values in template (sample data that should be merge fields)
+     * Looks for patterns like:
+     * - Currency amounts: $1,500,000
+     * - Dates: 2026-01-25, 01/25/2026
+     * - Email addresses: name@example.com
+     * - Phone numbers: (555) 123-4567
+     * - Common names: "John Smith", "Acme Corp"
+     */
+    private Boolean detectHardcodedValues(String template) {
+        // Currency pattern: $X,XXX,XXX or $XXX.XX
+        Pattern currencyPattern = Pattern.compile('\\$[0-9,]+\\.?[0-9]*');
+        if (currencyPattern.matcher(template).find()) {
+            return true;
+        }
+
+        // Date patterns: YYYY-MM-DD, MM/DD/YYYY, Jan 25, 2026
+        Pattern datePattern = Pattern.compile('\\d{4}-\\d{2}-\\d{2}|\\d{2}/\\d{2}/\\d{4}|[A-Z][a-z]{2}\\s+\\d{1,2},?\\s+\\d{4}');
+        Matcher dateMatcher = datePattern.matcher(template);
+        // Allow a few dates for examples, but too many suggests hardcoded data
+        Integer dateCount = 0;
+        while (dateMatcher.find()) {
+            dateCount++;
+            if (dateCount > 3) { // More than 3 specific dates suggests sample data
+                return true;
+            }
+        }
+
+        // Email pattern: name@domain.com
+        Pattern emailPattern = Pattern.compile('[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}');
+        if (emailPattern.matcher(template).find()) {
+            return true;
+        }
+
+        // Phone pattern: (555) 123-4567 or 555-123-4567
+        Pattern phonePattern = Pattern.compile('\\(?\\d{3}\\)?[\\s.-]?\\d{3}[\\s.-]?\\d{4}');
+        if (phonePattern.matcher(template).find()) {
+            return true;
+        }
+
+        // Common placeholder names that shouldn't be in templates
+        List<String> suspiciousNames = new List<String>{'John Smith', 'Jane Doe', 'Acme Corp', 'Example Inc', 'Test Account'};
+        for (String suspiciousName : suspiciousNames) {
+            if (template.containsIgnoreCase(suspiciousName)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @description Count occurrences of a substring in a string
+     */
+    private Integer countOccurrences(String text, String substring) {
+        if (String.isBlank(text) || String.isBlank(substring)) {
+            return 0;
+        }
+
+        Integer count = 0;
+        Integer index = 0;
+        while ((index = text.indexOf(substring, index)) != -1) {
+            count++;
+            index += substring.length();
+        }
+        return count;
+    }
+
+    /**
+     * @description Generate specific prompt template using meta-prompt + DCM analysis
+     * Uses existing AIServiceClient (auto-detects Azure OpenAI, Claude, or DeepSeek)
+     *
+     * @param metaPrompt The meta-prompt Builder content
+     * @param dcmAnalysisJson The DCM analysis JSON string
+     * @param businessContext The user's business context/requirements
+     * @return String The generated prompt template with merge fields
+     * @throws StageException If API call fails
+     */
+    private String generateSpecificPromptTemplate(
+            String metaPrompt,
+            String dcmAnalysisJson,
+            String businessContext) {
+
+        // Replace placeholders in meta-prompt with actual values
+        String finalMetaPrompt = metaPrompt
+            .replace('{{DCM_ANALYSIS}}', dcmAnalysisJson)
+            .replace('{{BUSINESS_CONTEXT}}', businessContext);
+
+        // Call AI API using existing credentials (Azure OpenAI, Claude, or DeepSeek)
+        // System prompt = meta-prompt with DCM/context injected
+        // User message = minimal trigger
+        AIServiceClient.AIResponse response = AIServiceClient.callAI(
+            finalMetaPrompt,            // System prompt (meta-prompt with injected values)
+            'Generate the template.',   // User message (trigger)
+            8192,                       // Max tokens (templates can be large)
+            0.7                         // Temperature
+        );
+
+        if (!response.success) {
+            throw new StageException('AI API call failed: ' + response.error);
+        }
+
+        return response.content;
+    }
+
+    /**
+     * @description Iterate on prompt generation with validation feedback
+     * Generates prompt template, validates quality, and iterates up to maxIterations if needed
+     *
+     * @param metaPrompt The meta-prompt Builder content
+     * @param dcmAnalysisJson The DCM analysis JSON string
+     * @param dcmAnalysisStructured The DCM analysis Map (for validation)
+     * @param businessContext The user's business context
+     * @param runId The run ID for logging
+     * @param result The StageResult for queuing logs
+     * @param maxIterations Maximum iteration attempts (default: 10)
+     * @return Map<String, Object> with keys: 'template' (String), 'validation' (Map), 'iterations' (Integer)
+     */
+    private Map<String, Object> iterateOnPromptGeneration(
+            String metaPrompt,
+            String dcmAnalysisJson,
+            Map<String, Object> dcmAnalysisStructured,
+            String businessContext,
+            Id runId,
+            StageResult result,
+            Integer maxIterations) {
+
+        if (maxIterations == null || maxIterations <= 0) {
+            maxIterations = 10;
+        }
+
+        String generatedTemplate;
+        Map<String, Object> validation;
+        Integer iteration = 0;
+
+        while (iteration < maxIterations) {
+            iteration++;
+
+            result.queueInfo(runId, STAGE_NUMBER,
+                'V2.5: Generating prompt template (iteration ' + iteration + ')');
+
+            // Generate template
+            try {
+                generatedTemplate = generateSpecificPromptTemplate(
+                    metaPrompt,
+                    dcmAnalysisJson,
+                    businessContext
+                );
+            } catch (Exception e) {
+                result.queueError(runId, STAGE_NUMBER,
+                    'V2.5: Template generation failed (iteration ' + iteration + '): ' + e.getMessage());
+
+                // If first iteration fails, rethrow
+                if (iteration == 1) {
+                    throw new StageException('Failed to generate prompt template: ' + e.getMessage(), e);
+                }
+
+                // Otherwise, continue to next iteration
+                continue;
+            }
+
+            // Validate template
+            validation = validatePromptTemplate(generatedTemplate, dcmAnalysisStructured);
+
+            Boolean isValid = (Boolean) validation.get('isValid');
+            Integer errorCount = (Integer) validation.get('errorCount');
+            Integer warningCount = (Integer) validation.get('warningCount');
+
+            result.queueInfo(runId, STAGE_NUMBER,
+                'V2.5: Template validation (iteration ' + iteration + '): ' +
+                'Valid=' + isValid + ', Errors=' + errorCount + ', Warnings=' + warningCount);
+
+            // Log validation errors/warnings
+            List<String> errors = (List<String>) validation.get('errors');
+            if (errors != null && !errors.isEmpty()) {
+                for (String error : errors) {
+                    result.queueError(runId, STAGE_NUMBER, 'Validation error: ' + error);
+                }
+            }
+
+            List<String> warnings = (List<String>) validation.get('warnings');
+            if (warnings != null && !warnings.isEmpty()) {
+                for (String warning : warnings) {
+                    result.queueInfo(runId, STAGE_NUMBER, 'Validation warning: ' + warning);
+                }
+            }
+
+            // If valid, return result
+            if (isValid) {
+                result.queueInfo(runId, STAGE_NUMBER,
+                    'V2.5: Template generation successful after ' + iteration + ' iteration(s)');
+
+                return new Map<String, Object>{
+                    'template' => generatedTemplate,
+                    'validation' => validation,
+                    'iterations' => iteration,
+                    'success' => true
+                };
+            }
+
+            // If not valid and not last iteration, log and continue
+            if (iteration < maxIterations) {
+                result.queueInfo(runId, STAGE_NUMBER,
+                    'V2.5: Template invalid. Retrying (iteration ' + (iteration + 1) + ')...');
+
+                // TODO: Add validation feedback to meta-prompt for next iteration
+                // For MVP, just retry without feedback
+            }
+        }
+
+        // Max iterations reached without success
+        result.queueError(runId, STAGE_NUMBER,
+            'V2.5: Failed to generate valid template after ' + maxIterations + ' iterations');
+
+        return new Map<String, Object>{
+            'template' => generatedTemplate, // Return last attempt
+            'validation' => validation,
+            'iterations' => iteration,
+            'success' => false
+        };
     }
 
     /**
