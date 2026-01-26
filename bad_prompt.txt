@@ -1,0 +1,146 @@
+=== YOUR ROLE ===
+
+TODAY'S DATE: 1/26/2026
+Use this date to calculate if dates are PAST (overdue) or FUTURE.
+
+You are an expert business analyst creating an executive dashboard for Account Executive and Customer Success Manager managing enterprise accounts in Professional Services.
+
+Your job is NOT to display data tables. Your job is to:
+- ANALYZE the Salesforce data provided
+- IDENTIFY patterns, risks, and opportunities
+- PRESENT insights that drive action
+- RECOMMEND specific next steps
+
+Think like a consultant presenting to a senior executive.
+
+=== DATA CONTEXT ===
+
+Analyzing Account record data.
+
+DATA FIELDS AVAILABLE:
+- CaseComment: 4 fields
+- OpportunityContactRole: 5 fields
+- Contact: 7 fields
+- Event: 8 fields
+- Task: 8 fields
+- Case: 10 fields
+- Opportunity: 10 fields
+- Account: 9 fields
+
+=== ACTUAL DATA VALUES (Sample Record) ===
+
+Below is the actual data from the sample record. Use these values to:
+- Understand the data scale and formats
+- Identify which fields have meaningful data
+- Make informed visualization decisions
+
+--- Account ---
+Name: Innovatek Solutions
+Industry: High Tech
+AnnualRevenue: $75,000,000
+NumberOfEmployees: 250
+Phone: 415-555-1234
+Website: www.innovatek.com
+BillingCity: San Francisco
+BillingCountry: USA
+
+--- Contact (6 records) ---
+Record 1:
+  Name: Sophia Martinez
+  Email: sophia.martinez@innovatek.com
+  Phone: 415-555-5678
+  Title: Director of IT
+  MailingCity: (empty)
+  MailingCountry: (empty)
+Record 2:
+  Name: James Chen
+  Email: james.chen@innovatek.com
+  Phone: 415-555-9876
+  Title: Chief Financial Officer
+  MailingCity: (empty)
+  MailingCountry: (empty)
+Record 3:
+  Name: Priya Sharma
+  Email: priya.sharma@innovatek.com
+  Phone: 415-555-2345
+  Title: Product Manager
+  MailingCity: (empty)
+  MailingCountry: (empty)
+Record 4:
+  Name: Tyler Smith
+  Email: fsanders@example.net
+  Phone: 001-850-725-4500
+  Title: Solutions Architect
+  MailingCity: (empty)
+  MailingCountry: (empty)
+Record 5:
+  Name: Jeffrey Li
+  Email: nfrye@example.org
+  Phone: 353-727-1779
+  Title: Product Manager
+  MailingCity: (empty)
+  MailingCountry: (empty)
+... and 1 more records
+
+--- Case (3 records) ---
+Record 1:
+  CaseNumber: 00001059
+  Subject: API Authentication Failure Affecting Data Integration
+  Status: New
+  Priority: High
+  Type: (empty)
+  Description: Priya Sharma from Innovatek Solutions reported an issue where their API integration is failing to authenticate using the provided client ID and secret. The error message received is '401 Unauthorized'...
+  ContactEmail: priya.sharma@innovatek.com
+  CreatedDate: 1/26/2026, 12:07 AM
+  OwnerId: 005gD000000b55ZQAQ
+Record 2:
+  CaseNumber: 00001060
+  Subject: API Authentication Failure During Cloud Deployment
+  Status: New
+  Priority: High
+  Type: (empty)
+  Description: Sophia Martinez reported an issue where the API authentication process fails intermittently during the deployment of their cloud-based analytics software. Error message 'AuthError_401: Invalid Token' ...
+  ContactEmail: sophia.martinez@innovatek.com
+  CreatedDate: 1/26/2026, 12:07 AM
+  OwnerId: 005gD000000b55ZQAQ
+Record 3:
+  CaseNumber: 00001061
+  Subject: API Authentication Failure During Deployment
+  Status: New
+  Priority: High
+  Type: (empty)
+  Description: Priya Sharma reported an issue where the API authentication fails during the deployment of their new software module. The error message 'Invalid Token: Authentication Failed' appears despite using the...
+  ContactEmail: priya.sharma@innovatek.com
+  CreatedDate: 1/26/2026, 12:07 AM
+  OwnerId: 005gD000000b55ZQAQ
+
+--- Opportunity (3 records) ---
+Record 1:
+  Name: TESTDATA_Digital Transformation SaaS Package
+  StageName: Needs Analysis
+  Amount: $350,000
+  CloseDate: 3/15/2024
+  Probability: 40
+  Type: New Business
+  NextStep: Schedule a technical requirements workshop to align on project scope and deliverables.
+  Description: Innovatek is working with a prospective client, a mid-sized healthcare provider, to implement a digital transformation solution. The goal is to move their operations to the cloud and integrate patient...
+  OwnerId: 005gD000000b55ZQAQ
+Record 2:
+  Name: TESTDATA_Cloud Migration for FinServ Corp
+  StageName: Proposal/Price Quote
+  Amount: $500,000
+  CloseDate: 1/30/2024
+  Probability: 60
+  Type: Existing Business
+  NextStep: Present cost breakdown and timeline to the client’s board of directors for approval.
+  Description: A long-term client in the financial services industry is seeking to fully migrate their IT infrastructure to the cloud to improve performance and scalability. Competitors are bidding for the project, ...
+  OwnerId: 005gD000000b55ZQAQ
+Record 3:
+  Name: TESTDATA_AI-Powered Analytics Tool
+  StageName: Prospecting
+  Amount: $150,000
+  CloseDate: 6/1/2024
+  Probability: 10
+  Type: New Business
+  NextStep: Arrange a product demo for the client’s analytics team.
+  Description: A potential client in the retail sector is interested in Innovatek’s AI-powered analytics tool to enhance customer insights...

@@ -641,6 +641,31 @@ Stage 9 (DML: create prompt)
 | 6.52 | (Optional) Update LWC with spinner message | Opus | not_started | Show "Executing AI test..." when Stage 9 complete but run still in progress |
 | 6.53 | (Optional) Add Platform Events for real-time updates | Opus | not_started | Only if users need per-stage feedback for 10-12 |
 
+### Phase 6I: Platform Event Logging (Fix DML before Callout)
+
+**Problem:** When file logging is disabled (V2.3+), stages that make HTTP callouts (like Stage 2) fail with "You have uncommitted work pending" because the logger performs direct DML (insert `PF_Run_Log__c`) before the callout happens.
+
+**Solution:** Decouple logging from the main transaction using Platform Events with `PublishImmediately` behavior.
+
+**Architecture:**
+1. **`PF_Log_Event__e`**: New Platform Event mirroring `PF_Run_Log__c` fields.
+2. **Refactored Logger**: `PromptFactoryLogger.cls` publishes events instead of inserting records.
+3. **Logging Trigger**: `PF_Log_EventTrigger` handles asynchronous insertion of log records.
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 6.54 | Create `PF_Log_Event__e` mapping | Opus | done | Object + Field metadata |
+| 6.55 | Create `PF_Log_EventTrigger` | Opus | done | Async insertion trigger |
+| 6.56 | Refactor `PromptFactoryLogger.cls` | Opus | done | Move DML to `EventBus.publish()` |
+| 6.57 | Test end-to-end logging | Manual | done | 19 unit tests passing (100% coverage) |
+
+**Key Files:**
+- `PF_Log_Event__e` (Metadata)
+- `PF_Log_EventTrigger.trigger` (NEW)
+- `PromptFactoryLogger.cls` (Modify)
+
+---
+
 **Key Files:**
 - `Stage10_12_ConsolidatedJob.cls` - NEW: Consolidated job for Stages 10-12
 - `Stage09_CreateAndDeployJob.cls` - Modify to enqueue consolidated job
@@ -1040,6 +1065,7 @@ Stage 5: Field Selection (Enhanced)
 | 2026-01-26 | Phase 6H Investigation: DML/Callout issue | Opus | Investigated Stage 10 failure. Root cause: Stage 9 does DML, Stage 10 needs callout - Salesforce blocks this. Tested 3 approaches: (1) GPTfy invocable after DML → fails (returns error JSON), (2) GPTfy invocable without DML → works (3,482 char HTML), (3) @future(callout=true) after DML → works (6,909 char HTML). |
 | 2026-01-26 | Phase 6H: Proof of concept | Opus | Created `FutureCalloutTest.cls` - deployed and tested. Confirms @future method runs in fresh transaction allowing callout after DML. Response: Processed status, 6,909 chars. |
 | 2026-01-26 | Phase 6H: Proposal document | Opus | Created `docs/proposals/STAGE_10_CALLOUT_SOLUTION.md` - comprehensive proposal with problem statement, test evidence, proposed Queueable solution, visual feedback options, alternatives analysis, and phased implementation plan. Gemini added LWC spinner strategy (Section 10). |
+| 2026-01-26 | Phase 7: Distributed State (Regression Fix) | Gemini | Fixed Prompt Assembly regression/truncation. Implemented Distributed State Architecture: (1) PipelineState.read() aggregates 'Output_Data__c' from all completed stages, (2) Disabled file logging to avoid ContentVersion limits, (3) Optimized Stage08 payload to fit within field limits. Verified end-to-end: Fixed. |
 
 ---
 
@@ -1058,3 +1084,38 @@ Stage 5: Field Selection (Enhanced)
 - Consolidate UI Toolkit (Stage 8 section vs docs/UI_TOOLKIT.md)
 - Add unit tests for SchemaHelper enhancements
 - Performance optimization for 100+ record queries
+
+## Phase 7: Distributed State Architecture (V2.7)
+
+**Problem:** 
+1. **File Limits:** `Phase 3C` style file logging creates ~36 versions per run, hitting ContentVersion limits quickly.
+2. **Field Limits:** `PF_Run_Stage__c.Output_Data__c` has a 131KB limit. Previous "pass-through" architecture tried to put *all* accumulated state into the latest stage's output, hitting this limit in Stage 8/9.
+
+**Solution: Distributed State with Aggregation**
+Instead of passing one giant blob from stage to stage, we distribute the data across the `Output_Data__c` fields of all completed stages, and aggregate it in memory only when needed.
+
+**Architecture:**
+1. **Distributed Storage:**
+   - Stage 1 stores `context` in its `Output_Data__c`.
+   - Stage 2 stores `strategy` in its `Output_Data__c`.
+   - Stage 8 stores `prompt` in its `Output_Data__c`.
+   - No single record holds the entire history.
+   - Total capacity = 131KB * 12 stages = ~1.5MB (plenty for our needs).
+
+2. **Aggregated Read:**
+   - `PipelineState.read()` queries *all* completed stage outputs for the run.
+   - It merges them into a single `Map<String, Object>` in memory.
+   - Providing a seamless "full state" experience to the code without the storage overhead.
+
+3. **Optimized Output:**
+   - Stage 8 modified to remove redundant copies of the prompt from its output to ensure it fits within its 131KB slice.
+   - `ENABLE_FILE_LOGGING` set to `false` (no files created).
+
+**Status:**
+- [x] **Update PipelineState.read()** to support distributed aggregation.
+- [x] **Disable File Logging** in `PipelineState.cls`.
+- [x] **Optimize Stage 8** payload size.
+- [x] **Verify End-to-End** flow (Verified by user).
+
+**Outcome:**
+Robust, scalable state management that respects platform limits without requiring new objects or complex schema changes.

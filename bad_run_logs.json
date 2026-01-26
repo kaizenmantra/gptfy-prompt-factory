@@ -1,0 +1,1324 @@
+{
+  "status": 0,
+  "result": {
+    "records": [
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qgLXYAY"
+        },
+        "Stage_Number__c": 1,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Starting execution of Stage 1"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qgLYYAY"
+        },
+        "Stage_Number__c": 1,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Starting intelligence retrieval"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qgLZYAY"
+        },
+        "Stage_Number__c": 1,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Retrieved run configuration: Account, Sample ID: 001QH000024pY3ZYAU"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qgLaYAI"
+        },
+        "Stage_Number__c": 1,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Successfully validated sample record. Summary keys: 3"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qgLbYAI"
+        },
+        "Stage_Number__c": 1,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Company Website: www.accenture.com"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qgLcYAI"
+        },
+        "Stage_Number__c": 1,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Intelligence retrieval completed successfully"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qgLdYAI"
+        },
+        "Stage_Number__c": 1,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Stage completed with status: Completed (Duration: 0.113s)"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qgLeYAI"
+        },
+        "Stage_Number__c": 1,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Stage 1 completed successfully"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qgLfYAI"
+        },
+        "Stage_Number__c": 1,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Preparing to chain to Stage 2"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qgLgYAI"
+        },
+        "Stage_Number__c": 2,
+        "Log_Level__c": "WARNING",
+        "Log_Message__c": "PipelineState file not found, falling back to stage record"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkblYAA"
+        },
+        "Stage_Number__c": null,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Pipeline run created and queued for: Account with AI Model: a01gD000003okzEQAQ"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkbmYAA"
+        },
+        "Stage_Number__c": 1,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Stage 1 enqueued successfully"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkSFYAY"
+        },
+        "Stage_Number__c": 2,
+        "Log_Level__c": "DEBUG",
+        "Log_Message__c": "Calling AI for company research: Accenture"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkSGYAY"
+        },
+        "Stage_Number__c": 2,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Company research completed for: Accenture (Tokens: 686/1595)"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkSHYAY"
+        },
+        "Stage_Number__c": 2,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": ">>> COMPANY RESEARCH: Received 7369 chars of intelligence"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkSRYAY"
+        },
+        "Stage_Number__c": 2,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Stage completed with status: Completed (Duration: 26.364s)"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkgdYAA"
+        },
+        "Stage_Number__c": 2,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Starting execution of Stage 2"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkSUYAY"
+        },
+        "Stage_Number__c": 3,
+        "Log_Level__c": "WARNING",
+        "Log_Message__c": "PipelineState file not found, falling back to stage record"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkSQYAY"
+        },
+        "Stage_Number__c": 2,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Strategic profiling completed successfully"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkSTYAY"
+        },
+        "Stage_Number__c": 2,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Preparing to chain to Stage 3"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkSSYAY"
+        },
+        "Stage_Number__c": 2,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Stage 2 completed successfully"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkSPYAY"
+        },
+        "Stage_Number__c": 2,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Target Persona: Account Executive and Customer Success Manager managing enterprise accounts in Professional Services"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkSOYAY"
+        },
+        "Stage_Number__c": 2,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Strategic Insights: - Highlight open opportunities segmented by stage and priority to enable faster closing\n- Identify unresolved cases and escalate high-impact issues proactively to improve customer satisfaction\n- Surface activity trends (e.g., meeting cadence, email response rates) to track relationship health and engagement"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkSMYAY"
+        },
+        "Stage_Number__c": 2,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Company Profile: Accenture, a global professional services firm specializing in consulting, technology, outsourcing, and digital transformation"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkSNYAY"
+        },
+        "Stage_Number__c": 2,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Industry Context: Professional Services industry with focus on management consulting, technology consulting, outsourcing, and emerging technologies such as AI/ML, cloud..."
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkSLYAY"
+        },
+        "Stage_Number__c": 2,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Company Research: ## 1. Industry Context\n* **Primary Industry**: Professional Services  \n  **Sub-industries**: Management Consulting, Technology Consulting, Outsourcing, Digital Transformation, Cloud Services, Artifici..."
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkSKYAY"
+        },
+        "Stage_Number__c": 2,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "AI response received (Tokens: 2229/322)"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkSJYAY"
+        },
+        "Stage_Number__c": 2,
+        "Log_Level__c": "DEBUG",
+        "Log_Message__c": "Calling AI for strategic profiling"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkSIYAY"
+        },
+        "Stage_Number__c": 2,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": ">>> COMPANY RESEARCH PREVIEW: ## 1. Industry Context\n* **Primary Industry**: Professional Services  \n  **Sub-industries**: Management Consulting, Technology Consulting, Outsourcing, Digital Transformation, Cloud Services, Artificial Intelligence, and Cybersecurity.\n* **Regulatory Environment**:  \n  - Accenture operates globally"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkS8YAI"
+        },
+        "Stage_Number__c": 2,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Starting strategic profiling with company research"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkS9YAI"
+        },
+        "Stage_Number__c": 2,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "DEBUG - Inputs received from Stage 1:"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkSAYAY"
+        },
+        "Stage_Number__c": 2,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "rootObject: Account"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkSBYAY"
+        },
+        "Stage_Number__c": 2,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "outputFormat: Report"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkSCYAY"
+        },
+        "Stage_Number__c": 2,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "companyWebsite: [www.accenture.com]"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkSDYAY"
+        },
+        "Stage_Number__c": 2,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "businessContext length: 195"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkSEYAY"
+        },
+        "Stage_Number__c": 2,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": ">>> COMPANY RESEARCH: Starting research for website: www.accenture.com"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qbkCYAQ"
+        },
+        "Stage_Number__c": 3,
+        "Log_Level__c": "DEBUG",
+        "Log_Message__c": "Calling AI for schema selection"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qbk8YAA"
+        },
+        "Stage_Number__c": 3,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Starting execution of Stage 3"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qbk9YAA"
+        },
+        "Stage_Number__c": 3,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Starting schema discovery"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qbkAYAQ"
+        },
+        "Stage_Number__c": 3,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Found 98 child relationships for Account"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qbkBYAQ"
+        },
+        "Stage_Number__c": 3,
+        "Log_Level__c": "DEBUG",
+        "Log_Message__c": "Available objects: Account, Account, AccountContactRole, AccountPartner, AccountPartner, Asset, Asset, Asset, AssociatedLocation, Attachment, AuthorizationFormConsent, AuthorizationFormConsent, CampaignMember, Case, CollaborationGroupRecord, CommSubscriptionConsent, Contact, ContactPointAddress, ContactPointEmail, ContactPointPhone, ContactRequest, ContentDistribution, ContentDocumentLink, ContentVersion, Contract, DuplicateRecordItem, EmailMessage, Entitlement, EntitySubscription, Event, Event, FeedComment, FeedItem, FlowOrchestrationWorkItem, FlowRecordRelation, Lead, Note, Opportunity, OpportunityPartner, Order, OutgoingEmail, Partner, Partner, ProcessInstance, RecordAction, ScorecardAssociation, ServiceContract, SocialPersona, SocialPost, Task, Task, TopicAssignment, User, UserDefinedLabelAssignment, UserPrioritizedRecord, UserRole, WorkOrder"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qbkDYAQ"
+        },
+        "Stage_Number__c": 3,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Claude AI response received (Tokens: 371/172)"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qbkEYAQ"
+        },
+        "Stage_Number__c": 3,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Selected 10 child objects"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qbkFYAQ"
+        },
+        "Stage_Number__c": 3,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Starting grandchild discovery (2-level deep)"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qbkGYAQ"
+        },
+        "Stage_Number__c": 3,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Found 204 potential grandchild objects"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qbkHYAQ"
+        },
+        "Stage_Number__c": 3,
+        "Log_Level__c": "DEBUG",
+        "Log_Message__c": "Calling AI for grandchild selection"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qbkIYAQ"
+        },
+        "Stage_Number__c": 3,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Selected 5 grandchild objects"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qbkJYAQ"
+        },
+        "Stage_Number__c": 3,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Schema discovery completed. Selected 10 children + 5 grandchildren"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qbkKYAQ"
+        },
+        "Stage_Number__c": 3,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Stage completed with status: Completed (Duration: 8.975s)"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qbkLYAQ"
+        },
+        "Stage_Number__c": 3,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Stage 3 completed successfully"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qbkMYAQ"
+        },
+        "Stage_Number__c": 3,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Preparing to chain to Stage 4"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qbkNYAQ"
+        },
+        "Stage_Number__c": 4,
+        "Log_Level__c": "WARNING",
+        "Log_Message__c": "PipelineState file not found, falling back to stage record"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qknDYAQ"
+        },
+        "Stage_Number__c": 4,
+        "Log_Level__c": "DEBUG",
+        "Log_Message__c": "Asset: 0 records (via AccountId)"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qknEYAQ"
+        },
+        "Stage_Number__c": 4,
+        "Log_Level__c": "DEBUG",
+        "Log_Message__c": "AccountContactRole: 0 records (via AccountId)"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qknFYAQ"
+        },
+        "Stage_Number__c": 4,
+        "Log_Level__c": "DEBUG",
+        "Log_Message__c": "OpportunityContactRole (grandchild via Opportunity): 6 records"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qknGYAQ"
+        },
+        "Stage_Number__c": 4,
+        "Log_Level__c": "DEBUG",
+        "Log_Message__c": "OpportunityLineItem (grandchild via Opportunity): 0 records"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qknHYAQ"
+        },
+        "Stage_Number__c": 4,
+        "Log_Level__c": "DEBUG",
+        "Log_Message__c": "CaseComment (grandchild via Case): 6 records"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qknIYAQ"
+        },
+        "Stage_Number__c": 4,
+        "Log_Level__c": "DEBUG",
+        "Log_Message__c": "EntitlementContact (grandchild via Entitlement): 0 records"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkn8YAA"
+        },
+        "Stage_Number__c": 4,
+        "Log_Level__c": "DEBUG",
+        "Log_Message__c": "Case: 3 records (via AccountId)"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qknJYAQ"
+        },
+        "Stage_Number__c": 4,
+        "Log_Level__c": "DEBUG",
+        "Log_Message__c": "AssetRelationship (grandchild via Asset): 0 records"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qknCYAQ"
+        },
+        "Stage_Number__c": 4,
+        "Log_Level__c": "DEBUG",
+        "Log_Message__c": "Entitlement: 0 records (via AccountId)"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qknLYAQ"
+        },
+        "Stage_Number__c": 4,
+        "Log_Level__c": "DEBUG",
+        "Log_Message__c": "Data availability: Account (1), Contact (6), Opportunity (3), Case (3), Task (18), Event (9), OpportunityContactRole (6), CaseComment (6)"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qknMYAQ"
+        },
+        "Stage_Number__c": 4,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Data profiling completed successfully"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qknBYAQ"
+        },
+        "Stage_Number__c": 4,
+        "Log_Level__c": "DEBUG",
+        "Log_Message__c": "Contract: 0 records (via AccountId)"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qknAYAQ"
+        },
+        "Stage_Number__c": 4,
+        "Log_Level__c": "DEBUG",
+        "Log_Message__c": "Event: 9 records (via AccountId)"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkn9YAA"
+        },
+        "Stage_Number__c": 4,
+        "Log_Level__c": "DEBUG",
+        "Log_Message__c": "Task: 18 records (via AccountId)"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qknKYAQ"
+        },
+        "Stage_Number__c": 4,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "8 objects have data for this record (filtered from 15 selected objects)"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qknNYAQ"
+        },
+        "Stage_Number__c": 4,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Stage completed with status: Completed (Duration: 0.499s)"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qknOYAQ"
+        },
+        "Stage_Number__c": 4,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Stage 4 completed successfully"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qknPYAQ"
+        },
+        "Stage_Number__c": 4,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Preparing to chain to Stage 5"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkn3YAA"
+        },
+        "Stage_Number__c": 4,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Starting execution of Stage 4"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkn4YAA"
+        },
+        "Stage_Number__c": 4,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Starting data profiling"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkn5YAA"
+        },
+        "Stage_Number__c": 4,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Profiling data for 15 objects (including 5 grandchildren)"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkn6YAA"
+        },
+        "Stage_Number__c": 4,
+        "Log_Level__c": "DEBUG",
+        "Log_Message__c": "Contact: 6 records (via AccountId)"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkn7YAA"
+        },
+        "Stage_Number__c": 4,
+        "Log_Level__c": "DEBUG",
+        "Log_Message__c": "Opportunity: 3 records (via AccountId)"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkaeYAA"
+        },
+        "Stage_Number__c": 5,
+        "Log_Level__c": "DEBUG",
+        "Log_Message__c": "CaseComment: 6 accessible of 6 total fields"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkafYAA"
+        },
+        "Stage_Number__c": 5,
+        "Log_Level__c": "DEBUG",
+        "Log_Message__c": "Loaded 13 traversal builders for 8 objects"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkagYAA"
+        },
+        "Stage_Number__c": 5,
+        "Log_Level__c": "WARNING",
+        "Log_Message__c": "Failed to parse traversal Account Traversals: Unexpected character ('=' (code 61)): expected a valid value (number, String, array, object, 'true', 'false' or 'null') at input location [1,2]"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkahYAA"
+        },
+        "Stage_Number__c": 5,
+        "Log_Level__c": "WARNING",
+        "Log_Message__c": "Failed to parse traversal Opportunity Traversals: Unexpected character ('=' (code 61)): expected a valid value (number, String, array, object, 'true', 'false' or 'null') at input location [1,2]"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkaiYAA"
+        },
+        "Stage_Number__c": 5,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Parsed 11 traversals for 5 objects"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkajYAA"
+        },
+        "Stage_Number__c": 5,
+        "Log_Level__c": "DEBUG",
+        "Log_Message__c": "Calling Claude AI for field selection"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkakYAA"
+        },
+        "Stage_Number__c": 5,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Claude AI response received (Tokens: 3146/526)"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkalYAA"
+        },
+        "Stage_Number__c": 5,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "AI Reasoning: The selected fields focus on providing a comprehensive 360-degree view of the customer for Account Executives and Customer Success Managers. For the Account object, key fields like Name, Industry, and AnnualRevenue provide business context, while Phone and Website enable direct engagement. Opportunities include StageName, Amount, and CloseDate to track in-flight deals. Cases include Subject, Status, and Priority to monitor ongoing issues. Tasks and Events focus on activity tracking with Subject, Status, and ActivityDate. Contacts include Name, Email, and Phone for stakeholder information. Parent fields are included to personalize outputs, such as OwnerId.Name for accountability and ContactId.Name for stakeholder identification. The selection ensures a balance between meaningful data and usability."
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkamYAA"
+        },
+        "Stage_Number__c": 5,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "OpportunityContactRole: Enriched from 4 to 5 fields (added meaningful fields)"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkanYAA"
+        },
+        "Stage_Number__c": 5,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Field selection complete: 61 valid fields across 8 objects"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkaoYAA"
+        },
+        "Stage_Number__c": 5,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Parent fields selected: {\"CaseComment\":[\"ParentId.CaseNumber\",\"ParentId.Subject\"],\"OpportunityContactRole\":[\"ContactId.Name\",\"ContactId.Email\"],\"Event\":[\"OwnerId.Name\",\"OwnerId.Email\"],\"Task\":[\"OwnerId.Name\",\"OwnerId.Email\"],\"Case\":[\"OwnerId.Name\",\"OwnerId.Email\",\"ContactId.Name\"],\"Opportunity\":[\"OwnerId.Name\",\"OwnerId.Email\"],\"Account\":[\"OwnerId.Name\",\"OwnerId.Email\"]}"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkaaYAA"
+        },
+        "Stage_Number__c": 5,
+        "Log_Level__c": "DEBUG",
+        "Log_Message__c": "Case: 29 accessible of 41 total fields, skipped 12 inaccessible"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkabYAA"
+        },
+        "Stage_Number__c": 5,
+        "Log_Level__c": "DEBUG",
+        "Log_Message__c": "Task: 30 accessible of 44 total fields, skipped 1 inaccessible"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkacYAA"
+        },
+        "Stage_Number__c": 5,
+        "Log_Level__c": "DEBUG",
+        "Log_Message__c": "Event: 30 accessible of 55 total fields, skipped 1 inaccessible"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkadYAA"
+        },
+        "Stage_Number__c": 5,
+        "Log_Level__c": "DEBUG",
+        "Log_Message__c": "OpportunityContactRole: 7 accessible of 7 total fields"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkaWYAQ"
+        },
+        "Stage_Number__c": 5,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Using LLM-based field selection (shell script parity)"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkaXYAQ"
+        },
+        "Stage_Number__c": 5,
+        "Log_Level__c": "DEBUG",
+        "Log_Message__c": "Account: 30 accessible of 46 total fields, skipped 2 inaccessible"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkaYYAQ"
+        },
+        "Stage_Number__c": 5,
+        "Log_Level__c": "DEBUG",
+        "Log_Message__c": "Contact: 30 accessible of 58 total fields"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkaZYAQ"
+        },
+        "Stage_Number__c": 5,
+        "Log_Level__c": "DEBUG",
+        "Log_Message__c": "Opportunity: 30 accessible of 37 total fields, skipped 4 inaccessible"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkapYAA"
+        },
+        "Stage_Number__c": 6,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Starting configuration validation"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkaqYAA"
+        },
+        "Stage_Number__c": 6,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Validating configuration for 8 objects"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkbnYAA"
+        },
+        "Stage_Number__c": 6,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Validation complete: 101/101 checks passed"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkboYAA"
+        },
+        "Stage_Number__c": 6,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Configuration validation completed"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkoqYAA"
+        },
+        "Stage_Number__c": 7,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "All merge fields validated against whitelist"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkofYAA"
+        },
+        "Stage_Number__c": 7,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Starting template design"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkogYAA"
+        },
+        "Stage_Number__c": 7,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Loaded UI patterns from static resource"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkohYAA"
+        },
+        "Stage_Number__c": 7,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Sample data available for template design"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkoiYAA"
+        },
+        "Stage_Number__c": 7,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Built field whitelist with 61 allowed fields"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkojYAA"
+        },
+        "Stage_Number__c": 7,
+        "Log_Level__c": "DEBUG",
+        "Log_Message__c": "Whitelist: Id, Name, Industry, AnnualRevenue, NumberOfEmployees, Phone, Website, BillingCity, BillingCountry, Opportunity.Id, Opportunity.Name, Opportunity.StageName, Opportunity.Amount, Opportunity.CloseDate, Opportunity.Probability, Opportunity.Type, Opportunity.NextStep, Opportunity.Description, Opportunity.OwnerId, Case.Id, Case.CaseNumber, Case.Subject, Case.Status, Case.Priority, Case.Type, Case.Description, Case.ContactEmail, Case.CreatedDate, Case.OwnerId, Task.Id, Task.Subject, Task.Status, Task.Priority, Task.ActivityDate, Task.Description, Task.WhatId, Task.OwnerId, Event.Id, Event.Subject, Event.Location, Event.ActivityDateTime, Event.DurationInMinutes, Event.Description, Event.WhatId, Event.OwnerId, Contact.Id, Contact.Name, Contact.Email, Contact.Phone, Contact.Title, Contact.MailingCity, Contact.MailingCountry, OpportunityContactRole.Id, OpportunityContactRole.Role, OpportunityContactRole.IsPrimary, OpportunityContactRole.ContactId, OpportunityContactRole.OpportunityId, CaseComment.Id, CaseComment.CommentBody, CaseComment.CreatedDate, CaseComment.IsPublished"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkokYAA"
+        },
+        "Stage_Number__c": 7,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Using meta-prompt approach (V2.0)"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkolYAA"
+        },
+        "Stage_Number__c": 7,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Generated analysis brief for meta-prompt"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkomYAA"
+        },
+        "Stage_Number__c": 7,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Generating prompt metadata via AI"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkonYAA"
+        },
+        "Stage_Number__c": 7,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Generated prompt metadata: description=181 chars, howItWorks=843 chars"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkooYAA"
+        },
+        "Stage_Number__c": 7,
+        "Log_Level__c": "DEBUG",
+        "Log_Message__c": "Generated minimal template for validation (2349 chars)"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkopYAA"
+        },
+        "Stage_Number__c": 7,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Template contains 61 merge fields"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkorYAA"
+        },
+        "Stage_Number__c": 7,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Template design completed successfully"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkrtYAA"
+        },
+        "Stage_Number__c": 8,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Starting prompt assembly"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkrvYAA"
+        },
+        "Stage_Number__c": 8,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Assembling prompt for Account (Meta-Prompt V2.0)"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkrwYAA"
+        },
+        "Stage_Number__c": 8,
+        "Log_Level__c": "DEBUG",
+        "Log_Message__c": "Validated 61 merge fields"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkryYAA"
+        },
+        "Stage_Number__c": 8,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "V2.5: Querying sample record: Account"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkrzYAA"
+        },
+        "Stage_Number__c": 8,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "V2.5: Could not query CaseComment: Didn't understand relationship 'CaseComments' in FROM part of query call. If you are attempting to use a custom relationship, be sure to append the '__r' after the custom relationship name. Please reference your WSDL or the describe call for the appropriate names."
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkVKYAY"
+        },
+        "Stage_Number__c": 8,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Loading Output Rules builder"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qks4YAA"
+        },
+        "Stage_Number__c": 8,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Prompt size: 32667/131072 chars (25%)"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qks5YAA"
+        },
+        "Stage_Number__c": 8,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Prompt assembly completed successfully - all merge fields validated"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkrxYAA"
+        },
+        "Stage_Number__c": 8,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Building meta-prompt (V2.5)"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkqHYAQ"
+        },
+        "Stage_Number__c": 8,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Loaded Output Rules: GPTfy Merge Field Syntax Rules (1506 chars)"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkruYAA"
+        },
+        "Stage_Number__c": 8,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Using company research: ## 1. Industry Context\n* **Primary Industry**: Professional Services  \n  **Sub-industries**: Managem..."
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qks0YAA"
+        },
+        "Stage_Number__c": 8,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "V2.5: Could not query OpportunityContactRole: Didn't understand relationship 'OpportunityContactRoles' in FROM part of query call. If you are attempting to use a custom relationship, be sure to append the '__r' after the custom relationship name. Please reference your WSDL or the describe call for the appropriate names."
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qks1YAA"
+        },
+        "Stage_Number__c": 8,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "V2.5: Actual data section built (4300 chars)"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qks2YAA"
+        },
+        "Stage_Number__c": 8,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Meta-prompt built: 28342 chars"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qks3YAA"
+        },
+        "Stage_Number__c": 8,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Prompt assembled: 31433 characters total (Instructions: 28342, Template: 2349, Rules: 742), 61 of 61 merge fields validated"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qktVYAQ"
+        },
+        "Stage_Number__c": 9,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Starting DCM and Prompt creation"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qktWYAQ"
+        },
+        "Stage_Number__c": 9,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Using user-selected AI Model: a01gD000003okzEQAQ"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qktXYAQ"
+        },
+        "Stage_Number__c": 9,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Creating Data Context Mapping (with grandchild support)"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qhMDYAY"
+        },
+        "Stage_Number__c": 9,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Creating AI Prompt record"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qhMCYAY"
+        },
+        "Stage_Number__c": 9,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "DCM created successfully: a05QH000008SpmAYAS"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qamEYAQ"
+        },
+        "Stage_Number__c": 9,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Updated run record with DCM and Prompt IDs"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qamCYAQ"
+        },
+        "Stage_Number__c": 9,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Prompt Request ID captured after 1 poll attempt(s): d9d70553211db3b359062c51d31a8e1e94206"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qamBYAQ"
+        },
+        "Stage_Number__c": 9,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Waiting for GPTfy to generate Prompt Request ID (polling up to 15 times, 2000ms interval)..."
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qamAYAQ"
+        },
+        "Stage_Number__c": 9,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "AI Prompt activated at 1/26/2026, 4:30 PM"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qam9YAA"
+        },
+        "Stage_Number__c": 9,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Activating AI Prompt..."
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qam8YAA"
+        },
+        "Stage_Number__c": 9,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "DCM activated successfully"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkYZYAY"
+        },
+        "Stage_Number__c": 9,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "DCM linked to Prompt via External_Id"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qkYYYAY"
+        },
+        "Stage_Number__c": 9,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "AI Prompt created successfully: a0DQH00000KbmOj2AJ"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qamFYAQ"
+        },
+        "Stage_Number__c": 9,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Deployment completed successfully. DCM and Prompt are active. Ready for execution."
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qamDYAQ"
+        },
+        "Stage_Number__c": 9,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Prompt Request ID captured: d9d70553211db3b359062c51d31a8e1e94206"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qgLmYAI"
+        },
+        "Stage_Number__c": 12,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Claude AI response received (Tokens: 1267/287)"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qgLlYAI"
+        },
+        "Stage_Number__c": 12,
+        "Log_Level__c": "DEBUG",
+        "Log_Message__c": "Calling AI for quality scoring"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qgLkYAI"
+        },
+        "Stage_Number__c": 12,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Starting quality audit with Claude AI"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qgLoYAI"
+        },
+        "Stage_Number__c": 12,
+        "Log_Level__c": "ERROR",
+        "Log_Message__c": "Quality audit completed but score below threshold. Score: 8.45/10, Threshold: 9.0"
+      },
+      {
+        "attributes": {
+          "type": "PF_Run_Log__c",
+          "url": "/services/data/v65.0/sobjects/PF_Run_Log__c/a0eQH000005qgLnYAI"
+        },
+        "Stage_Number__c": 12,
+        "Log_Level__c": "INFO",
+        "Log_Message__c": "Created 11-dimension quality score record: a0dQH000006jaNFYAY (Score: 8.45/10)"
+      }
+    ],
+    "totalSize": 146,
+    "done": true
+  },
+  "warnings": []
+}

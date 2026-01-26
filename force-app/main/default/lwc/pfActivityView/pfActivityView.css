@@ -2,10 +2,6 @@
    Activity View - Premium Design
    =================================== */
 
-.activity-view-container {
-    /* Removed min-height to avoid unnecessary whitespace */
-}
-
 /* Box styling */
 .slds-box {
     background: linear-gradient(180deg, #ffffff 0%, #fafaf9 100%);
@@ -13,6 +9,7 @@
     border-radius: 0.75rem;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
     padding: 1.5rem;
+    position: relative; /* Contain absolute elements like spinners */
 }
 
 /* Stage Header */

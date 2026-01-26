@@ -44,8 +44,9 @@ public with sharing class PipelineState {
     /**
      * @description Reads the current state for a run
      * Returns buffered state if available, otherwise reads from file
+     * Fallback: Aggregates state from all completed PF_Run_Stage__c records (Distributed State)
      * @param runId ID of the PF_Run__c record
-     * @return Map containing the state, or empty map if no file exists
+     * @return Map containing the state, or empty map if no state found
      */
     public static Map<String, Object> read(Id runId) {
         if (runId == null) {
@@ -57,28 +58,55 @@ public with sharing class PipelineState {
             return stateBuffer.get(runId);
         }
 
-        // Read from file
+        // Try reading from file first (if enabled/exists)
         try {
             ContentVersion cv = getLatestVersion(runId);
-            if (cv == null || cv.VersionData == null) {
-                return new Map<String, Object>();
+            if (cv != null && cv.VersionData != null) {
+                String jsonContent = cv.VersionData.toString();
+                if (String.isNotBlank(jsonContent)) {
+                    Map<String, Object> state = (Map<String, Object>) JSON.deserializeUntyped(jsonContent);
+                    stateBuffer.put(runId, state);
+                    return state;
+                }
             }
-
-            String jsonContent = cv.VersionData.toString();
-            if (String.isBlank(jsonContent)) {
-                return new Map<String, Object>();
-            }
-
-            Map<String, Object> state = (Map<String, Object>) JSON.deserializeUntyped(jsonContent);
-
-            // Cache in buffer for subsequent reads within this transaction
-            stateBuffer.put(runId, state);
-
-            return state;
         } catch (Exception e) {
-            System.debug(LoggingLevel.ERROR, 'PipelineState.read error: ' + e.getMessage());
-            return new Map<String, Object>();
+            System.debug(LoggingLevel.ERROR, 'PipelineState.read file error: ' + e.getMessage());
         }
+
+        // Fallback: Distributed Read from PF_Run_Stage__c records
+        // Aggregates Output_Data__c from all completed stages in order
+        try {
+            Map<String, Object> aggregatedState = new Map<String, Object>();
+            
+            List<PF_Run_Stage__c> stages = [
+                SELECT Output_Data__c
+                FROM PF_Run_Stage__c 
+                WHERE Run__c = :runId 
+                ORDER BY Stage_Number__c ASC
+            ];
+
+            for (PF_Run_Stage__c stage : stages) {
+                if (String.isNotBlank(stage.Output_Data__c)) {
+                    try {
+                        Map<String, Object> stageOutputs = (Map<String, Object>) JSON.deserializeUntyped(stage.Output_Data__c);
+                        aggregatedState.putAll(stageOutputs);
+                    } catch (Exception jsonEx) {
+                        System.debug(LoggingLevel.WARN, 'Failed to parse output for stage: ' + jsonEx.getMessage());
+                    }
+                }
+            }
+
+            if (!aggregatedState.isEmpty()) {
+                // Cache aggregated state in buffer
+                stateBuffer.put(runId, aggregatedState);
+                return aggregatedState;
+            }
+
+        } catch (Exception e) {
+            System.debug(LoggingLevel.ERROR, 'PipelineState.read distributed error: ' + e.getMessage());
+        }
+
+        return new Map<String, Object>();
     }
 
     /**

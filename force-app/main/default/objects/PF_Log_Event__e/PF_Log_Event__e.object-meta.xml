@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomObject xmlns="http://soap.sforce.com/2006/04/metadata">
+    <deploymentStatus>Deployed</deploymentStatus>
+    <description>Platform Event mapping for Prompt Factory logging to bypass DML before callout restrictions</description>
+    <eventType>HighVolume</eventType>
+    <label>Prompt Factory Log Event</label>
+    <pluralLabel>Prompt Factory Log Events</pluralLabel>
+    <publishBehavior>PublishImmediately</publishBehavior>
+</CustomObject>

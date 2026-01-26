@@ -198,12 +198,12 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             // Build outputs - include dcmConfig and promptConfig for Stage 9
             result.outputs.put('dcmConfig', dcmConfig);
             result.outputs.put('promptConfig', promptConfigForStage9);
-            result.outputs.put('promptConfiguration', promptConfig);
-            result.outputs.put('aiInstructions', aiInstructions);
-            result.outputs.put('groundingRules', groundingRules);
-            result.outputs.put('validatedFields', validatedFields);
-            result.outputs.put('invalidFieldCount', invalidFieldCount);
-            result.outputs.put('validationErrors', validationErrors);
+            // result.outputs.put('promptConfiguration', promptConfig); // Redundant
+            // result.outputs.put('aiInstructions', aiInstructions); // Redundant
+            // result.outputs.put('groundingRules', groundingRules); // Redundant
+            // result.outputs.put('validatedFields', validatedFields); // Redundant
+            // result.outputs.put('invalidFieldCount', invalidFieldCount); // Redundant
+            // result.outputs.put('validationErrors', validationErrors); // Redundant
             result.outputs.put('assemblySummary', assemblySummary);
 
             // Pass through critical inputs for downstream stages

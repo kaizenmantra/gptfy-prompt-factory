@@ -27,34 +27,46 @@ public with sharing class PromptFactoryLogger {
     public static void log(Id runId, Integer stageNumber, String logLevel,
                           String logMessage, String component, String details) {
         try {
-            PF_Run_Log__c logEntry = new PF_Run_Log__c(
-                Run__c = runId,
+            // V2.6H: Use Platform Events (Publish Immediately) to bypass DML before callout restrictions
+            PF_Log_Event__e logEvent = new PF_Log_Event__e(
+                Run_Id__c = runId,
                 Stage_Number__c = stageNumber,
                 Log_Level__c = logLevel,
-                Log_Message__c = truncate(logMessage, 10000),
-                Timestamp__c = System.now(),
+                Log_Message__c = truncate(logMessage, 10000), // Dest field on PF_Run_Log__c is 10k
                 Component__c = component,
                 Details__c = truncate(details, 32000)
             );
 
-            insert logEntry;
+            EventBus.publish(logEvent);
         } catch (Exception e) {
             // Log errors should not break the pipeline
-            System.debug(LoggingLevel.ERROR, 'Failed to create log entry: ' + e.getMessage());
+            System.debug(LoggingLevel.ERROR, 'Failed to publish log event: ' + e.getMessage());
         }
     }
 
     /**
      * @description Bulk insert log entries (more efficient for multiple logs)
+     * Re-implemented for Platform Events
      * @param logEntries List of PF_Run_Log__c records to insert
      */
     public static void bulkLog(List<PF_Run_Log__c> logEntries) {
         try {
             if (logEntries != null && !logEntries.isEmpty()) {
-                insert logEntries;
+                List<PF_Log_Event__e> events = new List<PF_Log_Event__e>();
+                for (PF_Run_Log__c entry : logEntries) {
+                    events.add(new PF_Log_Event__e(
+                        Run_Id__c = entry.Run__c,
+                        Stage_Number__c = entry.Stage_Number__c,
+                        Log_Level__c = entry.Log_Level__c,
+                        Log_Message__c = entry.Log_Message__c,
+                        Component__c = entry.Component__c,
+                        Details__c = entry.Details__c
+                    ));
+                }
+                EventBus.publish(events);
             }
         } catch (Exception e) {
-            System.debug(LoggingLevel.ERROR, 'Failed to bulk insert logs: ' + e.getMessage());
+            System.debug(LoggingLevel.ERROR, 'Failed to publish bulk log events: ' + e.getMessage());
         }
     }
 
@@ -70,6 +82,7 @@ public with sharing class PromptFactoryLogger {
     public static PF_Run_Log__c createLogEntry(Id runId, Integer stageNumber,
                                                String logLevel, String logMessage,
                                                String component) {
+        // DEPRECATED: Standard DML is not callout-safe. Use log() instead.
         return new PF_Run_Log__c(
             Run__c = runId,
             Stage_Number__c = stageNumber,
