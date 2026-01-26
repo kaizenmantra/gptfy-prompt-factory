@@ -203,11 +203,19 @@ public with sharing class SchemaHelper {
     /**
      * @description Checks if a system field is commonly useful in prompts
      * @param fieldName API name of the field
-     * @return true if it's a useful system field
+     * @return true if it's a useful system field for business context
+     *
+     * Includes:
+     * - Id fields for record correlation (parent-child linking)
+     * - CreatedDate, LastModifiedDate for timeline context
+     * - LastActivityDate for engagement/staleness analysis
+     * - OwnerId for ownership context
      */
     private static Boolean isUsefulSystemField(String fieldName) {
         Set<String> usefulFields = new Set<String>{
-            'Id', 'Name', 'CreatedDate', 'LastModifiedDate', 'OwnerId'
+            'Id', 'Name', 'OwnerId',
+            'CreatedDate', 'LastModifiedDate',
+            'LastActivityDate'  // Critical for engagement/staleness analysis
         };
         return usefulFields.contains(fieldName);
     }

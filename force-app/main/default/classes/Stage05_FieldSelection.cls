@@ -826,17 +826,20 @@ public with sharing class Stage05_FieldSelection implements IStage {
      */
     private List<String> getPriorityFieldsForObject(String objectName) {
         Map<String, List<String>> objectPriorityFields = new Map<String, List<String>>{
-            'Opportunity' => new List<String>{'Name', 'Amount', 'StageName', 'CloseDate', 'Probability', 'Type', 'NextStep', 'Description', 'IsClosed', 'IsWon'},
-            'OpportunityContactRole' => new List<String>{'Role', 'IsPrimary', 'ContactId'},
-            'OpportunityLineItem' => new List<String>{'Name', 'Quantity', 'UnitPrice', 'TotalPrice', 'Description'},
-            'Task' => new List<String>{'Subject', 'Status', 'Priority', 'ActivityDate', 'Description', 'Type'},
-            'Event' => new List<String>{'Subject', 'StartDateTime', 'EndDateTime', 'Location', 'Description', 'Type'},
-            'Case' => new List<String>{'Subject', 'Status', 'Priority', 'Type', 'Description', 'Origin'},
-            'Contact' => new List<String>{'Name', 'Title', 'Email', 'Phone', 'Department'},
+            // Parent objects
             'Account' => new List<String>{'Name', 'Industry', 'Type', 'AnnualRevenue', 'NumberOfEmployees', 'Website'},
             'Lead' => new List<String>{'Name', 'Company', 'Status', 'Industry', 'Rating', 'Email', 'Phone'},
-            'EmailMessage' => new List<String>{'Subject', 'TextBody', 'FromAddress', 'ToAddress', 'MessageDate', 'Status'},
-            'Note' => new List<String>{'Title', 'Body'},
+            // Child objects - include lookup IDs for parent correlation
+            'Opportunity' => new List<String>{'Name', 'Amount', 'StageName', 'CloseDate', 'Probability', 'Type', 'NextStep', 'Description', 'IsClosed', 'IsWon', 'AccountId'},
+            'Contact' => new List<String>{'Name', 'Title', 'Email', 'Phone', 'Department', 'AccountId'},
+            'Case' => new List<String>{'Subject', 'Status', 'Priority', 'Type', 'Description', 'Origin', 'AccountId', 'ContactId'},
+            'Task' => new List<String>{'Subject', 'Status', 'Priority', 'ActivityDate', 'Description', 'Type', 'WhatId', 'WhoId'},
+            'Event' => new List<String>{'Subject', 'StartDateTime', 'EndDateTime', 'Location', 'Description', 'Type', 'WhatId', 'WhoId'},
+            // Grandchild objects - include lookup IDs for correlation
+            'OpportunityContactRole' => new List<String>{'Role', 'IsPrimary', 'ContactId', 'OpportunityId'},
+            'OpportunityLineItem' => new List<String>{'Name', 'Quantity', 'UnitPrice', 'TotalPrice', 'Description', 'OpportunityId'},
+            'EmailMessage' => new List<String>{'Subject', 'TextBody', 'FromAddress', 'ToAddress', 'MessageDate', 'Status', 'ParentId'},
+            'Note' => new List<String>{'Title', 'Body', 'ParentId'},
             'ContentDocumentLink' => new List<String>{'LinkedEntityId', 'ContentDocumentId', 'ShareType', 'Visibility'}
         };
 
