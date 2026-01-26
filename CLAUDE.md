@@ -140,7 +140,23 @@ Goal: Visual richness and creative freedom in generated dashboards.
 |----------|---------|
 | `tests/phase0/score_outputs.py` | Python: evidence citations, forbidden phrases, customer refs, diagnostic ratio |
 | `tests/v26/run_innovatek_test.py` | Python: evidence, date analysis, forbidden, colors, customer refs (target: 90+) |
-| `Stage12_QualityAudit.cls` | Apex: 8 AI-scored dimensions (Evidence 20%, Diagnostic 15%, Visual 15%, etc.) |
+| `Stage12_QualityAudit.cls` | Apex: **11 AI-scored dimensions** (V2.6), threshold 9.0, JSON storage |
+
+### Stage 12 Scoring Dimensions (V2.6)
+
+| Dimension | Weight | Description |
+|-----------|--------|-------------|
+| evidenceBinding | 15% | Field citations present and accurate |
+| diagnosticDepth | 10% | Diagnostic vs descriptive language |
+| visualQuality | 10% | SLDS patterns, hierarchy |
+| uiEffectiveness | 5% | Stat cards, alerts, tables |
+| dataAccuracy | 10% | Totals, dates, related data |
+| personaFit | 5% | Density/tone for persona |
+| actionability | 5% | Specific next steps |
+| businessValue | 5% | Strategic "so what" |
+| **dateAnalysis** | **15%** | "X months overdue" calculations |
+| **forbiddenPhrases** | **10%** | No "touch base", "ensure alignment" |
+| **customerReferences** | **10%** | Specific names, not "stakeholder" |
 
 ### Common Test Accounts
 
