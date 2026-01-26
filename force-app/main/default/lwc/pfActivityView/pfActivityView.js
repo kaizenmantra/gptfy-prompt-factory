@@ -202,7 +202,8 @@ export default class PfActivityView extends NavigationMixin(LightningElement) {
 
     /**
      * Parse quality scorecard for display
-     * Uses backend fields: visualQuality, dataAccuracy, personaFit, actionability, businessValue
+     * V2.6: All 11 dimensions - evidenceBinding, diagnosticDepth, visualQuality, uiEffectiveness,
+     *       dataAccuracy, personaFit, actionability, businessValue, dateAnalysis, forbiddenPhrases, customerReferences
      */
     @api
     get qualityScores() {
@@ -215,11 +216,18 @@ export default class PfActivityView extends NavigationMixin(LightningElement) {
             : this.qualityScorecard;
 
         return [
-            { dimension: 'Visual Quality', score: scorecard.visualQuality || 0, icon: 'utility:layout' },
-            { dimension: 'Data Accuracy', score: scorecard.dataAccuracy || 0, icon: 'utility:check' },
-            { dimension: 'Persona Fit', score: scorecard.personaFit || 0, icon: 'utility:user' },
-            { dimension: 'Actionability', score: scorecard.actionability || 0, icon: 'utility:dynamic_record_choice' },
-            { dimension: 'Business Value', score: scorecard.businessValue || 0, icon: 'utility:money' }
+            // Core dimensions
+            { dimension: 'Evidence Binding', score: scorecard.evidenceBinding || 0, icon: 'utility:link', weight: '15%' },
+            { dimension: 'Date Analysis', score: scorecard.dateAnalysis || 0, icon: 'utility:date_input', weight: '15%' },
+            { dimension: 'Diagnostic Depth', score: scorecard.diagnosticDepth || 0, icon: 'utility:search', weight: '10%' },
+            { dimension: 'Visual Quality', score: scorecard.visualQuality || 0, icon: 'utility:layout', weight: '10%' },
+            { dimension: 'Data Accuracy', score: scorecard.dataAccuracy || 0, icon: 'utility:check', weight: '10%' },
+            { dimension: 'Forbidden Phrases', score: scorecard.forbiddenPhrases || 0, icon: 'utility:ban', weight: '10%' },
+            { dimension: 'Customer References', score: scorecard.customerReferences || 0, icon: 'utility:people', weight: '10%' },
+            { dimension: 'UI Effectiveness', score: scorecard.uiEffectiveness || 0, icon: 'utility:desktop', weight: '5%' },
+            { dimension: 'Persona Fit', score: scorecard.personaFit || 0, icon: 'utility:user', weight: '5%' },
+            { dimension: 'Actionability', score: scorecard.actionability || 0, icon: 'utility:task', weight: '5%' },
+            { dimension: 'Business Value', score: scorecard.businessValue || 0, icon: 'utility:money', weight: '5%' }
         ].map((item, index) => ({
             ...item,
             key: `score-${index}`,

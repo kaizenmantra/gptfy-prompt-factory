@@ -170,12 +170,11 @@ public with sharing class PromptFactoryController {
             }
 
             // Query quality score record if run is completed
+            // V2.6: Parse AI_Feedback__c JSON instead of individual fields
             Map<String, Object> qualityScorecard = null;
             if (run.Status__c == 'Completed') {
                 List<PF_Quality_Score__c> qualityScores = [
-                    SELECT Id, Visual_Quality__c, Data_Accuracy__c, Persona_Fit__c,
-                           Actionability__c, Business_Value__c, Pass_Threshold__c,
-                           Overall_Score__c, AI_Feedback__c
+                    SELECT Id, AI_Feedback__c
                     FROM PF_Quality_Score__c
                     WHERE Run__c = :runId
                     ORDER BY CreatedDate DESC
@@ -184,15 +183,42 @@ public with sharing class PromptFactoryController {
 
                 if (!qualityScores.isEmpty()) {
                     PF_Quality_Score__c qs = qualityScores[0];
-                    qualityScorecard = new Map<String, Object>{
-                        'visualQuality' => qs.Visual_Quality__c,
-                        'dataAccuracy' => qs.Data_Accuracy__c,
-                        'personaFit' => qs.Persona_Fit__c,
-                        'actionability' => qs.Actionability__c,
-                        'businessValue' => qs.Business_Value__c,
-                        'overallScore' => qs.Overall_Score__c,
-                        'threshold' => qs.Pass_Threshold__c
-                    };
+
+                    // V2.6: Parse AI_Feedback__c JSON to get all 11 dimensions
+                    if (String.isNotBlank(qs.AI_Feedback__c)) {
+                        try {
+                            Map<String, Object> feedback = (Map<String, Object>) JSON.deserializeUntyped(qs.AI_Feedback__c);
+                            Map<String, Object> dimensions = (Map<String, Object>) feedback.get('dimensions');
+
+                            if (dimensions != null) {
+                                qualityScorecard = new Map<String, Object>{
+                                    // Core dimensions
+                                    'visualQuality' => dimensions.get('visualQuality'),
+                                    'dataAccuracy' => dimensions.get('dataAccuracy'),
+                                    'personaFit' => dimensions.get('personaFit'),
+                                    'actionability' => dimensions.get('actionability'),
+                                    'businessValue' => dimensions.get('businessValue'),
+                                    'evidenceBinding' => dimensions.get('evidenceBinding'),
+                                    'diagnosticDepth' => dimensions.get('diagnosticDepth'),
+                                    'uiEffectiveness' => dimensions.get('uiEffectiveness'),
+                                    // V2.6 new dimensions
+                                    'dateAnalysis' => dimensions.get('dateAnalysis'),
+                                    'forbiddenPhrases' => dimensions.get('forbiddenPhrases'),
+                                    'customerReferences' => dimensions.get('customerReferences'),
+                                    // Overall score and threshold
+                                    'overallScore' => feedback.get('weightedScore'),
+                                    'threshold' => feedback.get('threshold'),
+                                    'meetsThreshold' => feedback.get('meetsThreshold'),
+                                    // Reasoning and feedback
+                                    'reasoning' => feedback.get('reasoning'),
+                                    'strengths' => feedback.get('strengths'),
+                                    'improvements' => feedback.get('improvements')
+                                };
+                            }
+                        } catch (Exception e) {
+                            System.debug('Failed to parse AI_Feedback__c JSON: ' + e.getMessage());
+                        }
+                    }
                 }
             }
 
