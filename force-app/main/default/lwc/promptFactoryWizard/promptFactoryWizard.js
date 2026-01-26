@@ -209,10 +209,21 @@ export default class PromptFactoryWizard extends LightningElement {
                     }
                 });
             }
+
+            // V2.6: Mark current stage as "running" if pipeline is in progress
+            // This ensures the blue running indicator shows even if no stage record exists yet
+            const pipelineStatusLower = result.status?.toLowerCase();
+            if (pipelineStatusLower === 'in progress' || pipelineStatusLower === 'running') {
+                const currentIdx = Math.floor(result.currentStage) - 1;
+                if (currentIdx >= 0 && currentIdx < 12 && newStageStatuses[currentIdx] === 'pending') {
+                    newStageStatuses[currentIdx] = 'running';
+                }
+            }
+
             this.stageStatuses = newStageStatuses;
 
             // Check if pipeline has completed or failed
-            const statusLower = result.status?.toLowerCase();
+            const statusLower = pipelineStatusLower;
             if (statusLower === 'completed' || statusLower === 'failed' || statusLower === 'aborted') {
                 this.stopPolling();
 
