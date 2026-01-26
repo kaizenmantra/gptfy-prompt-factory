@@ -1521,6 +1521,12 @@ public without sharing class Stage08_PromptAssembly implements IStage {
      */
     private String buildRoleSection(String targetPersona) {
         String section = '=== YOUR ROLE ===\n\n';
+
+        // Add current date for date calculations (critical for overdue/stale analysis)
+        String todayFormatted = Date.today().format();
+        section += 'TODAY\'S DATE: ' + todayFormatted + '\n';
+        section += 'Use this date to calculate if dates are PAST (overdue) or FUTURE.\n\n';
+
         section += 'You are an expert business analyst creating an executive dashboard for ' + targetPersona + '.\n\n';
         section += 'Your job is NOT to display data tables. Your job is to:\n';
         section += '- ANALYZE the Salesforce data provided\n';

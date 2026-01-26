@@ -531,8 +531,8 @@ Update `buildDirectiveSection()` to encourage story-driven layout.
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
 | 6.24 | Add Evidence Binding rules to Quality Rules (Compressed) | Opus | done | "Every insight MUST explain WHY" with GOOD/BAD examples |
-| 6.25 | Add DATE ANALYSIS section to Quality Rules | Opus | done | "Calculate if dates are PAST or FUTURE", overdue/stale guidance |
-| 6.26 | Add current date to meta-prompt | Opus | not_started | "Today's date is: [DATE]" so AI can calculate deltas |
+| 6.25 | Add DATE ANALYSIS section to Quality Rules | Opus | done | Enhanced v3: explicit "compare to TODAY'S DATE", calculated deltas required, GOOD/BAD examples, forbidden phrases |
+| 6.26 | Add current date to meta-prompt | Opus | done | Added TODAY'S DATE to buildRoleSection() in Stage08 |
 | 6.27 | Add LastActivityDate to useful system fields | Opus | done | SchemaHelper.cls - critical for staleness analysis |
 | 6.28 | Add lookup ID fields to priority field lists | Opus | done | Stage05 - AccountId, ContactId, WhatId, WhoId for parent-child correlation |
 | 6.29 | Keep CreatedDate, LastModifiedDate in useful fields | Opus | done | Per user request - useful for context |
@@ -561,6 +561,29 @@ Update `buildDirectiveSection()` to encourage story-driven layout.
 | 6.34 | Add evidence binding scoring criteria | Opus | not_started | Check for "because", "due to", "(Evidence:" patterns |
 | 6.35 | Run 3 iterations with Innovatek account | Opus | not_started | Target: 90+ score with proper evidence binding |
 | 6.36 | Document winning prompt configuration | Opus | not_started | Capture what worked for future reference |
+
+### Phase 6G: Stage 12 Quality Audit Enhancement
+
+**Problem:** Stage 12 has 8 AI-scored dimensions but is missing key quality checks that exist in Python test harness.
+
+**Current Stage 12 Dimensions:** Evidence Binding (20%), Diagnostic Depth (15%), Visual Quality (15%), UI Effectiveness (10%), Data Accuracy (10%), Persona Fit (10%), Actionability (10%), Business Value (10%)
+
+**Gaps to Address:**
+1. No Date Analysis check (does output calculate "X days overdue", "past close date"?)
+2. No Forbidden Phrases detection (generic advice like "touch base", "ensure alignment")
+3. Threshold too low (7.0 → should be 9.0)
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 6.37 | Add Date Analysis dimension to Stage 12 | Opus | not_started | Check for date calculations, overdue/stale language |
+| 6.38 | Add Forbidden Phrases check to Stage 12 | Opus | not_started | Detect generic advice, penalize score |
+| 6.39 | Add Customer Reference check to Stage 12 | Opus | not_started | Verify account/contact names are cited |
+| 6.40 | Raise quality threshold from 7.0 to 9.0 | Opus | not_started | Update DEFAULT_QUALITY_THRESHOLD constant |
+| 6.41 | Update AI audit prompt with new dimensions | Opus | not_started | Add Date Analysis, Forbidden Phrases to Claude prompt |
+| 6.42 | Update PF_Quality_Score__c fields if needed | Opus | not_started | Add fields for new dimensions |
+| 6.43 | Test Stage 12 with enhanced scoring | Manual | not_started | Validate new dimensions are scored correctly |
+
+**Scoring Logic Location:** `force-app/main/default/classes/Stage12_QualityAudit.cls`
 
 ---
 
