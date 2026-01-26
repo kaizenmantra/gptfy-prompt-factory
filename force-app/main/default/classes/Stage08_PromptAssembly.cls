@@ -1430,14 +1430,18 @@ public without sharing class Stage08_PromptAssembly implements IStage {
 
         if (useMetaPrompt) {
             // V2.0: Full meta-prompt with merge field reference
-            // V2.4: Include parent lookup fields for merge field documentation
+            // V2.4: Include parent lookup fields and grandchildren for merge field documentation
             Map<String, Object> selectedFieldsRaw = (Map<String, Object>) inputs.get('selectedFields');
             Map<String, Object> selectedParentFieldsRaw = (Map<String, Object>) inputs.get('selectedParentFields');
             if (selectedParentFieldsRaw == null) {
                 selectedParentFieldsRaw = new Map<String, Object>();
             }
+            List<Object> selectedGrandchildrenRaw = (List<Object>) inputs.get('selectedGrandchildren');
+            if (selectedGrandchildrenRaw == null) {
+                selectedGrandchildrenRaw = new List<Object>();
+            }
             finalPromptCommand = aiInstructions + '\n\n' + groundingRules + '\n\n' +
-                                buildMergeFieldReference(rootObject, selectedFieldsRaw, selectedParentFieldsRaw);
+                                buildMergeFieldReference(rootObject, selectedFieldsRaw, selectedParentFieldsRaw, selectedGrandchildrenRaw);
             // Empty template - LLM generates the HTML
             finalHtmlTemplate = '';
         } else {
@@ -1670,9 +1674,18 @@ public without sharing class Stage08_PromptAssembly implements IStage {
                 }
             }
 
-            // Add parent lookup fields (e.g., Owner.Name, Contact.Title)
+            // Add parent lookup fields (e.g., Owner.Name, CreatedBy.Email)
+            // Only include UNIVERSAL parent lookups that work on all standard objects
+            // Child objects like Contact/Opportunity are handled separately via subqueries
+            Set<String> universalParentLookups = new Set<String>{
+                'Owner', 'CreatedBy', 'LastModifiedBy', 'RecordType'
+            };
             if (selectedParentFieldsRaw != null) {
                 for (String parentKey : selectedParentFieldsRaw.keySet()) {
+                    // Only add if this is a universal parent lookup relationship
+                    if (!universalParentLookups.contains(parentKey)) {
+                        continue; // Skip child objects and ambiguous relationships
+                    }
                     List<Object> parentFields = (List<Object>) selectedParentFieldsRaw.get(parentKey);
                     if (parentFields != null) {
                         for (Object pf : parentFields) {
