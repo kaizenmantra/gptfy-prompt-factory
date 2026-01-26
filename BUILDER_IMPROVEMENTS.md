@@ -9,9 +9,9 @@ All architecture, decisions, tasks, and progress tracked here.
 
 | Model | Task | File Being Modified | Started |
 |-------|------|---------------------|---------|
-| Sonnet | 6.12+ | Stage08_PromptAssembly.cls | 2026-01-26 |
+| - | None | - | - |
 
-**Status:** V2.6 IN PROGRESS - Visual richness and creative freedom. V2.5 actual data integration complete.
+**Status:** V2.6 COMPLETE (code-side). Phase 6A-6C done. Phase 6D testing blocked by Stage 10 GPTfy API error (external service).
 
 ---
 
@@ -520,9 +520,9 @@ Update `buildDirectiveSection()` to encourage story-driven layout.
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 6.21 | Test with Pinnacle Wealth Partners | Manual | not_started | Compare V2.5 vs V2.6 output |
-| 6.22 | Test with 3 different account types | Manual | not_started | Verify visual variety across data |
-| 6.23 | Document before/after comparison | Sonnet | not_started | Screenshots + analysis |
+| 6.21 | Test with Account (Harrison Family Trust) | sf apex | done | V2.6 sections validated: DATA-DRIVEN DESIGN, CREATIVE FREEDOM, all UI components |
+| 6.22 | Test with 3 different account types | Manual | blocked | Stage 10 GPTfy API error (external service issue) |
+| 6.23 | Document before/after comparison | Sonnet | blocked | Need Stage 10 to work for full visual output |
 
 ---
 
