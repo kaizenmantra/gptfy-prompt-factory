@@ -22,17 +22,23 @@ public with sharing class PipelineState {
     private static final String SHARE_TYPE = 'V'; // Viewer access
 
     // ============================================================================
-    // BUFFERED WRITE MODE - Accumulates changes in memory, writes ONCE on flush()
+    // IN-MEMORY STATE WITH OPTIONAL FILE LOGGING
     // ============================================================================
-    // This prevents creating hundreds of ContentVersion records per run.
-    // Call write(), log(), markStageComplete() freely - they only update memory.
-    // Call flush() ONCE at the end of each stage to persist to file.
+    // By default, state is kept in memory only and passed via PF_Run_Stage__c records.
+    // File logging is DISABLED by default to avoid ContentPublication limits.
+    // Set ENABLE_FILE_LOGGING = true for debugging (creates ~12 files per run).
+    //
+    // Stage records (Output_Data__c) have 131KB limit - our max usage is ~35KB (27%).
     // ============================================================================
 
-    // In-memory buffer for pending state changes (keyed by runId)
+    // Set to true to enable file logging for debugging (creates ~12 ContentVersions per run)
+    @TestVisible
+    private static final Boolean ENABLE_FILE_LOGGING = false;
+
+    // In-memory buffer for state (keyed by runId) - primary state storage
     private static Map<Id, Map<String, Object>> stateBuffer = new Map<Id, Map<String, Object>>();
 
-    // Track which runs have pending changes that need flushing
+    // Track which runs have pending changes (for file logging when enabled)
     private static Set<Id> dirtyRuns = new Set<Id>();
 
     /**
@@ -113,6 +119,14 @@ public with sharing class PipelineState {
             return false; // Nothing to flush
         }
 
+        // Clear dirty flag regardless of file logging
+        dirtyRuns.remove(runId);
+
+        // Skip file writes when file logging is disabled (default)
+        if (!ENABLE_FILE_LOGGING) {
+            return true; // State is in buffer, no file needed
+        }
+
         Map<String, Object> state = stateBuffer.get(runId);
         if (state == null || state.isEmpty()) {
             return false;
@@ -139,8 +153,6 @@ public with sharing class PipelineState {
                 createNewFile(runId, jsonContent);
             }
 
-            // Clear dirty flag (but keep in buffer for reads)
-            dirtyRuns.remove(runId);
             System.debug('PipelineState: Flushed state to file for run ' + runId);
             return true;
 
