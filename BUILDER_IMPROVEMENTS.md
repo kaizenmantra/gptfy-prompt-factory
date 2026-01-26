@@ -393,6 +393,67 @@ Moved from original V2.3 plan. Will tackle after V2.4 is complete.
 | 5.6 | Add object-specific builder filtering | Sonnet | not_started | Only load Opportunity builders for Opportunity |
 | 5.7 | Add token budget awareness | Opus | not_started | Don't exceed prompt size limit |
 
+### Phase 5C: Thinking Model Enhancement (V2.5 Core)
+
+**Vision:** Leverage thinking models (Claude, GPT-4) to create superior visualizations by giving them:
+1. **Actual data** (not just schema) - queried early using DCM
+2. **Business context** - what the user wants to achieve
+3. **UI/UX toolkit** - available components (stat cards, charts, tables, alerts)
+4. **Information hierarchy guidance** - "don't bury the lead", most important first
+
+**Key Insight:** V2.0 already works well because the LLM sees real data and analyzes it. V2.5 enhances this by:
+- Querying data earlier in pipeline (Stage 8 instead of Stage 10)
+- Richer UI component library with examples
+- Explicit guidance on information architecture
+- Letting thinking models reason about what visualization best fits THIS data
+
+**Architecture:**
+```
+Stage 8 (Enhanced):
+  1. Load DCM config from previous stages
+  2. Query ACTUAL DATA using DCM (buildDynamicSOQL + Database.query)
+  3. Build comprehensive prompt:
+     - Business context
+     - Actual data payload (JSON or structured)
+     - UI Toolkit (components with HTML examples)
+     - Information hierarchy rules
+     - Output rules (merge field syntax)
+  4. Send to thinking model
+  5. Thinking model analyzes data + decides visualization + generates output
+  6. Return complete prompt (no template filling needed)
+
+Stage 9-10:
+  - Standard DCM/Prompt creation and execution
+  - LLM in Stage 10 receives the well-crafted prompt with data
+```
+
+**What was wrong with previous V2.5 attempt:**
+- Generated templates with merge fields in Stage 8 (AI only saw schema, not data)
+- Mechanical template filling in Stage 9 (no intelligence)
+- Stage 10 asked to "return HTML exactly" (wasted API call, no analysis)
+- Thinking model never saw actual data when making visualization decisions
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 5.8 | Revert Stage 8 to V2.0 base | Opus | not_started | Remove template generation code |
+| 5.9 | Add early data query to Stage 8 | Opus | not_started | Query using DCM before prompt assembly |
+| 5.10 | Enhance UI Toolkit with richer examples | Opus | not_started | More component HTML, usage guidance |
+| 5.11 | Add information hierarchy section | Opus | not_started | "Lead with insights, tables last" |
+| 5.12 | Remove V2.5 template code from Stage 9 | Opus | not_started | Remove executeV25TemplateFlow, merge gate |
+| 5.13 | Test with 3 golden accounts | Manual | not_started | Compare output quality vs V2.0 |
+| 5.14 | Document V2.5 architecture | Opus | not_started | Update this file + create design doc |
+
+### Phase 5D: Abandoned - Two-Layer Template Architecture
+
+**Status:** ❌ ABANDONED (2026-01-26)
+
+The "two-layer meta-prompt" approach that was implemented is fundamentally flawed:
+- Stage 8 generated templates with merge fields (AI only saw schema)
+- Stage 9 filled templates mechanically (no intelligence)
+- Stage 10 just echoed back HTML (wasted API call)
+
+This has been replaced by Phase 5C (Thinking Model Enhancement) which keeps V2.0's working approach of letting the AI see actual data.
+
 ---
 
 ## PipelineState Architecture
@@ -722,6 +783,7 @@ Stage 5: Field Selection (Enhanced)
 | 2026-01-24 | LWC links open in new tabs | State file and run logs should open in new browser tabs to preserve Factory LWC context. Better UX for debugging. |
 | 2026-01-24 | Consolidate traversal builders by object | When LLM sees all traversal options for an object in one place (vs. fragmented across 3-5 records), it makes better field selection decisions. Also improves performance (fewer SOQL queries) and maintainability (one record to update). Pilot with Account + Opportunity first. |
 | 2026-01-24 | DCMBuilder must create parent lookups for child objects | Testing revealed OpportunityContactRole includes ContactId but not Contact.Name/Title/Email. LLM was extracting names from Description field text (unreliable). DCMBuilder needs to auto-discover child object lookups and create PARENT_LOOKUP records for related fields. Enables 3-level traversals. |
+| 2026-01-26 | Abandon V2.5 two-layer template architecture | **Critical flaw**: Template approach had AI see only schema (not data) when making UI decisions. Stage 8 generated templates, Stage 9 filled mechanically, Stage 10 just echoed HTML. AI never analyzed actual data. V2.0 works well because AI sees real data. V2.5 should ENHANCE V2.0, not replace it. New approach: query data early, give thinking model data+context+UI toolkit, let it create optimal visualization with analysis. Created feature/v2.5-clean branch from main. |
 
 ---
 
