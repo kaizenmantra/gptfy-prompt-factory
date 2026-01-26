@@ -804,7 +804,32 @@ Implement the two-layer architecture where Stage 8 uses meta-prompt to generate 
 | 5.41-5.42 | Configure API credentials | Manual | done | Uses existing AIServiceClient - no new credentials needed! Auto-detects Azure OpenAI, Claude, or DeepSeek from Custom Settings. |
 | 5.43 | Integrate with AI API | Opus | done | Updated Stage08 to use AIServiceClient.callAI(systemPrompt, userPrompt, 8192, 0.7). Removed unnecessary AnthropicClient. |
 | 5.44 | Add error handling for API failures | Opus | done | AIServiceClient already has retry logic, rate limiting, timeout handling built-in |
-| 5.45 | Test API integration end-to-end | Manual | not_started | TODO: Enable USE_META_PROMPT_V2_5 flag and test with golden test case 006QH00000HjgvlYAB |
+| 5.45 | Test API integration end-to-end | Opus | done | Enabled USE_META_PROMPT_V2_5 flag, deployed to org. Fixed type conversion errors (defensive instanceof checks in extractParentLookupNames, categorizeFields, objectListToStringList, analyzeDCMStructure). Removed .backup directory that was deploying old V2.0 code. V2.5 Stage 8 now working: generates 3,700 char template on first iteration with valid merge fields. Stage 9 integration pending. Commit f5a9d04. |
+
+#### Sub-Phase 5D.5: Stage 9 Integration (V2.5 Template Execution)
+
+**Goal:** Enable Stage 9 to detect V2.5 templates, query actual data, and substitute merge fields to create final executable prompt.
+
+**Context:** V2.5 Stage 8 successfully generates Handlebars templates with `{{{FieldName}}}` merge fields and `{{#Collection}}...{{/Collection}}` iteration blocks. Stage 9 must now process these templates by querying actual record data and substituting merge fields.
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 5.53 | Update Stage 8 outputs to include metadata | Sonnet | not_started | Add selectedFields, selectedParentFields, selectedGrandchildren, recordId to result.outputs for Stage 9 |
+| 5.54 | Add V2.5 detection to Stage 9 execute() | Sonnet | not_started | Check promptType == 'V2.5_Meta_Generated', route to executeV25Template() method |
+| 5.55 | Create HandlebarsTemplateEngine.cls | Opus | not_started | Purpose-built substitution engine. Features: {{{Field}}} substitution, {{#Collection}} iteration support, nested loops for grandchildren, null/empty handling. ~300 lines. |
+| 5.56 | Add buildDynamicSOQL() to Stage 9 | Opus | not_started | Construct SOQL from selectedFields/parentFields/grandchildren. Handles root fields, parent lookups (Owner.Name), child subqueries, grandchild nested queries. Uses SchemaHelper for validation. |
+| 5.57 | Add queryRecordData() to Stage 9 | Opus | not_started | Execute dynamic SOQL, return SObject. Convert to Map structure for template substitution. |
+| 5.58 | Add executeV25Template() to Stage 9 | Sonnet | not_started | Orchestrates V2.5 flow: Build DCM config → Query data → Call HandlebarsTemplateEngine → Return final prompt. Falls back to V2.0 on error. |
+| 5.59 | Create HandlebarsTemplateEngine_Test.cls | Sonnet | not_started | Unit tests for simple fields, parent lookups, iteration blocks, nested iterations, null handling. Mock data structure. |
+| 5.60 | Create Stage09_V25_Test.cls | Sonnet | not_started | Test V2.5 detection, SOQL building, template execution. Use golden test case data. |
+| 5.61 | Manual end-to-end verification | Manual | not_started | Run pipeline with Opportunity 006QH00000HjgvlYAB. Verify Stage 9 completes, prompt has real data (no {{{...}}} placeholders), GPTfy executes successfully. |
+
+**Implementation Notes:**
+- SchemaHelper.cls already exists with field metadata methods - use for SOQL validation
+- Stage 9 already queries PF_Run__c for recordId - can reuse this pattern
+- Template engine should handle missing/null values gracefully (replace with empty string, log warning)
+- SOQL complexity: Watch governor limits with grandchildren (100 relationship query max)
+- Error handling: If template substitution fails, log error and fall back to V2.0 flow
 
 #### Sub-Phase 5D.4: Iterative Refinement & Testing
 
@@ -1292,6 +1317,10 @@ Stage 5: Field Selection (Enhanced)
 | 2026-01-24 | Phase 5A.5: Automated Testing designed | Sonnet | Created new phase with 8 tasks (5.9-5.16): golden test case, PipelineIntegrationTest.cls, PipelineValidator.cls, stage smoke tests, validation script, baseline run. Inserted as prerequisite before Phase 5B. Renumbered subsequent tasks. |
 | 2026-01-24 | Decision Log + Progress Log updated | Sonnet | Documented testing prioritization decision, learning log approach, all V2.5 Phase 5A work. File now serves as reasoning tracker, not just task tracker. |
 | 2026-01-25 | Bug fix: analyzeDCMStructure Map/String type error | Opus | Fixed "Invalid conversion from runtime type Map<String,ANY> to String" at Stage08 line 135. Root cause: deployment lag where old code returned raw Map instead of JSON.serialize() String. Fix: Added defensive type checking with `instanceof String` and fallback serialization. Location: Stage08_PromptAssembly.cls lines 135-143. |
+| 2026-01-26 | Task 5.45: V2.5 Stage 8 end-to-end testing | Opus | Enabled USE_META_PROMPT_V2_5 flag, deployed Stage08 to org. Discovered .backup directory (670 lines, old V2.0 code) was being deployed instead of main classes directory (2,634 lines, V2.5 code). Removed .backup directory, redeployed. V2.5 now executing successfully at Stage 8. |
+| 2026-01-26 | Bug fix: Type conversion errors in V2.5 helpers | Opus | Fixed "Invalid conversion from runtime type Map<String,ANY> to String" errors in 4 locations: extractParentLookupNames() line 2150, categorizeFields() lines 2193+2209, objectListToStringList() line 2339, analyzeDCMStructure() line 2080. Added defensive instanceof checks with fallback to String.valueOf(). All methods now handle both String and Map types gracefully. |
+| 2026-01-26 | V2.5 Stage 8 SUCCESS | Opus | Pipeline run a0gQH000005GPh7YAG completed Stage 8 successfully! Generated 3,700 char template with merge fields on FIRST iteration (no retries needed). Template validation passed: merge fields detected, iteration blocks closed, no hardcoded values. Stage 9 fails as expected (doesn't understand V2.5 template format yet). Commit f5a9d04. |
+| 2026-01-26 | Phase 5D.5: Stage 9 Integration plan | Opus | Documented 9-task plan for Stage 9 V2.5 support. Tasks assigned to Sonnet (metadata pass-through, detection, orchestration, tests) and Opus (HandlebarsTemplateEngine, dynamic SOQL, data querying). Leverages existing SchemaHelper. Implementation ready to start. |
 
 ---
 
