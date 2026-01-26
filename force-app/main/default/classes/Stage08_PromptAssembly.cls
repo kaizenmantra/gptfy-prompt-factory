@@ -959,7 +959,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
 
                     ref += objName.toUpperCase() + ' (Grandchild of ' + parentObjName + '):\n';
                     ref += '  Nested iteration: {{#' + parentRelName + '}}{{#' + chainedPath + '}}...{{/' + chainedPath + '}}{{/' + parentRelName + '}}\n';
-                    ref += '  Fields use chained path (e.g., ' + chainedPath + '.FieldName):\n';
+                    ref += '  Use chained path prefix ' + chainedPath + ' for these fields:\n';
                     for (Object field : fields) {
                         String fieldName = String.valueOf(field);
                         ref += '    {{{' + chainedPath + '.' + fieldName + '}}}\n';
