@@ -814,7 +814,7 @@ Implement the two-layer architecture where Stage 8 uses meta-prompt to generate 
 
 | # | Task | Model | Status | Notes |
 |---|------|-------|--------|-------|
-| 5.53 | Update Stage 8 outputs to include metadata | Sonnet | not_started | Add selectedFields, selectedParentFields, selectedGrandchildren, recordId to result.outputs for Stage 9 |
+| 5.53 | Update Stage 8 outputs to include metadata | Sonnet | done | Fixed: result.outputs was overwriting instead of merging. Restored selectedFields, selectedParentFields, dcmConfig, and promptConfig pass-through for Stage 9. |
 | 5.54 | Add V2.5 detection to Stage 9 execute() | Sonnet | not_started | Check promptType == 'V2.5_Meta_Generated', route to executeV25Template() method |
 | 5.55 | Create HandlebarsTemplateEngine.cls | Opus | not_started | Purpose-built substitution engine. Features: {{{Field}}} substitution, {{#Collection}} iteration support, nested loops for grandchildren, null/empty handling. ~300 lines. |
 | 5.56 | Add buildDynamicSOQL() to Stage 9 | Opus | not_started | Construct SOQL from selectedFields/parentFields/grandchildren. Handles root fields, parent lookups (Owner.Name), child subqueries, grandchild nested queries. Uses SchemaHelper for validation. |

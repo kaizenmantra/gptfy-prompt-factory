@@ -191,17 +191,32 @@ public without sharing class Stage08_PromptAssembly implements IStage {
                     iterations + ' iteration' + (iterations > 1 ? 's' : '') + ')');
 
                 // Step 4: Assemble prompt configuration with generated template
+                // V2.5: Build dcmConfig and promptConfig for Stage 9 hand-off
+                Map<String, Object> dcmConfig = buildDCMConfigForStage9(
+                    rootObject, selectedFieldsRaw, inputs);
+                
+                // For promptConfig, use a light version that Stage 9 will finalize
                 Map<String, Object> promptConfig = new Map<String, Object>{
                     'promptCommand' => generatedTemplate,
                     'promptType' => 'V2.5_Meta_Generated',
                     'metaPromptUsed' => true,
                     'iterations' => iterations,
                     'dcmAnalysis' => dcmAnalysisJson,
-                    'businessContext' => businessContext
+                    'businessContext' => businessContext,
+                    'name' => inputs.get('promptName'),
+                    'targetObject' => rootObject
                 };
 
-                // Return outputs
-                result.outputs = promptConfig;
+                // Return outputs - merge with existing metadata to ensure nothing is lost
+                result.outputs.put('promptConfig', promptConfig);
+                result.outputs.put('dcmConfig', dcmConfig);
+                result.outputs.put('promptType', 'V2.5_Meta_Generated');
+                
+                // Persist the raw metadata for the Stage 9 "Merge Gate" logic
+                result.outputs.put('selectedFields', selectedFieldsRaw);
+                result.outputs.put('selectedParentFields', selectedParentFieldsRaw);
+                result.outputs.put('selectedGrandchildren', selectedGrandchildrenRaw);
+
                 result.queueInfo(runId, STAGE_NUMBER,
                     'V2.5: Prompt assembly complete (two-layer meta-prompt)');
                 result.markCompleted();
