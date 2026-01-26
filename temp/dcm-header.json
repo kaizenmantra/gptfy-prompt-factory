@@ -1,0 +1,19 @@
+{
+  "status": 0,
+  "result": {
+    "records": [
+      {
+        "attributes": {
+          "type": "ccai__AI_Data_Extraction_Mapping__c",
+          "url": "/services/data/v65.0/sobjects/ccai__AI_Data_Extraction_Mapping__c/a05QH000008RggHYAS"
+        },
+        "Id": "a05QH000008RggHYAS",
+        "Name": "Account 360 - Pinnacle Wealth Partners (Golden Test) DCM",
+        "ccai__Object_Name__c": "Account"
+      }
+    ],
+    "totalSize": 1,
+    "done": true
+  },
+  "warnings": []
+}

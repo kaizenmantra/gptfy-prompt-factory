@@ -1,0 +1,43 @@
+{
+  "accounts": [
+    {
+      "Id": null,
+      "Name": null,
+      "Industry": null,
+      "Type": null,
+      "AnnualRevenue": null,
+      "NumberOfEmployees": null,
+      "Contacts": null,
+      "Opportunities": null,
+      "Cases": null,
+      "Tasks": null,
+      "Events": null
+    },
+    {
+      "Id": null,
+      "Name": null,
+      "Industry": null,
+      "Type": null,
+      "AnnualRevenue": null,
+      "NumberOfEmployees": null,
+      "Contacts": null,
+      "Opportunities": null,
+      "Cases": null,
+      "Tasks": null,
+      "Events": null
+    },
+    {
+      "Id": null,
+      "Name": null,
+      "Industry": null,
+      "Type": null,
+      "AnnualRevenue": null,
+      "NumberOfEmployees": null,
+      "Contacts": null,
+      "Opportunities": null,
+      "Cases": null,
+      "Tasks": null,
+      "Events": null
+    }
+  ]
+}
