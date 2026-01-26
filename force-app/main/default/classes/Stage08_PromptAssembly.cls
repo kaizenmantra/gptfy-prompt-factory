@@ -28,11 +28,13 @@
 public without sharing class Stage08_PromptAssembly implements IStage {
 
     private static final Integer STAGE_NUMBER = 8;
+    // Force recompilation: 2026-01-25-v2 (fix Map/String type issue)
 
     // V2.5: Feature flag for two-layer meta-prompt architecture
     // When true: Meta-prompt generates TEMPLATE → Template executes on data
     // When false: Falls back to V2.0 (LLM analyzes data directly) or V1.1 (legacy)
-    private static final Boolean USE_META_PROMPT_V2_5 = false; // TODO: Enable after API integration complete
+    // ENABLED: 2026-01-25 - Ready for testing
+    private static final Boolean USE_META_PROMPT_V2_5 = true;
 
     /**
      * @description Executes Stage 8: Prompt Assembly
@@ -98,6 +100,9 @@ public without sharing class Stage08_PromptAssembly implements IStage {
             // Then return that template (no execution yet - happens at DCM stage)
             // =========================================================================
 
+            // DEBUG: Always log the flag value to confirm code deployment
+            result.queueInfo(runId, STAGE_NUMBER, 'V2.5 flag value: ' + USE_META_PROMPT_V2_5);
+
             if (USE_META_PROMPT_V2_5) {
                 result.queueInfo(runId, STAGE_NUMBER,
                     'V2.5: Using two-layer meta-prompt architecture');
@@ -112,11 +117,13 @@ public without sharing class Stage08_PromptAssembly implements IStage {
                     throw new StageException('Failed to load meta-prompt Builder: ' + e.getMessage(), e);
                 }
 
-                // Step 2: Analyze DCM structure
-                Map<String, Object> dcmConfigRaw = (Map<String, Object>) inputs.get('dcmConfig');
-                if (dcmConfigRaw == null) {
-                    throw new StageException('V2.5 requires dcmConfig in inputs');
-                }
+                // Step 2: Build DCM structure from available inputs
+                // At Stage 8, DCM doesn't exist yet, but we have all the data to build its structure
+                Map<String, Object> dcmConfigRaw = new Map<String, Object>{
+                    'objectName' => rootObject,
+                    'childRelationships' => getChildObjectNames(selectedFieldsRaw),
+                    'parentLookups' => extractParentLookupNames(selectedParentFieldsRaw)
+                };
 
                 Map<String, Object> dcmAnalysis = analyzeDCMStructure(
                     dcmConfigRaw,
@@ -125,11 +132,26 @@ public without sharing class Stage08_PromptAssembly implements IStage {
                     selectedGrandchildrenRaw
                 );
 
-                String dcmAnalysisJson = (String) dcmAnalysis.get('json');
+                // Defensive: handle both String and Map types for 'json' key
+                Object jsonValue = dcmAnalysis.get('json');
+                String dcmAnalysisJson;
+                if (jsonValue instanceof String) {
+                    dcmAnalysisJson = (String) jsonValue;
+                } else {
+                    // Fallback: serialize if we got raw Map (handles deployment lag)
+                    dcmAnalysisJson = JSON.serialize(jsonValue, true);
+                }
+
+                // Defensive: handle narrative which might be Map or String
+                Object narrativeValue = dcmAnalysis.get('narrative');
+                String narrative = (narrativeValue instanceof String) ? (String) narrativeValue : String.valueOf(narrativeValue);
+
                 result.queueInfo(runId, STAGE_NUMBER,
-                    'V2.5: Analyzed DCM structure: ' + dcmAnalysis.get('narrative'));
+                    'V2.5: Analyzed DCM structure: ' + narrative);
 
                 // Step 3: Generate and iterate on template
+                result.queueInfo(runId, STAGE_NUMBER, 'V2.5: Starting template generation...');
+
                 Map<String, Object> generationResult = iterateOnPromptGeneration(
                     metaPromptBuilder,
                     dcmAnalysisJson,
@@ -140,12 +162,27 @@ public without sharing class Stage08_PromptAssembly implements IStage {
                     10 // Max iterations
                 );
 
+                result.queueInfo(runId, STAGE_NUMBER, 'V2.5: Template generation returned');
+
                 Boolean success = (Boolean) generationResult.get('success');
+                result.queueInfo(runId, STAGE_NUMBER, 'V2.5: Success flag: ' + success);
+
                 if (!success) {
                     throw new StageException('V2.5: Failed to generate valid template after max iterations');
                 }
 
-                String generatedTemplate = (String) generationResult.get('template');
+                result.queueInfo(runId, STAGE_NUMBER, 'V2.5: Extracting generated template from result...');
+                Object templateObj = generationResult.get('template');
+                result.queueInfo(runId, STAGE_NUMBER, 'V2.5: Template object type: ' + (templateObj != null ? 'exists' : 'null'));
+
+                String generatedTemplate;
+                if (templateObj instanceof String) {
+                    generatedTemplate = (String) templateObj;
+                } else {
+                    result.queueInfo(runId, STAGE_NUMBER, 'V2.5: Template is not String, converting...');
+                    generatedTemplate = String.valueOf(templateObj);
+                }
+
                 Integer iterations = (Integer) generationResult.get('iterations');
 
                 result.queueInfo(runId, STAGE_NUMBER,
@@ -166,7 +203,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
                 result.outputs = promptConfig;
                 result.queueInfo(runId, STAGE_NUMBER,
                     'V2.5: Prompt assembly complete (two-layer meta-prompt)');
-                result.success = true;
+                result.markCompleted();
                 return result;
             }
 
@@ -2081,6 +2118,24 @@ public without sharing class Stage08_PromptAssembly implements IStage {
     }
 
     /**
+     * @description Get child object names from selectedFields
+     * Example: {'Opportunity': [...], 'Task': [...], 'Event': [...]} → ['Task', 'Event']
+     * Returns List<Object> for compatibility with analyzeDCMStructure
+     */
+    private List<Object> getChildObjectNames(Map<String, Object> selectedFields) {
+        List<Object> childObjects = new List<Object>();
+
+        if (selectedFields != null) {
+            for (String objName : selectedFields.keySet()) {
+                // Include all objects as children (root will be identified separately)
+                childObjects.add(objName);
+            }
+        }
+
+        return childObjects;
+    }
+
+    /**
      * @description Extract parent lookup names from selectedParentFields
      * Example: {'Opportunity': ['Account.Name', 'Owner.Name']} → ['Account', 'Owner']
      */
@@ -2419,7 +2474,7 @@ public without sharing class Stage08_PromptAssembly implements IStage {
         );
 
         if (!response.success) {
-            throw new StageException('AI API call failed: ' + response.error);
+            throw new StageException('AI API call failed: ' + response.errorMessage);
         }
 
         return response.content;

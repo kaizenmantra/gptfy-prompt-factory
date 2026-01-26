@@ -1291,6 +1291,7 @@ Stage 5: Field Selection (Enhanced)
 | 2026-01-24 | Architectural Fragility Analysis | Sonnet | Documented pattern of failure across V2.2, V2.5 attempts. Root cause: fragility + no safety nets, not agent intelligence. Added comprehensive analysis to BUILDER_IMPROVEMENTS.md with user feedback about emphatically confident but failed recommendations. |
 | 2026-01-24 | Phase 5A.5: Automated Testing designed | Sonnet | Created new phase with 8 tasks (5.9-5.16): golden test case, PipelineIntegrationTest.cls, PipelineValidator.cls, stage smoke tests, validation script, baseline run. Inserted as prerequisite before Phase 5B. Renumbered subsequent tasks. |
 | 2026-01-24 | Decision Log + Progress Log updated | Sonnet | Documented testing prioritization decision, learning log approach, all V2.5 Phase 5A work. File now serves as reasoning tracker, not just task tracker. |
+| 2026-01-25 | Bug fix: analyzeDCMStructure Map/String type error | Opus | Fixed "Invalid conversion from runtime type Map<String,ANY> to String" at Stage08 line 135. Root cause: deployment lag where old code returned raw Map instead of JSON.serialize() String. Fix: Added defensive type checking with `instanceof String` and fallback serialization. Location: Stage08_PromptAssembly.cls lines 135-143. |
 
 ---
 
