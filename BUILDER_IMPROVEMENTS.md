@@ -9,9 +9,10 @@ All architecture, decisions, tasks, and progress tracked here.
 
 | Model | Task | File Being Modified | Started |
 |-------|------|---------------------|---------|
-| - | None | - | - |
+| Opus | Phase 6H: Stage 10-12 Consolidated Callout | Stage10_12_ConsolidatedJob.cls | 2026-01-26 |
 
-**Status:** V2.6 RELEASED to main (2026-01-26). All phases complete.
+**Status:** V2.6 released. Phase 6H in progress - fixing Stage 10 DML/callout issue.
+**Branch:** `feature/v2.6-future-callout`
 
 ---
 
@@ -604,6 +605,47 @@ Update `buildDirectiveSection()` to encourage story-driven layout.
 
 **Scoring Logic Location:** `force-app/main/default/classes/Stage12_QualityAudit.cls`
 
+### Phase 6H: Stage 10-12 Consolidated Callout Job
+
+**Problem:** Pipeline fails at Stage 10 with "You have uncommitted work pending. Please commit or rollback before calling out." Stage 9 does DML (creates prompt), then Stage 10 tries HTTP callout to GPTfy API - Salesforce blocks this.
+
+**Solution:** Consolidate Stages 10-12 into a single Queueable job that runs in a fresh transaction (no prior DML). All callouts happen BEFORE any DML within the job.
+
+**Architecture:**
+```
+Stage 9 (DML: create prompt)
+    → enqueueJob(Stage10_12_ConsolidatedJob)
+        → Fresh transaction (chain depth reset)
+        → Stage 10: GPTfy callout
+        → Stage 11: Safety validation (in-memory)
+        → Stage 12: Claude AI callout
+        → Final DML: Update PF_Run__c with all results
+```
+
+**Proof of Concept:** `FutureCalloutTest.cls` - tested and confirmed @future(callout=true) works after DML. Response: 6,909 char HTML with "Processed" status.
+
+**Visual Feedback:** Stages 10-12 will update as a batch when the job completes (~30-45 seconds). LWC can show "Executing AI test and quality audit..." during this phase. Platform Events can be added later for real-time updates if needed.
+
+**Proposal Document:** `docs/proposals/STAGE_10_CALLOUT_SOLUTION.md`
+
+| # | Task | Model | Status | Notes |
+|---|------|-------|--------|-------|
+| 6.44 | Create `Stage10_12_ConsolidatedJob.cls` | Opus | not_started | Queueable + Database.AllowsCallouts, executes Stages 10-12 |
+| 6.45 | Implement Stage 10 logic (GPTfy callout) | Opus | not_started | Use `ccai.AIPromptProcessingInvokable.processRequest()` |
+| 6.46 | Implement Stage 11 logic (safety validation) | Opus | not_started | In-memory validation, no callout |
+| 6.47 | Implement Stage 12 logic (Claude callout) | Opus | not_started | Call `Stage12_QualityAudit.auditQuality()` or inline |
+| 6.48 | Add final DML to update PF_Run__c | Opus | not_started | Update stage status, scores, output HTML, logs |
+| 6.49 | Add error handling and logging | Opus | not_started | Try/catch with JSON log updates on failure |
+| 6.50 | Modify Stage 9 to enqueue consolidated job | Opus | not_started | Replace Stage 10 enqueue with Stage10_12_ConsolidatedJob |
+| 6.51 | Deploy and test end-to-end | Manual | not_started | Run full pipeline, verify Stages 10-12 complete |
+| 6.52 | (Optional) Update LWC with spinner message | Opus | not_started | Show "Executing AI test..." when Stage 9 complete but run still in progress |
+| 6.53 | (Optional) Add Platform Events for real-time updates | Opus | not_started | Only if users need per-stage feedback for 10-12 |
+
+**Key Files:**
+- `Stage10_12_ConsolidatedJob.cls` - NEW: Consolidated job for Stages 10-12
+- `Stage09_CreateAndDeployJob.cls` - Modify to enqueue consolidated job
+- `FutureCalloutTest.cls` - Proof of concept (can be deleted after implementation)
+
 ---
 
 ## PipelineState Architecture
@@ -995,6 +1037,9 @@ Stage 5: Field Selection (Enhanced)
 | 2026-01-26 | Tasks 6.30-6.34: Test harness creation | Opus | Created `tests/v26/run_innovatek_test.py` - comprehensive test script that: (1) Starts pipeline via TestHarnessController REST API, (2) Polls for Stage 9 completion, (3) Gets promptId, (4) Calls GPTfy API directly, (5) Scores output for evidence, date analysis, forbidden phrases, colors, customer refs. Target: 90+ score. |
 | 2026-01-26 | Tasks 6.35-6.36: Test execution SUCCESS | Opus | Ran 4 iterations total. v3 Quality Rules scored 75-85/100. v4 Quality Rules scored **100/100**. Key improvements in v4: "ANALYZE EVERY RECORD", "FOR EACH OPPORTUNITY", "CHECK YOUR MATH", explicit checklist items. Output now shows "11 months overdue", "22 months overdue" for all opportunities. |
 | 2026-01-26 | Tasks 6.37-6.42: Stage 12 Enhancement | Opus | Enhanced Stage12_QualityAudit.cls: (1) Added 3 new dimensions: dateAnalysis (15%), forbiddenPhrases (10%), customerReferences (10%), (2) Raised threshold from 7.0 to 9.0, (3) Simplified to JSON-only storage in AI_Feedback__c, (4) Updated AI prompt with 11-dimension scoring. Schema version: v2.6-11-dimension-weighted. |
+| 2026-01-26 | Phase 6H Investigation: DML/Callout issue | Opus | Investigated Stage 10 failure. Root cause: Stage 9 does DML, Stage 10 needs callout - Salesforce blocks this. Tested 3 approaches: (1) GPTfy invocable after DML → fails (returns error JSON), (2) GPTfy invocable without DML → works (3,482 char HTML), (3) @future(callout=true) after DML → works (6,909 char HTML). |
+| 2026-01-26 | Phase 6H: Proof of concept | Opus | Created `FutureCalloutTest.cls` - deployed and tested. Confirms @future method runs in fresh transaction allowing callout after DML. Response: Processed status, 6,909 chars. |
+| 2026-01-26 | Phase 6H: Proposal document | Opus | Created `docs/proposals/STAGE_10_CALLOUT_SOLUTION.md` - comprehensive proposal with problem statement, test evidence, proposed Queueable solution, visual feedback options, alternatives analysis, and phased implementation plan. Gemini added LWC spinner strategy (Section 10). |
 
 ---
 

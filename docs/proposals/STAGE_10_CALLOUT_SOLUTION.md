@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-The Prompt Factory pipeline fails at Stage 10 due to Salesforce's "DML before callout" limitation. This document proposes using `@future(callout=true)` to execute Stages 10-12 in a fresh transaction context, with batch status updates at completion.
+The Prompt Factory pipeline fails at Stage 10 due to Salesforce's "DML before callout" limitation. This document proposes using a consolidated asynchronous transaction (Queueable or @future) to execute Stages 10-12 in a fresh transaction context, with batch status updates at completion and proactive UI feedback.
 
 ---
 
@@ -24,10 +24,11 @@ The Prompt Factory pipeline fails at Stage 10 due to Salesforce's "DML before ca
 7. [Alternative Approaches](#alternative-approaches)
 8. [Risks & Mitigations](#risks--mitigations)
 9. [Recommendation](#recommendation)
+10. [Consolidated UX Strategy (LWC Spinner)](#consolidated-ux-strategy)
 
 ---
 
-## Problem Statement
+## 1. Problem Statement
 
 ### Current Failure
 
@@ -57,7 +58,7 @@ System.CalloutException: You have uncommitted work pending. Please commit or rol
 
 ---
 
-## Technical Background
+## 2. Technical Background
 
 ### Salesforce Callout Rules
 
@@ -103,7 +104,7 @@ The pipeline already uses `PromptFactoryChainBreaker` (Schedulable) to reset the
 
 ---
 
-## Investigation & Findings
+## 3. Investigation & Findings
 
 ### Approaches Tested
 
@@ -161,23 +162,13 @@ Content: Real HTML output
 
 **Key Finding:** The `@future` method executes in a completely fresh transaction with no prior DML, so the callout succeeds.
 
-### Test Evidence
-
-| Scenario | Callouts Made | Response |
-|----------|---------------|----------|
-| Invocable after DML | 0 (blocked) | Error JSON (79 chars) |
-| Invocable without DML | 1 (success) | HTML (3,482 chars) |
-| @future after DML | 1 (success) | HTML (6,909 chars) |
-
-**Proof-of-concept class deployed:** `FutureCalloutTest.cls`
-
 ---
 
-## Proposed Solution
+## 4. Proposed Solution
 
 ### Overview
 
-Use `@future(callout=true)` to execute Stages 10-12 in a single fresh transaction after Stage 9 completes.
+Consolidate Stages 10-12 into a single fresh transaction (Queueable or @future) after Stage 9 completes. This avoids DML/callout conflicts by performing all callouts before any DML in the new transaction.
 
 ### Architecture
 
@@ -194,359 +185,109 @@ Use `@future(callout=true)` to execute Stages 10-12 in a single fresh transactio
 │       ▼                                                                 │
 │  Stages 5-9 (Queueable Chain)                                          │
 │       │                                                                 │
-│       │  Stage 9 completes with:                                       │
-│       │  - promptId                                                     │
-│       │  - promptRequestId                                              │
-│       │  - sampleRecordId                                               │
+│       │  Stage 9 completes with DML, then triggers:                     │
 │       │                                                                 │
 │       ▼                                                                 │
 │  ┌─────────────────────────────────────────────────────────────────┐   │
-│  │  @future(callout=true) executeStages10to12(...)                 │   │
+│  │  Stage10_12_ConsolidatedJob                                     │   │
 │  │                                                                  │   │
 │  │  // Fresh transaction - no prior DML                            │   │
 │  │                                                                  │   │
 │  │  1. Stage 10: Call GPTfy API (CALLOUT #1)                       │   │
-│  │     └─► Returns HTML output                                      │   │
-│  │                                                                  │   │
-│  │  2. Stage 11: Safety validation (no callout)                    │   │
-│  │     └─► Validates output content                                 │   │
-│  │                                                                  │   │
+│  │  2. Stage 11: Safety validation (In-memory)                     │   │
 │  │  3. Stage 12: Call Claude AI (CALLOUT #2)                       │   │
-│  │     └─► Returns quality scores                                   │   │
-│  │                                                                  │   │
-│  │  4. Update PF_Run__c with all results (DML - after callouts)    │   │
+│  │  4. FINAL DML: Update PF_Run__c with all results                │   │
 │  │                                                                  │   │
 │  └─────────────────────────────────────────────────────────────────┘   │
 │                                                                         │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Why This Works
-
-1. **@future breaks the chain**: The `@future` method runs in a completely new transaction with chain depth = 0 and no prior DML.
-
-2. **Multiple callouts allowed**: Within the `@future` method, we can make multiple HTTP callouts (GPTfy + Claude) as long as we do ALL callouts BEFORE any DML.
-
-3. **DML at the end**: After all callouts complete, we perform a single DML operation to update `PF_Run__c` with all results.
-
 ---
 
-## Implementation Details
+## 5. Implementation Details
 
-### New Class: Stage10to12FutureJob
+### New Class: Stage10_12_ConsolidatedJob
 
 ```apex
-/**
- * @description Executes Stages 10-12 in a @future context to avoid DML/callout conflicts
- */
-public class Stage10to12FutureJob {
-
-    /**
-     * @description Execute stages 10-12 with callouts
-     * @param runId The PF_Run__c record ID
-     * @param promptRequestId The GPTfy prompt request ID
-     * @param sampleRecordId The sample record ID to test against
-     */
-    @future(callout=true)
-    public static void execute(Id runId, String promptRequestId, String sampleRecordId) {
-        List<Map<String,Object>> stageLogs = new List<Map<String,Object>>();
-        String outputHtml;
-        Map<String,Object> qualityScores;
-
-        try {
-            // ═══════════════════════════════════════════════════════════
-            // STAGE 10: Execute GPTfy Prompt (CALLOUT #1)
-            // ═══════════════════════════════════════════════════════════
-            stageLogs.add(createLog(10, 'Started', null));
-
-            ccai.AIPromptProcessingInvokable.RequestWrapper wrap =
-                new ccai.AIPromptProcessingInvokable.RequestWrapper();
-            wrap.promptRequestId = promptRequestId;
-            wrap.recordId = sampleRecordId;
-            wrap.customPromptCommand = '';
-
-            List<ccai.AIPromptProcessingInvokable.ResponseWrapper> responses =
-                ccai.AIPromptProcessingInvokable.processRequest(
-                    new List<ccai.AIPromptProcessingInvokable.RequestWrapper>{wrap}
-                );
-
-            if (responses == null || responses.isEmpty()) {
-                throw new Stage10to12Exception('No response from GPTfy');
-            }
-
-            ccai.AIPromptProcessingInvokable.ResponseWrapper resp = responses[0];
-
-            if (resp.responseBody == null || resp.responseBody.contains('"error"')) {
-                throw new Stage10to12Exception('GPTfy error: ' + resp.responseBody);
-            }
-
-            outputHtml = resp.responseBody;
-            stageLogs.add(createLog(10, 'Completed', 'HTML length: ' + outputHtml.length()));
-
-            // ═══════════════════════════════════════════════════════════
-            // STAGE 11: Safety Validation (NO CALLOUT)
-            // ═══════════════════════════════════════════════════════════
-            stageLogs.add(createLog(11, 'Started', null));
-
-            // Validate output doesn't contain prohibited content
-            Boolean safetyPassed = validateSafety(outputHtml);
-
-            if (!safetyPassed) {
-                throw new Stage10to12Exception('Safety validation failed');
-            }
-
-            stageLogs.add(createLog(11, 'Completed', 'Safety check passed'));
-
-            // ═══════════════════════════════════════════════════════════
-            // STAGE 12: Quality Audit (CALLOUT #2)
-            // ═══════════════════════════════════════════════════════════
-            stageLogs.add(createLog(12, 'Started', null));
-
-            // Call Claude AI for quality scoring
-            qualityScores = Stage12_QualityAudit.auditQuality(runId, outputHtml);
-
-            stageLogs.add(createLog(12, 'Completed',
-                'Score: ' + qualityScores.get('overallScore')));
-
-            // ═══════════════════════════════════════════════════════════
-            // FINAL: Update PF_Run__c (DML - after all callouts)
-            // ═══════════════════════════════════════════════════════════
-            updateRunRecord(runId, stageLogs, outputHtml, qualityScores, null);
-
-        } catch (Exception e) {
-            stageLogs.add(createLog(0, 'Error', e.getMessage()));
-            updateRunRecord(runId, stageLogs, outputHtml, qualityScores, e.getMessage());
-        }
+public class Stage10_12_ConsolidatedJob implements Queueable, Database.AllowsCallouts {
+    private Id runId;
+    
+    public void execute(QueueableContext context) {
+        // 1. Stage 10 Callout
+        // 2. Stage 11 Validation
+        // 3. Stage 12 Callout
+        // 4. Update PF_Run__c (DML)
     }
-
-    private static Map<String,Object> createLog(Integer stage, String status, String details) {
-        return new Map<String,Object>{
-            'stage' => stage,
-            'status' => status,
-            'details' => details,
-            'timestamp' => System.now()
-        };
-    }
-
-    private static Boolean validateSafety(String html) {
-        // Implement safety checks
-        return true;
-    }
-
-    private static void updateRunRecord(Id runId, List<Map<String,Object>> logs,
-                                         String html, Map<String,Object> scores,
-                                         String errorMsg) {
-        PF_Run__c run = [SELECT Id FROM PF_Run__c WHERE Id = :runId];
-        run.Current_Stage__c = errorMsg != null ? 'Failed' : 'Completed';
-        run.Stage_10_12_Logs__c = JSON.serialize(logs);
-        run.Output_HTML__c = html;
-        run.Quality_Score__c = scores != null ? (Decimal)scores.get('overallScore') : null;
-        run.Error_Message__c = errorMsg;
-        run.Completed_Date__c = System.now();
-        update run;
-    }
-
-    public class Stage10to12Exception extends Exception {}
 }
 ```
 
-### Modification to Stage 9
-
-At the end of `Stage09_CreateAndDeployJob`, instead of continuing to Stage 10 directly:
-
-```apex
-// Current (fails):
-// System.enqueueJob(new Stage10_TestExecutionJob(runId));
-
-// Proposed:
-Stage10to12FutureJob.execute(
-    runId,
-    promptRequestId,
-    sampleRecordId
-);
-```
-
 ---
 
-## Visual Feedback Considerations
+## 6. Visual Feedback Considerations
 
 ### The Challenge
 
-Within the `@future` method, we cannot update `PF_Run__c` between callouts:
-
-```apex
-@future(callout=true)
-public static void execute(...) {
-    updateRunStage(10, 'In Progress');  // DML ❌
-    callGPTfy();                         // CALLOUT - blocked by DML above!
-}
-```
+Within the consolidated job, we cannot update Stage records between callouts without triggering the "DML before callout" error again.
 
 ### User Experience Impact
 
-| Stage | With Current Queueables | With Proposed @future |
-|-------|------------------------|----------------------|
-| 1-9 | Real-time updates | Real-time updates |
-| 10 | N/A (fails) | Batch update at end |
-| 11 | N/A (fails) | Batch update at end |
-| 12 | N/A (fails) | Batch update at end |
+The user sees Stages 1-9 update in real-time, then a 30-45 second pause while Stages 10-12 execute, followed by a final completion update.
 
-**User sees:**
-```
-Stage 9: Complete ✓
-[waiting 20-40 seconds]
-Stage 10: Complete ✓  ← All appear
-Stage 11: Complete ✓  ← simultaneously
-Stage 12: Complete ✓  ← when @future finishes
-```
+---
 
-### Potential Enhancement: Platform Events
+## 7. Alternative Approaches
 
-If real-time feedback for Stages 10-12 is required, we can add Platform Events:
+- **Option A**: Queueable Chaining (Current - Slow)
+- **Option B**: Platform Events (Complex Metadata)
+- **Option C**: Consolidated Job + LWC Spinner (Recommended)
 
-```apex
-@future(callout=true)
-public static void execute(...) {
-    // Platform Events ARE allowed before callouts
-    EventBus.publish(new Pipeline_Status__e(Stage__c=10, Status__c='In Progress'));
+---
 
-    String html = callGPTfy();  // CALLOUT - works!
+## 8. Risks & Mitigations
 
-    EventBus.publish(new Pipeline_Status__e(Stage__c=10, Status__c='Completed'));
-    // ... continue
+- **Timeout**: @future/Queueable have 60-120s timeout. Mitigation: GPTfy/Claude typically take <30s total.
+- **UI Freeze**: User may think it's stuck. Mitigation: Add proactive "Finalizing" state in LWC.
+
+---
+
+## 9. Recommendation
+
+Implement the **Consolidated Job** for Stages 10-12 to minimize latency and simplify the transaction model, while updating the LWC UI to provide a proactive "Optimizing results..." message during the final execution phase.
+
+---
+
+## 10. Consolidated UX Strategy (LWC Spinner)
+
+### The Challenge
+
+With the Stages 10-12 consolidated into a single transaction, the LWC will not receive incremental stage updates for the final 30-45 seconds. To avoid a "frozen" UI, we will implement a proactive feedback mechanism.
+
+### Step 1: Stage 9 Handoff Update
+
+At the end of Stage 9, the run record is updated, and the consolidated job is enqueued. The LWC will detect that Stage 9 is complete but the overall run is still `In Progress`.
+
+### Step 2: LWC Progress Tracking Enhancements
+
+Update `pfProgressTracker.js` to handle a new "Processing" visual state.
+
+- **Visual State**: Stage 10 shows as "Running" (Amber pulse).
+- **Dynamic Message**: Change the footer instruction to: *"Optimizing results and auditing quality... (Est. 30s)"*
+
+### Step 3: PromptFactoryWizard Polling Logic
+
+Modify `refreshStatus()` in `promptFactoryWizard.js` to provide explicit feedback during this phase.
+
+```javascript
+if (this.currentStage >= 9 && this.pipelineStatus === 'running') {
+    this.customLoadingMessage = 'Performing AI Test Execution & Quality Audit...';
+    // Logic to visually highlight phase 4
 }
 ```
 
-**Implementation cost:**
-- Create 1 Platform Event object (`Pipeline_Status__e`)
-- Add ~10 lines of publish code in `Stage10to12FutureJob`
-- Add `empApi` subscription in LWC (~20 lines)
+### Step 4: Consolidated Job Completion
 
-**Recommendation:** Start without Platform Events. Add them later if users request real-time feedback for Stages 10-12.
-
----
-
-## Alternative Approaches
-
-### Option A: Queueable + ChainBreaker for Each Stage
-
-```
-Stage 9 → ChainBreaker → Stage 10 (Queueable with callout)
-                              → ChainBreaker → Stage 11 (Queueable)
-                                                    → ChainBreaker → Stage 12 (Queueable with callout)
-```
-
-**Pros:**
-- Real-time updates per stage
-- Follows existing pattern
-
-**Cons:**
-- Slow (each ChainBreaker adds ~5-60 second delay)
-- Complex orchestration
-- More points of failure
-
-### Option B: Batch Apex
-
-Use `Database.Batchable` with `Database.AllowsCallouts` for Stages 10-12.
-
-**Pros:**
-- Higher governor limits
-- Good for bulk operations
-
-**Cons:**
-- Overkill for single-record processing
-- Batch scheduling adds latency
-- More complex than @future
-
-### Option C: External Orchestration (Python)
-
-Keep using the Python test harness (`tests/v26/run_innovatek_test.py`) as the primary execution path.
-
-**Pros:**
-- Already working
-- Full control over timing and retries
-- Achieved 100/100 quality scores
-
-**Cons:**
-- External dependency
-- Not native Salesforce
-- Requires separate infrastructure
-
-### Comparison Matrix
-
-| Approach | Latency | Real-time UI | Complexity | Callouts |
-|----------|---------|--------------|------------|----------|
-| **@future (proposed)** | ~30s | Batch | Low | ✅ |
-| Queueable + ChainBreaker | ~3-5min | Per stage | High | ✅ |
-| Batch Apex | ~1-2min | None | Medium | ✅ |
-| Python external | ~30s | Via polling | Medium | N/A |
-| Platform Events + @future | ~30s | Real-time | Medium | ✅ |
-
----
-
-## Risks & Mitigations
-
-### Risk 1: @future Governor Limits
-
-**Risk:** @future has a limit of 50 calls per transaction and 250,000 per 24 hours.
-
-**Mitigation:** Each pipeline run only calls @future once. Would need 250,000 daily pipeline runs to hit the limit.
-
-### Risk 2: @future Timeout
-
-**Risk:** @future methods have a 60-second timeout. If GPTfy + Claude take too long, the job fails.
-
-**Mitigation:**
-- GPTfy typically responds in 10-20 seconds
-- Claude typically responds in 5-10 seconds
-- Total ~30 seconds, well under 60-second limit
-- Add timeout handling and retry logic if needed
-
-### Risk 3: No Real-time Feedback
-
-**Risk:** Users may be confused by the 20-40 second gap with no updates.
-
-**Mitigation:**
-- Add loading indicator in LWC: "Executing stages 10-12..."
-- Consider Platform Events for future enhancement
-- Document expected behavior
-
-### Risk 4: Error Handling
-
-**Risk:** If @future fails, there's no automatic retry.
-
-**Mitigation:**
-- Comprehensive try/catch with error logging to PF_Run__c
-- Add manual "Retry" button in LWC
-- Consider Queueable (which can self-retry) if reliability is critical
-
----
-
-## Recommendation
-
-### Implement in Phases
-
-**Phase 1 (Immediate):**
-1. Create `Stage10to12FutureJob` class with `@future(callout=true)`
-2. Modify Stage 9 to call the @future method instead of enqueueing Stage 10
-3. Update LWC to show "Processing stages 10-12..." during @future execution
-4. Test end-to-end with Innovatek account
-
-**Phase 2 (If Needed):**
-1. Add Platform Events for real-time Stage 10-12 updates
-2. Add `empApi` subscription to LWC
-
-**Phase 3 (Future):**
-1. Add retry mechanism for failed @future jobs
-2. Consider Queueable migration if @future limits become an issue
-
-### Success Criteria
-
-- [ ] Pipeline completes end-to-end without "DML before callout" error
-- [ ] Stage 10 successfully executes GPTfy prompt
-- [ ] Stage 12 successfully scores output quality
-- [ ] PF_Run__c updated with final results
-- [ ] LWC displays completion status
+Once the `Stage10_12_ConsolidatedJob` completes its single DML update to `PF_Run__c`, the next LWC heartbeat poll will receive the final status and score, instantly resolving all final stages to Green/Complete.
 
 ---
 
@@ -556,35 +297,12 @@ Keep using the Python test harness (`tests/v26/run_innovatek_test.py`) as the pr
 
 **Proof-of-concept class:** `force-app/main/default/classes/FutureCalloutTest.cls`
 
-**Test execution log:**
-```
-12:53:15 | DML completed: 001QH000024rKBqYAM
-12:53:15 | @future enqueued (will execute async)
-12:53:15 | Test account cleaned up
----
-[Async @future execution]
-Status: Processed
-Response ID: a0IQH000001pxez2AA
-Response Length: 6,909 chars
-Content: <div style="background:#F3F3F3...
-```
-
 ### B. Related Files
 
 | File | Purpose |
 |------|---------|
 | `Stage09_CreateAndDeploy.cls` | Stage 9 - creates prompt (DML) |
-| `Stage10_TestExecution.cls` | Current Stage 10 (fails) |
-| `Stage12_QualityAudit.cls` | Stage 12 - Claude AI scoring |
-| `PromptFactoryChainBreaker.cls` | Existing chain depth reset mechanism |
-| `FutureCalloutTest.cls` | Proof-of-concept @future class |
-| `tests/v26/run_innovatek_test.py` | Python test harness (working alternative) |
-
-### C. Salesforce Documentation References
-
-- [Invoking Callouts Using Apex](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_callouts.htm)
-- [Future Methods](https://developer.salesforce.com/docs/atlas.en-us.apexcode.meta/apexcode/apex_invoking_future_methods.htm)
-- [Platform Events Developer Guide](https://developer.salesforce.com/docs/atlas.en-us.platform_events.meta/platform_events/)
+| `Stage10_12_ConsolidatedJob.cls` | NEW: Consolidated Stages 10-12 |
 
 ---
 
@@ -593,3 +311,4 @@ Content: <div style="background:#F3F3F3...
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
 | 1.0 | 2026-01-26 | Claude | Initial proposal |
+| 1.1 | 2026-01-26 | Gemini | Added Consolidated UX Strategy (LWC Spinner) section |
