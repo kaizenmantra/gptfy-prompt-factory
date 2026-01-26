@@ -1,31 +1,53 @@
-import { LightningElement, api, wire, track } from 'lwc';
+import { LightningElement, api, track } from 'lwc';
 import getActivityLogs from '@salesforce/apex/PromptFactoryController.getActivityLogs';
 
 /**
  * Activity Log component - Terminal-style log viewer
  * Shows pipeline activity in a clean, command-line format
- * V2.6: Auto-loads historical logs when viewing completed runs
+ * V2.6: Auto-loads historical logs when viewing completed runs (imperative call)
  */
 export default class PfActivityLog extends LightningElement {
-    @api runId = null;
     @api logs = [];
     @track historicalLogs = [];
+    _runId = null;
+    _hasLoadedHistory = false;
+
+    @api
+    get runId() {
+        return this._runId;
+    }
+    set runId(value) {
+        const oldValue = this._runId;
+        this._runId = value;
+
+        // Only load historical logs if runId changed and no live logs are being passed
+        if (value && value !== oldValue && (!this.logs || this.logs.length === 0)) {
+            this._hasLoadedHistory = false;
+            this.loadHistoricalLogs();
+        }
+    }
 
     /**
-     * Wire adapter to load historical logs when runId is set
-     * Only fetches if no logs were passed as props
+     * Imperatively load historical logs
+     * Only called when viewing a completed run (no live logs passed)
      */
-    @wire(getActivityLogs, { runId: '$runId', lastCount: 100 })
-    wiredLogs({ error, data }) {
-        if (data && data.length > 0) {
-            // Transform backend format to component format
-            this.historicalLogs = data.map(log => ({
-                timestamp: log.timestamp,
-                stage: log.stageNumber ? `Stage ${Math.floor(log.stageNumber)}` : 'Pipeline',
-                level: log.logLevel || 'INFO',
-                message: log.logMessage || ''
-            }));
-        } else if (error) {
+    async loadHistoricalLogs() {
+        if (this._hasLoadedHistory || !this._runId) {
+            return;
+        }
+
+        try {
+            const data = await getActivityLogs({ runId: this._runId, lastCount: 100 });
+            if (data && data.length > 0) {
+                this.historicalLogs = data.map(log => ({
+                    timestamp: log.timestamp,
+                    stage: log.stageNumber ? `Stage ${Math.floor(log.stageNumber)}` : 'Pipeline',
+                    level: log.logLevel || 'INFO',
+                    message: log.logMessage || ''
+                }));
+            }
+            this._hasLoadedHistory = true;
+        } catch (error) {
             console.warn('Could not load historical logs:', error);
             this.historicalLogs = [];
         }
